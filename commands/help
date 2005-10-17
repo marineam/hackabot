@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use XML::Simple;
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my $MODS = $ENV{'HACKABOT_CMD'};
+if (not defined $MODS) {
+	die "help: Uh, are you running this from hackabot?";
+}
+
+print "sendnext\n";
+
+my $send = "Commands:";
+opendir(MODDIR, $MODS);
+while ($_ = readdir(MODDIR)) {
+	if (/^[^\.]/ and -x "/$MODS/$_") {
+		$send .= " $_";
+	}
+}
+closedir(MODDIR);
+print "$send\n";

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "sendnext"
+fortune=`fortune -s | tr '	' '    '`
+while [ `echo $fortune | wc -l` != "1" ]
+do
+	fortune=`fortune -s | tr '   ' '    '`
+done
+echo $fortune

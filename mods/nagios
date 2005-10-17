@@ -1,0 +1,200 @@
+#!/usr/bin/perl -w
+#
+# An IRC BOT for the OSU Open Source Lab
+#
+# Copyright 2005 Michael Marineau
+# Licensed under the GPLv2
+
+use strict;
+use LWP::Simple;
+use XML::Simple;
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my $nagios_url = "http://page.osuosl.org/cgi-open/nxe.pl";
+my $nagios_cmd = "?type=status&params=status";
+my $nagios_tmp = "/tmp/";
+
+sub getxml {
+	if ((stat("$nagios_tmp/nagios.xml"))[9] + 600 < time) { # check mtime
+		system("wget -O $nagios_tmp/nagios.xml '$nagios_url$nagios_cmd' &>/dev/null");
+	}
+	my $nagios_xml = `cat $nagios_tmp/nagios.xml`;
+	return $nagios_xml;
+}
+
+sub gethost {
+	
+	my $nagios_xml_host = getxml();
+	$nagios_xml_host =~ s/<(?!HOST)[^>]*>//g;
+	$nagios_xml_host =~ s/\s*(<[^>]*>)\s*/$1\n/g;
+	$nagios_xml_host = "<NAGIOS>\n$nagios_xml_host</NAGIOS>\n";
+
+	my $nagios_host = XMLin($nagios_xml_host,
+		KeyAttr => { HOST => "HOSTNAME" }, ForceArray => "HOST");
+	
+	return $nagios_host;
+}
+
+sub getservice {
+
+	my $nagios_xml = getxml();
+	my $nagios_xml_service;
+	my $current_host;
+	foreach(split(/\n/,$nagios_xml)) {
+		if (not /<SERVICE/) {
+			next;
+		}
+		/<.*HOSTNAME="([^"]*)"[^>]*>/;
+		my $new_host = $1;
+		if (not defined $current_host or not $new_host eq $current_host) {
+			$_ = "<HOST HOSTNAME=\"".$new_host."\">\n" . $_;
+			if (defined $current_host) {
+				$_ = "</HOST>\n" . $_;
+			}
+			$current_host = $new_host;
+		}
+		$nagios_xml_service .= "$_\n";
+	}
+	$nagios_xml_service .= "</HOST>\n";
+	$nagios_xml_service = "<NAGIOS>\n$nagios_xml_service</NAGIOS>\n";
+
+	#print $nagios_xml_service;
+	my $nagios_service = XMLin($nagios_xml_service,
+		KeyAttr => { SERVICE => "+SVC_DESC", HOST => "HOSTNAME" },
+		ForceArray => "SERVICE");
+
+	return $nagios_service;
+}
+
+sub printhost {
+	my $host = shift;
+	
+	my $nagios_host = gethost();
+	
+	if(defined $nagios_host->{'HOST'}->{$host}) {
+		my $info = $nagios_host->{'HOST'}->{$host};
+		print "$host :: Status: $info->{'HST_STATUS'}, Last Check: $info->{'LAST_CHECK'}\n";
+	}
+	else {
+		print "Error: No such host $host\n";
+	}
+}
+
+sub printservice {
+	my $host = shift;
+	my $service = shift;
+
+	my $nagios_service = getservice();
+
+	if(defined $nagios_service->{'HOST'}->{$host}) {
+		my $info = $nagios_service->{'HOST'}->{$host}->{'SERVICE'};
+		my $svc;
+		foreach my $key (keys %$info) {
+			if ($info->{$key}->{'SVC_DESC'} =~ /$service/i) {
+				$svc = $info->{$key}->{'SVC_DESC'};
+				last;
+			}
+		}
+		if (defined $svc) {
+			print "$host - $svc :: Status: $info->{$svc}->{'SVC_STATUS'}, Last Check: $info->{$svc}->{'LAST_CHECK'}\n";
+		}
+		else {
+			print "Error: No such service $host\n";
+		}
+	}
+	else {
+		print "Error: No such host $host\n";
+	}
+}
+
+sub printprobservice {
+
+	my $nagios_service = getservice();
+
+	my $svcfound = 0;
+	if(defined $nagios_service->{'HOST'}) {
+		my $hstinfo = $nagios_service->{'HOST'};
+		foreach my $host (keys %$hstinfo) {
+			my $svcinfo = $nagios_service->{'HOST'}->{$host}->{'SERVICE'};
+			foreach my $svc (keys %$svcinfo) {
+				if (not $svcinfo->{$svc}->{'SVC_STATUS'} eq "OK") {
+					print "$host - $svc :: Status: $svcinfo->{$svc}->{'SVC_STATUS'}, Last Check: $svcinfo->{$svc}->{'LAST_CHECK'}\n";
+					$svcfound = 1;
+				}
+			}
+		}
+		if ($svcfound == 0) {
+			print "No service problems found.\n";
+		}
+	}
+	else {
+		print "Error: No service data\n";
+	}
+}
+
+sub printprobhost {
+
+	my $nagios_host = gethost();
+
+	my $hstfound = 0;
+	if(defined $nagios_host->{'HOST'}) {
+		my $info = $nagios_host->{'HOST'};
+		foreach my $host (keys %$info) {
+			if (not $info->{$host}->{'HST_STATUS'} eq "UP") {
+				print "$host :: Status: $info->{$host}->{'HST_STATUS'}, Last Check: $info->{$host}->{'LAST_CHECK'}\n";
+				$hstfound = 1;
+			}
+		}
+		if ($hstfound == 0) {
+			print "No host problems found.\n";
+		}
+	}
+	else {
+		print "Error: No host data\n";
+	}
+}
+
+my $arg = shift;
+my @argv;
+if  ($arg eq "msg") {
+	@argv = split(/\s/,<STDIN>);
+}
+else {
+	die "mod/nagios: ERROR: unknown arg $arg";
+}
+
+print "send\n";
+
+if (defined $argv[0] && defined $argv[1] && $argv[0] =~ /^host$/) {
+	print "Getting host info, just a sec...\n";
+	printhost($argv[1]);
+}
+elsif (defined $argv[0] && defined $argv[1] && defined $argv[2] 
+		&& $argv[0] =~ /^service$/) {
+	print "Getting service info, just a sec...\n";
+	printservice($argv[1], $argv[2]);
+}
+elsif (defined $argv[0] && defined $argv[1] && $argv[0] =~ /^problem/
+		&& $argv[1] =~ /^host/) {
+	print "Getting host info, just a sec...\n";
+	printprobhost();
+}
+elsif (defined $argv[0] && defined $argv[1] && $argv[0] =~ /^problem/
+		&& $argv[1] =~ /^service/) {
+	print "Getting service info, just a sec...\n";
+	printprobservice();
+}
+elsif (defined $argv[0] && $argv[0] =~ /^problem/) {
+	print "Getting host and service info, just a sec...\n";
+	printprobhost();
+	printprobservice();
+}
+elsif (defined $argv[0] && $argv[0] =~ /^refresh/) {
+	print "Removing cached info...\n";
+	system ("rm -f $nagios_tmp/nagios.xml");
+}
+else {
+	print "Usage: !nagios host <hostname> OR !nagios service <hostname> <service> OR !nagios problem [host|service]\n";
+}
+

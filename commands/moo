@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "sendnext"
+echo '  Gentoo (Linux)'
+echo
+echo ' _______________________'
+echo '< Have you mooed today? >'
+echo ' -----------------------'
+echo '        \   ^__^'
+echo '         \  (oo)\_______'
+echo '            (__)\       )\/\'
+echo '                ||----w |'
+echo '                ||     ||'

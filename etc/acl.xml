@@ -1,0 +1,40 @@
+<hackabotacl>
+	<default action="allow" />
+	<command name="nagios" action="deny"
+	msg="Sorry, that's only for OSUOSL usage.">
+		<public chan="#osuosl" action="deny"
+		msg="You're not special enough.">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+		</public>
+		<public chan="#osuosl-staff" action="allow" />
+	</command>
+	<command name="topvhosts" action="deny"
+	msg="Sorry, that's only for OSUOSL usage.">
+		<public chan="#osuosl" action="deny"
+		msg="You're not special enough.">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+		</public>
+		<public chan="#osuosl-staff" action="allow" />
+	</command>
+	<command name="onscreen" action="deny"
+	msg="NO! You can't make me do it!">
+		<public chan="#osuosl-staff" action="allow" />
+	</command>
+	<command name="admin" action="deny"
+	msg="You are not my master!">
+		<public chan="#osuosl-staff" action="deny"
+		msg="Keep you dirty hands off me!">
+			<person nick="marineam"	action="allow" />
+		</public>
+		<public chan="#foss-anonymous" action="deny"
+		msg="Keep you dirty hands off me!">
+			<person nick="marineam"	action="allow" />
+		</public>
+	</command>
+</hackabotacl>

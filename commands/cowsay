@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "sendnext"
+grep '^msg' | sed -e 's/^msg\s*//g' | cowsay

@@ -1,0 +1,26 @@
+<hackabot>
+	<directory>/home/manatee/hackabot</directory>
+	<commands>commands</commands>
+	<hooks>hooks</hooks>
+	<etc>etc</etc>
+	<ext>etc</ext>
+
+	<server>irc.oregonstate.edu</server>
+	<nick>manatee</nick>
+	<name>Most certainly not the OSL logo!</name>
+
+	<automsg to="nickserv">identify beaverdamnit</automsg>
+	<automsg to="chanserv">invite #osuosl-staff</automsg>
+	
+	<!--<autojoin chan="#osuosl-test" />-->
+	<autojoin chan="#osuosl" />
+	<autojoin chan="#osuosl-staff" />
+	<autojoin chan="#osu-lug" />
+	<autojoin chan="#foss-anonymous" />
+
+	<extsrc>
+		<!--<x-nagios type="msg">manatee</x-nagios>-->
+		<!--<x-nagios type="notice">#osuosl-test</x-nagios>-->
+		<x-nagios type="notice">#osuosl-staff</x-nagios>
+	</extsrc>
+</hackabot>

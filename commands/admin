@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use XML::Simple;
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my $command;
+while (<>) {
+	if (/^msg\s*(.*)/) {
+		$command = $1;
+	}
+}
+
+if (defined $command) {
+	$command =~ /(\S*)\s*(.*)/;
+	my $cmd = $1;
+	my $arg = $2;
+
+	if ($cmd eq "quit") {
+		print "quit\n";
+	}
+	elsif ($cmd eq "nick") {
+		print "nick $arg\n";
+	}
+	elsif ($cmd eq "join") {
+		print "join $arg\n";
+	}
+	elsif ($cmd eq "part") {
+		print "part $arg\n";
+	}
+}

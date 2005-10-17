@@ -1,0 +1,139 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use Time::localtime;
+
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+sub seen {
+	my $nick = shift;
+	my $asker = shift;
+	my ($dbh, $sth);
+	my $row;
+	my $ret;
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	$nick = $dbh->quote($nick);
+
+	$sth = $dbh->prepare("SELECT q.date, q.text, q.chan FROM seen_quotes AS q, seen AS s WHERE s.nick = $nick AND s.quote_id = q.id");
+	$sth->execute();
+	if ($row = $sth->fetchrow_hashref) {
+		$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
+	}
+	else {
+		$ret = "$asker: Sorry, I haven't seen $nick.\n";
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+sub seen_here {
+	my $nick = shift;
+	my $asker = shift;
+	my $chan = shift;
+	my ($dbh, $sth);
+	my $row;
+	my $ret;
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	$nick = $dbh->quote($nick);
+	$chan = $dbh->quote($chan);
+
+	$sth = $dbh->prepare("SELECT date, text FROM seen_quotes WHERE nick = $nick AND chan = $chan");
+	$sth->execute();
+	if ($row = $sth->fetchrow_hashref) {
+		$ret = "$asker: $nick was last seen in here saying \"$row->{'text'}\" at $row->{'date'}.\n";
+	}
+	else {
+		$ret = "$asker: Sorry, I haven't seen $nick here.\n";
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+sub seen_where {
+	my $nick = shift;
+	my $asker = shift;
+	my $chan = shift;
+	my ($dbh, $sth);
+	my $row;
+	my $ret;
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	$nick = $dbh->quote($nick);
+	$chan = $dbh->quote($chan);
+
+	$sth = $dbh->prepare("SELECT date, text FROM seen_quotes WHERE nick = $nick AND chan = $chan");
+	$sth->execute();
+	if ($row = $sth->fetchrow_hashref) {
+		$ret = "$asker: $nick was last seen in $chan saying \"$row->{'text'}\" at $row->{'date'}.\n";
+	}
+	else {
+		$ret = "$asker: Sorry, I haven't seen $nick in $chan.\n";
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+my $where = "all";
+my ($nick, $asker, $chan);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$asker = $1;
+	}
+	if (/^to\s*(\S*)/) {
+		$chan = $1;
+	}
+	elsif (/^msg\s*here\s*(\S*)/) {
+		$nick = $1;
+		$where = "here";
+	}
+	elsif (/^msg\s*(#\S*)\s*(\S*)/) {
+		$nick = $2;
+		$where = $1;
+	}
+	elsif (/^msg\s*(\S*)/) {
+		$nick = $1;
+	}
+}
+
+if (defined $nick and defined $asker, and defined $chan) {
+	if ($where eq "here") {
+		print "send " . seen_here($nick, $asker, $chan);
+	}
+	elsif ($where eq "all") {
+		print "send " . seen($nick, $asker);
+	}
+	else {
+		print "send " . seen_where($nick, $asker, $where);
+	}
+}
+else {
+	die "seen: All info not sent :-/\n";
+}

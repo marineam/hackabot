@@ -1,0 +1,8 @@
+#!/bin/bash
+# List the most popular vhosts
+
+echo "sendnext"
+lynx -width=1000 -dump http://ftp.osuosl.org/server-status | \
+	grep '^[\s]*[^\s]*[\s]*[^\s][\s]*[^\s]*[\s]*W' | \
+	awk '{print $12}' | grep -v ^$ | sort | uniq -c | sort -r | \
+	head -n 3

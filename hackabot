@@ -1,0 +1,312 @@
+#!/usr/bin/perl -w
+#
+# An IRC BOT for the OSU Open Source Lab
+#
+# Copyright 2005 Michael Marineau
+# Licensed under the GPLv2
+
+# This piece is based in part on the irctest script distributed with Net::IRC
+
+use strict;
+use Net::IRC;
+use XML::Simple;
+use Data::Dumper;
+use IO::Handle;
+use Fcntl;
+STDOUT->autoflush(1);
+
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	$cfgfile = "$ENV{'HOME'}/.hackabot.xml";
+}
+
+my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
+#print Dumper $CONFIG;
+#exit;
+
+my $DIR = $CONFIG->{'directory'};
+
+$ENV{'HACKABOT_DIR'} = $CONFIG->{'directory'};
+$ENV{'HACKABOT_ETC'} = "$CONFIG->{'directory'}/$CONFIG->{'etc'}";
+$ENV{'HACKABOT_CMD'} = "$CONFIG->{'directory'}/$CONFIG->{'commands'}";
+
+my $irc = new Net::IRC;
+
+print "hackabot: Creating connection to IRC server...\n";
+my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
+			 Nick     => $CONFIG->{'nick'},
+			 Ircname  => $CONFIG->{'name'})
+    or die "hackabot: Can't connect to IRC server.\n";
+
+# What to do when the bot successfully connects.
+sub on_connect {
+	my $self = shift;
+	
+	print "hackabot: Connected!\n";
+	sleep 1;
+	foreach (@{$CONFIG->{'automsg'}}) {
+		print "hackabot: sending message to $_->{'to'}\n";
+		$self->privmsg($_->{'to'}, $_->{'content'});
+	}
+	sleep 1;
+	foreach (@{$CONFIG->{'autojoin'}}) {
+		print "hackabot: joining $_->{'chan'}\n";
+		$self->join($_->{'chan'}, defined $_->{'password'}?$_->{'password'}:'');
+		if (defined $_->{'content'}) {
+			$self->privmsg($_->{'chan'}, $_->{'content'});
+		}
+	}
+}
+
+# Run a !cmd line
+sub runcmd {
+	my $self = shift;
+	my $event = shift;
+	my @to = shift;
+	my $cmd = shift;
+	my $txt = shift;
+	
+	my $exe = "/$CONFIG->{'directory'}/$CONFIG->{'commands'}/$cmd";
+
+	if ( not $cmd =~ /^[^\.]/ or not -x "$exe" ) {
+		$self->privmsg([ @to ], "Error: no such command\n");	
+		return;
+	}
+
+	runmod($self, $event, @to, $exe, $txt);
+	return "ok";
+}
+
+# Run a set of hooks
+sub runhook {
+	my $self = shift;
+	my $event = shift;
+	my @to = shift;
+	my $hook = shift;
+	my $txt = shift;
+	
+	my $dir = "/$CONFIG->{'directory'}/$CONFIG->{'hooks'}/$hook";
+	
+	my $ret = "ok";
+	if ( -d $dir ) {
+		opendir(HOOKDIR, $dir);
+		while ($_ = readdir(HOOKDIR)) {
+			if (/^[^\.]/ and -x "$dir/$_") {
+				my $r = runmod($self, $event, @to, "$dir/$_", $txt);
+				if ($r eq "nocmd" or $r eq "noall") {
+					$ret = "nocmd";
+				}
+				if ($r eq "nohook" or $r eq "noall") {
+					last;
+				}
+			}
+		}
+		closedir(HOOKDIR);
+	}
+	return $ret;
+}
+
+# A safer replacement for `$cmd` commands
+# plus some bangs and wizzing amazingness
+sub runmod {
+	my $self = shift;
+	my $event = shift;
+	my @to = shift;
+	my $cmd = shift;
+	my $txt = shift;
+	
+	if (not -x "/$cmd") {
+		print "hackabot: Error: no such module /$cmd\n";	
+		return "ok";
+	}
+
+	pipe(FROM_PARENT, TO_CHILD) or print "ERROR: pipe: $!" and return;
+	pipe(FROM_CHILD, TO_PARENT) or print "ERROR: pipe: $!" and return;
+	TO_CHILD->autoflush(1);
+	TO_PARENT->autoflush(1);
+
+	if (my $pid = fork) {
+		close FROM_PARENT;
+		close TO_PARENT;
+		
+		print TO_CHILD "type $event->{'type'}\n";
+		if (defined $event->{'nick'}) {
+			print TO_CHILD "nick $event->{'nick'}\n";
+		}
+		if (defined $event->{'user'}) {
+			print TO_CHILD "user $event->{'user'}\n";
+		}
+		if (defined $event->{'host'}) {
+			print TO_CHILD "host $event->{'host'}\n";
+		}
+		if (defined $event->{'to'}) {
+			print TO_CHILD "to ".join(" ",@{$event->{'to'}})."\n";
+		}
+		if (defined $txt) {
+			print TO_CHILD "msg $txt\n";
+		}
+		close TO_CHILD;
+
+		my $ret = "ok";
+		my $mode = "cmd";
+		while (<FROM_CHILD>) {
+			if ($mode eq "sendnext") {
+				$self->privmsg([ @to ], "$_\n");
+			}
+			elsif (/^sendnext/) {
+				$mode = "sendnext";
+			}
+			elsif (/^send\s*(.+)$/) {
+				$self->privmsg([ @to ], "$1\n");
+			}
+			elsif (/^notice\s*(.+)$/) {
+				$self->notice([ @to ], "$1\n");
+			}
+			elsif (/^me\s*(.+)$/) {
+				$self->me([ @to ], "$1\n");
+			}
+			elsif (/^to\s*(.+)$/) {
+				@to = split(/\s/,$1);
+			}
+			elsif (/^nick\s*(\S+)$/) {
+				$self->nick($1);
+			}
+			elsif (/^join\s*(\S+)\s*(\S*)$/) {
+				$self->join($1, $2 ? $2 : '');
+			}
+			elsif (/^part\s*(.+)/) {
+				$self->part(split(/\s/,$1));
+			}
+			elsif (/^quit\s*(.*)/) {
+				$self->quit($1 ? $1 : 'Bye');
+				sleep(3);
+				exit;
+			}
+			elsif (/^nocmd/) {
+				$ret = "nocmd";
+			}
+			elsif (/^nohook/) {
+				$ret = "nohook";
+			}
+			elsif (/^noall/) {
+				$ret = "noall";
+			}
+			else {
+				print "hackbot: Unknown cmdline: $_\n";
+			}
+		}
+		close FROM_CHILD;
+		waitpid($pid,0);
+		return $ret;
+	}
+	else {
+		if (not defined $pid) {
+			print "ERROR: cannot fork: $!\n";
+			return;
+		}
+		close FROM_CHILD;
+		close TO_CHILD;
+		open(STDIN, "<&FROM_PARENT") or die "ERROR: dup $!";
+		open(STDOUT, ">&TO_PARENT") or die "ERROR: dup $!";
+		exec("/$cmd") or die "ERROR: can't exec $!";
+	}
+}
+
+# What to do when we receive a private PRIVMSG.
+sub on_msg {
+	my ($self, $event) = @_;
+	my @to = [ $event->nick ];
+	my ($msg) = ($event->args);
+
+	return; # disabled for now
+	if ($msg =~ /^!(\S*)\s*(.*)/) {
+    		my $cmd = $1;
+		my $txt = $2;
+
+		runcmd($self, $event, @to, $cmd, $txt);
+	}
+}
+
+# What to do when we receive channel text.
+sub on_public {
+	my ($self, $event) = @_;
+	my @to = $event->to;
+	my ($msg) = ($event->args);
+
+	my $r = runhook($self, $event, @to, "public", $msg);
+	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
+    		my $cmd = $1;
+		my $txt = $2;
+
+		runcmd($self, $event, @to, $cmd, $txt);
+	}
+}
+
+
+# Change our nick if someone stole it.
+sub on_nick_taken {
+    my ($self) = shift;
+
+    $self->nick($self->nick . "_");
+}
+
+# Reconnect to the server when we die.
+sub on_disconnect {
+	my ($self, $event) = @_;
+
+	print "hackabot: Disconnected from ", $event->from(), " (",
+	      ($event->args())[0], ").";
+	      
+	sleep(60);
+	print "hackabot: Attempting to reconnect...\n";
+	
+	$self->connect();
+}
+
+sub extopen {
+	my $conf = shift;
+	
+	my $extfifos = {};
+	my $extdir = $CONFIG->{'directory'}."/".$CONFIG->{'ext'};
+	foreach my $fifo (keys %{$CONFIG->{'extsrc'}}) {
+		my $pipe;
+		sysopen($pipe, "/$extdir/$fifo", O_RDONLY|O_NONBLOCK) or
+			die "hackabot: can't open fifo $!\n";
+		$extfifos->{$fifo} = $pipe;
+	}
+	return $extfifos;
+}
+
+sub extcheck {
+	my $conf = shift;
+	my $extfifos = shift;
+	my $conn = shift;
+
+	foreach my $fifo (keys %$extfifos) {
+		while (my $line = readline($extfifos->{$fifo})) {
+			foreach my $dest (@{$CONFIG->{'extsrc'}->{$fifo}}) {
+				if ($dest->{'type'} eq 'notice') {
+					$conn->notice($dest->{'content'}, "$line\n");
+				}
+				else {
+					$conn->privmsg($dest->{'content'}, "$line\n");
+				}
+			}
+		}
+	}
+}
+
+$conn->add_handler('msg',    \&on_msg);
+$conn->add_handler('public', \&on_public);
+
+$conn->add_global_handler('disconnect', \&on_disconnect);
+$conn->add_global_handler(376, \&on_connect);
+$conn->add_global_handler(433, \&on_nick_taken);
+
+#$irc->start;
+my $extfifos = extopen($CONFIG);
+while (1) {
+	$irc->do_one_loop();
+	extcheck($CONFIG, $extfifos, $conn);
+}
+

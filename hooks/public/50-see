@@ -1,0 +1,70 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use Time::localtime;
+
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+sub add_msg {
+	my $nick = shift;
+	my $chan = shift;
+	my $txt = shift;
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+
+	$nick = $dbh->quote($nick);
+	$chan = $dbh->quote($chan);
+	$txt = $dbh->quote($txt);
+	$time = $dbh->quote($time);
+
+	$dbh->do("INSERT seen_quotes SET date = $time, text = $txt, chan = $chan, nick = $nick") or
+	$dbh->do("UPDATE seen_quotes SET date = $time, text = $txt WHERE chan = $chan AND nick = $nick") or
+	die "see: DB stuff failed.\n";
+
+	$sth = $dbh->prepare("SELECT id FROM seen_quotes WHERE chan = $chan AND nick = $nick");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $id = $row->{'id'};
+	$sth->finish();
+
+	$dbh->do("INSERT seen SET quote_id = $id, nick = $nick") or
+	$dbh->do("UPDATE seen SET quote_id = $id WHERE nick = $nick") or
+	die "see: DB stuff failed.\n";
+
+	$dbh->disconnect;
+}
+
+my ($nick, $chan, $msg);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$nick = $1;
+	}
+	elsif (/^to\s*(\S*)/) { # We assume there is only one name listed
+		$chan = $1;
+	}
+	elsif (/^msg\s*!s[\/\s]/) {
+		exit; # I don't care about seeing !s
+	}
+	elsif (/^msg\s*(.*)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg and defined $nick and defined $chan) {
+	add_msg($nick, $chan, $msg);
+}
+else {
+	die "see: All info not found :-/\n";
+}

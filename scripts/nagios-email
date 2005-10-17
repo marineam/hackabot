@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+use strict;
+use XML::Simple;
+
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	$cfgfile = "$ENV{'HOME'}/.hackabot.xml";
+}
+
+my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
+
+my $fifo = "/".$CONFIG->{'directory'}."/".$CONFIG->{'ext'}."/x-nagios";
+
+my $data;
+my $inhead = 1;
+while (<>) {
+	chomp;
+	if (/^Subject:/ and $inhead = 1) {
+		s/^Subject:\s*//;
+		$data = $_;
+	}
+	elsif (/^$/) {
+		$inhead = 0;
+	}
+	elsif (/^Info/ and $inhead == 0) {
+		$data .= " | $_";
+	}
+	elsif (/^Date/ and $inhead == 0) {
+		$data .= " | $_";
+	}
+}
+chomp($data);
+open(FIFO, ">", $fifo);
+print(FIFO "$data\n");
+close(FIFO);

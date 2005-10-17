@@ -1,0 +1,325 @@
+#!/usr/bin/perl
+use strict;
+use vars qw($VERSION %IRSSI $dbhost $dbname $dbuser $dbpass);
+#use Irssi;
+use DBI;
+
+$VERSION = "1.2";
+%IRSSI = (
+    author => 'mccammos',
+    contact => 'mccammos\@onid.orst.edu',
+    name => 'lunchalizer',
+    description => 'a bot script, typing !lunch will suggest a random place for lunch',
+    license => 'GNU GPL v2 or later',
+    url => ''
+);
+
+# specify your database connection parameters here
+$dbhost = 'db0.osuosl.org';
+$dbname = 'manatee-lunch';
+$dbuser = 'manatee-lunch';
+$dbpass = 'bMM19Mtx';
+
+sub make_lunch {
+    my ($dbh, $sth, @row, $lunch);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+
+#     $sth = $dbh->prepare("SELECT location_name FROM lunch_location ORDER BY RAND() LIMIT 1");
+    $sth = $dbh->prepare("SELECT location_name, (0
+        +5*(1-(LEAST(visit_count/(TO_DAYS(CURDATE())-TO_DAYS(date_added)+1),0.125)/0.125))
+        +10*(LEAST(GREATEST(0,TO_DAYS(CURDATE())-TO_DAYS(last_visit)),14)/14)
+        +85*RAND() 
+        ) AS score
+        FROM lunch_location ORDER BY score DESC LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $lunch = "lunchalizer suggests '" . $row[0] . "'";
+    $sth->finish();
+
+    $sth = $dbh->prepare("SELECT adj_name FROM lunch_adj ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $lunch = $lunch . " for " . $row[0];
+    $sth->finish();
+
+    $sth = $dbh->prepare("SELECT n_name FROM lunch_n ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $lunch = $lunch . " " . $row[0];
+    $sth->finish();
+
+    $dbh->disconnect;
+    return $lunch;
+}
+
+sub make_drink {
+    my ($dbh, $sth, @row, $drink);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+
+    $sth = $dbh->prepare("SELECT bar_name FROM lunch_bar ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $drink = "lunchalizer suggests '" . $row[0] . "'";
+    $sth->finish();
+
+    $sth = $dbh->prepare("SELECT adj_name FROM lunch_adj ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $drink = $drink . " for " . $row[0];
+    $sth->finish();
+
+    $sth = $dbh->prepare("SELECT n_name FROM lunch_n ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $drink = $drink . " " . $row[0];
+    $sth->finish();
+
+    $dbh->disconnect;
+    return $drink;
+}
+
+sub visit {
+    my ($location) = @_;
+    my ($dbh, $sth, $ret, @row, $count, $loc);
+    return "lunchalizer is still working on this feature";
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("SELECT location_name FROM lunch_location WHERE location_name LIKE ?");
+
+    ($location) = $location =~ /^\s*(.*?)\s*$/;
+    $count = 0;
+    $sth->execute('%'.$location.'%');
+    while (@row = $sth->fetchrow_array) {
+        $loc = $row[0];
+        $count++;
+    }
+    $sth->finish();
+
+    if ($count == 0) {
+        $ret = "lunchalizer count not find '$location' for visiting";
+    } elsif ($count > 1) {
+        $ret = "lunchalizer found more than one location containing '$location'";
+    } else { # $count == 1
+        if ($dbh->do(q{
+                UPDATE lunch_location
+                SET visit_count=(visit_count +
+                    IF(last_visit=CURDATE(),0,1)),
+                    last_visit=CURDATE()
+                WHERE location_name=?}, undef, $loc) >= 1) {
+            $ret = "a visit to '$loc' has been recorded for today";
+        } else {
+            $ret = "looks like '$loc' has already been visited today";
+        }
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_location {
+    my ($location) = @_;
+    my ($dbh, $sth, $ret);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("INSERT INTO lunch_location(location_name,date_added,last_visit) VALUES (?,CURDATE(),'2004-01-01')");
+
+    ($location) = $location =~ /^\s*(.*?)\s*$/;
+    if ($sth->execute($location)) {
+        $ret = "lunchalizer added location '$location'";
+    } elsif ($dbh->err == 1062) {
+        $ret = "lunchalizer already knows about '$location'";
+    } else {
+        $ret = "lunchalizer failed to add '$location'";
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_bar {
+    my ($bar) = @_;
+    my ($dbh, $sth, $ret);
+    $ret = 'lunchalizer added adjectives:';
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("INSERT INTO lunch_bar(bar_name) VALUES (?)");
+
+    ($bar) = $bar =~ /^\s*(.*?)\s*$/;
+    if ($sth->execute($bar)) {
+        $ret = "lunchalizer added bar '$bar'";
+    } elsif ($dbh->err == 1062) {
+        $ret = "lunchalizer already knows about '$bar'";
+    } else {
+        $ret = "lunchalizer failed to add '$bar'";
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_nouns {
+    my ($nounstr) = @_;
+    my ($dbh, $sth, $noun, $ret);
+    $ret = 'lunchalizer added nouns:';
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("REPLACE INTO lunch_n(n_name) VALUES (?)");
+
+    foreach $noun (split(/\s+/, $nounstr)) {
+        if ($sth->execute($noun)) {
+            $ret = "$ret $noun";
+        } else {
+            $ret = "$ret ($noun failed)";
+        }
+    }
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_adjs {
+    my ($adjstr) = @_;
+    my ($dbh, $sth, $adj, $ret);
+    $ret = 'lunchalizer added adjectives:';
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("REPLACE INTO lunch_adj(adj_name) VALUES (?)");
+
+    foreach $adj (split(/\s+/, $adjstr)) {
+        if ($sth->execute($adj)) {
+            $ret = "$ret $adj";
+        } else {
+            $ret = "$ret ($adj failed)";
+        }
+    }
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub cmd_lunch {
+    my ($data, $server, $witem) = @_;
+    my $lunch;
+
+    #if (!$server || !$server->{connected}) {
+    #    print("Not connected to server");
+    #    return;
+    #}
+
+    if (!($lunch = make_lunch())) {
+        print("lunchalizer failed to make_lunch()\n");
+        return;
+    }
+
+    #if ($witem && ($witem->{type} eq "CHANNEL" ||
+    #        $witem->{type} eq "QUERY")) {
+    #    $witem->command("MSG ".$witem->{name}." $lunch");
+    #} else {
+    #    print("No active channel/query in window for cmd_lunch");
+    #}
+    print "$lunch\n";
+}
+
+sub event_privmsg {
+    my ($server, $data, $nick, $mask, $target) = @_;
+    my ($target, $text) = $data =~ /^(\S*)\s:(.*)/;
+    my ($out, $extra, $cmd, $cmdargs);
+    return if ( $text !~ /^!lunch/i );
+    if (($extra, $cmd, $cmdargs) = $text =~ /^!lunch(\s*([a-z]*)\s*(.*)?)?$/i) {
+        if ((!defined $extra) || $extra =~ /^\s*$/) {
+            if (!($out = make_lunch())) {
+                $out = "lunchalizer says no lunch for you (database error?)";
+            }
+        } elsif ($cmd =~ /^h(e(lp?)?)?$/i) {
+            $out = "usage: !lunch [drink | visit | addlocation | addnoun | addadj | addbar ] [word(s)...] (see also http://saga.cws.oregonstate.edu/lunch/ )";
+        } elsif ($cmd =~ /^d(r(i(nk?)?)?)?$/i) {
+            if (!($out = make_drink())) {
+                $out = "lunchalizer says no drinks for you (database error?)";
+            }
+        } elsif ($cmd =~ /^v(i(s(it?)?)?)?$/i) {
+            if ($cmdargs =~ /[^\s]/) {
+                if (!($out = visit($cmdargs))) {
+                    $out = "lunchalizer is having database issues";
+                }
+            } else {
+                $out = "usage: !lunch visit location";
+            }
+        } elsif ($cmd =~ /^addl(o(c(a(t(i(on?)?)?)?)?)?)?$/i) {
+            if ($cmdargs =~ /[^\s]/) {
+                if (!($out = add_location($cmdargs))) {
+                    $out = "lunchalizer is having database issues";
+                }
+            } else {
+                $out = "usage: !lunch addlocation location";
+            }
+        } elsif ($cmd =~ /^addb(ar?)?$/i) {
+            if ($cmdargs =~ /[^\s]/) {
+                if (!($out = add_bar($cmdargs))) {
+                    $out = "lunchalizer is having database issues";
+                }
+            } else {
+                $out = "usage: !lunch addbar bar";
+            }
+        } elsif ($cmd =~ /^addn(o(u(ns?)?)?)?$/i) {
+            if ($cmdargs =~ /[^\s]/) {
+                if (!($out = add_nouns($cmdargs))) {
+                    $out = "lunchalizer is having database issues";
+                }
+            } else {
+                $out = "usage: !lunch addnoun noun(s)";
+            }
+        } elsif ($cmd =~ /^adda(d(js?)?)?$/i) {
+            if ($cmdargs =~ /[^\s]/) {
+                if (!($out = add_adjs($cmdargs))) {
+                    $out = "lunchalizer is having database issues";
+                }
+            } else {
+                $out = "usage: !lunch addadj adjective(s)";
+            }
+        } else {
+            #$out = "lunchalizer says huh? (try !lunch help)";
+            $out = "lunchalizer says 'Im not your momma - think for yourself' (try !lunch help)";
+        }
+
+        #if ( $target =~ /^#/ ) {
+        #    $server->command("MSG $target $out");
+        #} else {    # privmsg must have been from a query
+        #    $server->command("MSG $nick $out");
+        #}
+	print "$out\n";
+    }
+}
+
+print "send\n";
+cmd_lunch();
+
+#Irssi::command_bind('lunch', 'cmd_lunch');
+#Irssi::signal_add_last('event privmsg', 'event_privmsg');

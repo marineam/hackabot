@@ -1,0 +1,66 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use Time::localtime;
+
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+sub replace {
+	my $nick = shift;
+	my $chan = shift;
+	my $find = shift;
+	my $replace = shift;
+	my ($dbh, $sth);
+	my $row;
+	my $ret;
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	my $qnick = $dbh->quote($nick);
+	$chan = $dbh->quote($chan);
+
+	$sth = $dbh->prepare("SELECT text FROM seen_quotes WHERE nick = $qnick AND chan = $chan");
+	$sth->execute();
+	if ($row = $sth->fetchrow_hashref and $row->{'text'} =~ m/$find/) {
+		my $text = $row->{'text'};
+		$text =~ s/$find/$replace/g;
+		$ret = "$nick really said: $text"; 
+	}
+	else {
+		$ret = "$nick: Sorry, I can't match the string '$find'.\n";
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+my ($nick, $chan, $find, $replace, $arg);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$nick = $1;
+	}
+	if (/^to\s*(\S*)/) {
+		$chan = $1;
+	}
+	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\//) {
+		$find = $1;
+		$replace = $2;
+	}
+}
+
+if (defined $nick and defined $chan and defined $find and defined $replace) {
+	print "send " . replace($nick, $chan, $find, $replace);
+}
+else {
+	die "s: malformed request\n";
+}

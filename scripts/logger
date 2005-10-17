@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ "$HACKABOT_DIR" == "" ]; then
+	echo 'logger: $HACKABOT_DIR is undefined!' 1>&2
+	exit
+fi
+
+DATA=`cat`
+LINE=`echo "$DATA" | grep '^msg' | sed -e 's/^msg\s*//g'`
+NICK=`echo "$DATA" | grep '^nick' | sed -e 's/^nick\s*//g'`
+for to in `echo "$DATA" | grep '^to' | sed -e 's/^to\s*//g'`
+do
+	echo "`date +%Y%m%d-%R` $NICK> $LINE" >> $HACKABOT_DIR/logs/$to
+done

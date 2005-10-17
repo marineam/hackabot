@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ "$1" == "msg" ]; then
+	echo "send"
+	echo '  Gentoo (Linux)'
+	echo
+	echo ' _______________________'
+	echo '< Have you mooed today? >'
+	echo ' -----------------------'
+	echo '        \   ^__^'
+	echo '         \  (oo)\_______'
+	echo '            (__)\       )\/                ||----w |'
+	echo '                ||     ||'
+fi

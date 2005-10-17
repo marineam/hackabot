@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo sendnext
+fortune bofh-excuses | grep -v '^$' | tr '\n' ' '
+echo

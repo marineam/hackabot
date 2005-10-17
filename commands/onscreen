@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "sendnext"
+URL=`grep '^msg' | sed -e 's/^msg\s*//g'`
+ssh monitor@bigscreen -x "~/on-web \"$URL\""

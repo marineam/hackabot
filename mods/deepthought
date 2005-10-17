@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo send
+fortune $HOME/cookies/deepthoughts
