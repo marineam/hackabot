@@ -26,6 +26,10 @@
 	msg="NO! You can't make me do it!">
 		<public chan="#osuosl-staff" action="allow" />
 	</command>
+	<command name="volume" action="deny"
+	msg="NO! You can't make me do it!">
+		<public chan="#osuosl-staff" action="allow" />
+	</command>
 	<command name="admin" action="deny"
 	msg="You are not my master!">
 		<public chan="#osuosl-staff" action="deny"
