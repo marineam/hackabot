@@ -62,18 +62,18 @@ sub on_connect {
 sub runcmd {
 	my $self = shift;
 	my $event = shift;
-	my @to = shift;
+	my $to = shift;
 	my $cmd = shift;
 	my $txt = shift;
 	
 	my $exe = "/$CONFIG->{'directory'}/$CONFIG->{'commands'}/$cmd";
 
 	if ( not $cmd =~ /^[^\.]/ or not -x "$exe" ) {
-		$self->privmsg([ @to ], "Error: no such command\n");	
+		$self->privmsg([ @{$to} ], "Error: no such command\n");	
 		return;
 	}
 
-	runmod($self, $event, @to, $exe, $txt);
+	runmod($self, $event, $to, $exe, $txt);
 	return "ok";
 }
 
@@ -81,7 +81,7 @@ sub runcmd {
 sub runhook {
 	my $self = shift;
 	my $event = shift;
-	my @to = shift;
+	my $to = shift;
 	my $hook = shift;
 	my $txt = shift;
 	
@@ -92,7 +92,7 @@ sub runhook {
 		opendir(HOOKDIR, $dir);
 		while ($_ = readdir(HOOKDIR)) {
 			if (/^[^\.]/ and -x "$dir/$_") {
-				my $r = runmod($self, $event, @to, "$dir/$_", $txt);
+				my $r = runmod($self, $event, $to, "$dir/$_", $txt);
 				if ($r eq "nocmd" or $r eq "noall") {
 					$ret = "nocmd";
 				}
@@ -111,7 +111,7 @@ sub runhook {
 sub runmod {
 	my $self = shift;
 	my $event = shift;
-	my @to = shift;
+	my $to = shift;
 	my $cmd = shift;
 	my $txt = shift;
 	
@@ -151,22 +151,22 @@ sub runmod {
 		my $mode = "cmd";
 		while (<FROM_CHILD>) {
 			if ($mode eq "sendnext") {
-				$self->privmsg([ @to ], "$_\n");
+				$self->privmsg([ @{$to} ], "$_\n");
 			}
 			elsif (/^sendnext/) {
 				$mode = "sendnext";
 			}
 			elsif (/^send\s*(.+)$/) {
-				$self->privmsg([ @to ], "$1\n");
+				$self->privmsg([ @{$to} ], "$1\n");
 			}
 			elsif (/^notice\s*(.+)$/) {
-				$self->notice([ @to ], "$1\n");
+				$self->notice([ @{$to} ], "$1\n");
 			}
 			elsif (/^me\s*(.+)$/) {
-				$self->me([ @to ], "$1\n");
+				$self->me([ @{$to} ], "$1\n");
 			}
 			elsif (/^to\s*(.+)$/) {
-				@to = split(/\s/,$1);
+				@{$to} = split(/\s/,$1);
 			}
 			elsif (/^nick\s*(\S+)$/) {
 				$self->nick($1);
@@ -215,15 +215,16 @@ sub runmod {
 # What to do when we receive a private PRIVMSG.
 sub on_msg {
 	my ($self, $event) = @_;
-	my @to = [ $event->nick ];
+	#my @to = [ $event->nick ];
+	my @to = $event->nick;
 	my ($msg) = ($event->args);
 
-	return; # disabled for now
-	if ($msg =~ /^!(\S*)\s*(.*)/) {
+	my $r = runhook($self, $event, \@to, "private", $msg);
+	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
     		my $cmd = $1;
 		my $txt = $2;
 
-		runcmd($self, $event, @to, $cmd, $txt);
+		runcmd($self, $event, \@to, $cmd, $txt);
 	}
 }
 
@@ -233,12 +234,12 @@ sub on_public {
 	my @to = $event->to;
 	my ($msg) = ($event->args);
 
-	my $r = runhook($self, $event, @to, "public", $msg);
+	my $r = runhook($self, $event, \@to, "public", $msg);
 	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
     		my $cmd = $1;
 		my $txt = $2;
 
-		runcmd($self, $event, @to, $cmd, $txt);
+		runcmd($self, $event, \@to, $cmd, $txt);
 	}
 }
 

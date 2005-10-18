@@ -37,8 +37,8 @@ if (not defined $event{'msg'} or not $event{'msg'} =~ /^!(\S*)/) {
 	exit;
 }
 
-print "to $event{'to'}\n";
 if ($event{'type'} eq 'public') {
+	print "to $event{'to'}\n";
 	$event{'msg'} =~ /^!(\S*)/;
 	my $cmd = $1;
 	if (defined $ACCESS->{'command'}->{$cmd}) {
@@ -51,6 +51,33 @@ if ($event{'type'} eq 'public') {
 			else {
 				doaction($ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'action'}, $event{'nick'},
 					$ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'msg'});
+			}
+		}
+		else {
+			doaction($ACCESS->{'command'}->{$cmd}->{'action'}, $event{'nick'},
+				$ACCESS->{'command'}->{$cmd}->{'msg'});
+		}
+	}
+	else {
+		doaction($ACCESS->{'default'}->{'action'}, $event{'nick'}, 
+			$ACCESS->{'default'}->{'msg'});
+
+	}
+}	
+elsif ($event{'type'} eq 'msg') {
+	print "to $event{'nick'}\n";
+	$event{'msg'} =~ /^!(\S*)/;
+	my $cmd = $1;
+	if (defined $ACCESS->{'command'}->{$cmd}) {
+		if (defined $ACCESS->{'command'}->{$cmd}->{'private'}) {
+			if (defined $ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}) {
+				doaction($ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}->{'action'}, 
+					$event{'nick'},
+					$ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}->{'msg'});
+			}
+			else {
+				doaction($ACCESS->{'command'}->{$cmd}->{'private'}->{'action'}, $event{'nick'},
+					$ACCESS->{'command'}->{$cmd}->{'private'}->{'msg'});
 			}
 		}
 		else {
