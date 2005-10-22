@@ -8,7 +8,16 @@
 			<person nick="cshields" action="allow" />
 			<person nick="raema"	action="allow" />
 			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
 		</public>
+		<private action="deny"
+		msg="You're not special enough.">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+		</private>
 		<public chan="#osuosl-staff" action="allow" />
 	</command>
 	<command name="topvhosts" action="deny"
@@ -19,16 +28,47 @@
 			<person nick="cshields" action="allow" />
 			<person nick="raema"	action="allow" />
 			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
 		</public>
 		<public chan="#osuosl-staff" action="allow" />
+		<private action="deny"
+		msg="You're not special enough.">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+		</private>
 	</command>
 	<command name="onscreen" action="deny"
 	msg="NO! You can't make me do it!">
 		<public chan="#osuosl-staff" action="allow" />
+		<public chan="#osuosl" action="allow" />
+		<private action="deny"
+		msg="Bugger off!">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+			<person nick="morgamic"	action="allow" />
+			<person nick="polvi"	action="allow" />
+			<person nick="philips"	action="allow" />
+		</private>
 	</command>
 	<command name="volume" action="deny"
 	msg="NO! You can't make me do it!">
 		<public chan="#osuosl-staff" action="allow" />
+		<private action="deny"
+		msg="Bugger off!">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+			<person nick="morgamic"	action="allow" />
+			<person nick="polvi"	action="allow" />
+		</private>
 	</command>
 	<command name="admin" action="deny"
 	msg="You are not my master!">

@@ -2,7 +2,13 @@
 # List the most popular vhosts
 
 echo "sendnext"
-lynx -width=1000 -dump http://ftp.osuosl.org/server-status | \
+echo "ftp-chi.osuosl.org:"
+lynx -width=1000 -dump http://ftp-chi.osuosl.org/server-status | \
+	grep '^[\s]*[^\s]*[\s]*[^\s][\s]*[^\s]*[\s]*W' | \
+	awk '{print $12}' | grep -v ^$ | sort | uniq -c | sort -r | \
+	head -n 3
+echo "ftp-osl.osuosl.org:"
+lynx -width=1000 -dump http://ftp-osl.osuosl.org/server-status | \
 	grep '^[\s]*[^\s]*[\s]*[^\s][\s]*[^\s]*[\s]*W' | \
 	awk '{print $12}' | grep -v ^$ | sort | uniq -c | sort -r | \
 	head -n 3

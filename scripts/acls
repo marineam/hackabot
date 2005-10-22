@@ -14,7 +14,7 @@ if (not defined $cfgfile) {
 }
 
 my $ACCESS = XMLin($cfgfile,
-	ForceArray => ['command', 'public', 'private', 'person'],
+	ForceArray => ['command', 'public', 'person'],
 	KeyAttr => { command => "name", public => 'chan', person => 'nick' });
 
 my %event;
