@@ -85,12 +85,7 @@
 			<person nick="marineam" allow="allow" msg="Fine...." />
 		</msg>
 	</command>
-	<!--<command name="insult" action="allow">
-		<public chan="#osuosl" action="deny">
-			<person nick="marineam" allow="allow"/>
-		</public>
-		<msg action="deny" msg="Don't be rude...">
-			<person nick="marineam" allow="allow"/>
-		</msg>
+	<!--<command name="insult" action="deny"
+	msg="No Soup for You!">
 	</command>-->
 </hackabotacl>

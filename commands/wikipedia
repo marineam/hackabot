@@ -1,0 +1,34 @@
+#!/usr/bin/perl -w
+
+use strict;
+use URI::Escape;
+
+my ($search, $asker);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$asker = $1;
+	}
+	elsif (/^msg\s*(.*)/) {
+		$search = $1;
+	}
+}
+
+if (defined $search and defined $asker) {
+	$search = uri_escape($search);
+	my $google = `lynx --head --dump "http://en.wikipedia.org/wiki/Special:Search?search=$search\&go=Go"`;
+	my $url;
+	foreach(split(/\n/,$google)) {
+		if (/^Location:\s*(.+)/) {
+			$url = $1;
+		}
+	}
+	if (defined $url) {
+		print "send $asker: Wikipedia says $url\n";
+	}
+	else {
+		print "send $asker: Wikipedia didn't say much :-/\n";
+	}
+}
+else {
+	die "see: All info not found :-/\n";
+}
