@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use Time::localtime;
+
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+sub get_score {
+	my $name = shift;
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "see: Failed to connect to database\n";
+	}
+	
+	$name = $dbh->quote($name);
+	
+	$sth = $dbh->prepare("SELECT value FROM score WHERE name = $name");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'value'};
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+my $name;
+while (<>) {
+	if (/^msg\s+(\S+)/) {
+		$name = $1;
+	}
+}
+
+if (defined $name) {
+	my $val = get_score($name);
+	if ($val == "") { $val = 0; }
+	if ($val == "1") {
+		print "send $name has scored $val point!\n";
+	}
+	else {
+		print "send $name has scored $val points!\n";
+	}
+}
