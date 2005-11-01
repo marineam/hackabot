@@ -69,7 +69,9 @@ sub runcmd {
 	my $exe = "/$CONFIG->{'directory'}/$CONFIG->{'commands'}/$cmd";
 
 	if ( not $cmd =~ /^[^\.]/ or not -x "$exe" ) {
-		$self->privmsg([ @{$to} ], "Error: no such command\n");	
+		if ( $CONFIG->{'verbose'} ) {
+			$self->privmsg([ @{$to} ], "Error: no such command\n");	
+		}
 		return;
 	}
 
@@ -177,8 +179,8 @@ sub runmod {
 			elsif (/^part\s*(.+)/) {
 				$self->part(split(/\s/,$1));
 			}
-			elsif (/^quit\s*(.*)/) {
-				$self->quit($1 ? $1 : 'Bye');
+			elsif (/^quit\s*(\S*.*)$/) {
+				$self->quit(defined $1 ? $1 : 'Bye');
 				sleep(3);
 				exit;
 			}

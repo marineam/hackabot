@@ -23,4 +23,6 @@
 		<!--<x-nagios type="notice">#osuosl-test</x-nagios>-->
 		<x-nagios type="notice">#osuosl-staff</x-nagios>
 	</extsrc>
+
+	<verbose>0</verbose>
 </hackabot>

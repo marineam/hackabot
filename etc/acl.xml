@@ -80,10 +80,10 @@
 		msg="Keep you dirty hands off me!">
 			<person nick="marineam"	action="allow" />
 		</public>
-		<msg action="deny"
+		<private action="deny"
 		msg="Even even behind closed doors I'm not your slave!">
 			<person nick="marineam" allow="allow" msg="Fine...." />
-		</msg>
+		</private>
 	</command>
 	<!--<command name="insult" action="deny"
 	msg="No Soup for You!">
