@@ -46,6 +46,7 @@ sub add_score {
 }
 
 my ($nick, $chan, $name, $value);
+my $verbose = 0;
 while (<>) {
 	if (/^nick\s+(\S*)/) {
 		$nick = $1;
@@ -59,10 +60,16 @@ while (<>) {
 	elsif (/^msg.*\s+(\S+)\+\+\s+/) {
 		$name = $1;
 		$value = 1;
+		if (/\s-v\s/ or /\s--verbose\s/) {
+			$verbose = 1;
+		}
 	}
 	elsif (/^msg.*\s+(\S+)--\s+/) {
 		$name = $1;
 		$value = -1;
+		if (/\s-v\s/ or /\s--verbose\s/) {
+			$verbose = 1;
+		}
 	}
 }
 
@@ -80,10 +87,12 @@ if (defined $name and defined $nick and defined $chan) {
 	}
 	
 	my $newval = add_score($name, $value, $nick, $chan);
-	if ($newval == "1") {
-		print "send $name has scored $newval point!\n";
-	}
-	else {
-		print "send $name has scored $newval points!\n";
+	if ($verbose) {
+		if ($newval == "1") {
+			print "send $name has scored $newval point!\n";
+		}
+		else {
+			print "send $name has scored $newval points!\n";
+		}
 	}
 }

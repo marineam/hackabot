@@ -1,7 +1,6 @@
 <hackabotacl>
 	<default action="allow" />
-	<command name="nagios" action="deny"
-	msg="Sorry, that's only for OSUOSL usage.">
+	<command name="nagios" action="deny">
 		<public chan="#osuosl" action="deny"
 		msg="You're not special enough.">
 			<person nick="marineam" action="allow" />
@@ -20,8 +19,7 @@
 		</private>
 		<public chan="#osuosl-staff" action="allow" />
 	</command>
-	<command name="topvhosts" action="deny"
-	msg="Sorry, that's only for OSUOSL usage.">
+	<command name="topvhosts" action="deny">
 		<public chan="#osuosl" action="deny"
 		msg="You're not special enough.">
 			<person nick="marineam" action="allow" />
@@ -40,12 +38,10 @@
 			<person nick="chizu"	action="allow" />
 		</private>
 	</command>
-	<command name="onscreen" action="deny"
-	msg="NO! You can't make me do it!">
+	<command name="onscreen" action="deny">
 		<public chan="#osuosl-staff" action="allow" />
 		<public chan="#osuosl" action="allow" />
-		<private action="deny"
-		msg="Bugger off!">
+		<private action="deny">
 			<person nick="marineam" action="allow" />
 			<person nick="cshields" action="allow" />
 			<person nick="raema"	action="allow" />
@@ -56,11 +52,9 @@
 			<person nick="philips"	action="allow" />
 		</private>
 	</command>
-	<command name="volume" action="deny"
-	msg="NO! You can't make me do it!">
+	<command name="volume" action="deny">
 		<public chan="#osuosl-staff" action="allow" />
-		<private action="deny"
-		msg="Bugger off!">
+		<private action="deny">
 			<person nick="marineam" action="allow" />
 			<person nick="cshields" action="allow" />
 			<person nick="raema"	action="allow" />
@@ -82,10 +76,21 @@
 		</public>
 		<private action="deny"
 		msg="Even even behind closed doors I'm not your slave!">
-			<person nick="marineam" allow="allow" msg="Fine...." />
+			<person nick="marineam" action="allow" msg="Fine...." />
 		</private>
 	</command>
-	<!--<command name="insult" action="deny"
-	msg="No Soup for You!">
-	</command>-->
+	<command name="gobeavs" action="deny" />
+	<command name="cowsay" action="allow">
+		<public chan="#osu-chat" action="deny" />
+	</command>
+	<command name="moo" action="allow">
+		<public chan="#osu-chat" action="deny" />
+	</command>
+	<command name="insult" action="allow">
+		<public chan="#osu-chat" action="deny" />
+	</command>
+	<command name="lunch" action="allow">
+		<public chan="#osu-chat" action="deny" />
+		<public chan="#cws" action="deny" />
+	</command>
 </hackabotacl>

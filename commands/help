@@ -11,14 +11,86 @@ if (not defined $MODS) {
 	die "help: Uh, are you running this from hackabot?";
 }
 
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	if (not defined $ENV{'HACKABOT_ETC'}) {
+		die "Error HACKABOT_ETC is undefined";
+	}
+	$cfgfile = "$ENV{'HACKABOT_ETC'}/acl.xml";
+}
+
+our $ACCESS = XMLin($cfgfile,
+	ForceArray => ['command', 'public', 'person'],
+	KeyAttr => { command => "name", public => 'chan', person => 'nick' });
+
+our %event;
+while (<>) {
+	if (/^type\s*(\S*)/) {
+		$event{'type'} = $1;
+	}
+	elsif (/^to\s*(\S*)/) {
+		$event{'to'} = $1;
+	}
+	elsif (/^nick\s*(\S*)/) {
+		$event{'nick'} = $1;
+	}
+	elsif (/^msg\s*(.*)/) {
+		$event{'msg'} = $1;
+	}
+}
+
 print "sendnext\n";
 
 my $send = "Commands:";
 opendir(MODDIR, $MODS);
 while ($_ = readdir(MODDIR)) {
-	if (/^[^\.]/ and -x "/$MODS/$_") {
+	if (/^[^\.]/ and -x "/$MODS/$_" and getacl($_) eq 'allow') {
 		$send .= " $_";
 	}
 }
 closedir(MODDIR);
 print "$send\n";
+
+sub getacl {
+	my $cmd = shift;
+
+if ($event{'type'} eq 'public') {
+	if (defined $ACCESS->{'command'}->{$cmd}) {
+		if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}) {
+			if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
+				return $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'}; 
+			}
+			else {
+				return $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'action'};
+			}
+		}
+		else {
+			return $ACCESS->{'command'}->{$cmd}->{'action'};
+		}
+	}
+	else {
+		return $ACCESS->{'default'}->{'action'};
+	}
+}
+elsif ($event{'type'} eq 'msg') {
+
+	if (defined $ACCESS->{'command'}->{$cmd}) {
+		if (defined $ACCESS->{'command'}->{$cmd}->{'private'}) {
+			if (defined $ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}) {
+				return $ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}->{'action'};
+			}
+			else {
+				return $ACCESS->{'command'}->{$cmd}->{'private'}->{'action'};
+			}
+		}
+		else {
+			return $ACCESS->{'command'}->{$cmd}->{'action'};
+		}
+	}
+	else {
+		return $ACCESS->{'default'}->{'action'};
+	}
+}	
+
+}
+

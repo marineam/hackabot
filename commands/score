@@ -14,9 +14,9 @@ sub get_score {
 	my $name = shift;
 	my ($dbh, $sth);
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
 	if (!$dbh) {
-		die "see: Failed to connect to database\n";
+		die "score: Failed to connect to database\n";
 	}
 	
 	$name = $dbh->quote($name);
@@ -32,6 +32,48 @@ sub get_score {
 	return $value;
 }
 
+sub get_top {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "score: Failed to connect to database\n";
+	}
+	
+	$sth = $dbh->prepare("SELECT name, value FROM score ORDER BY value DESC LIMIT 3");
+	$sth->execute;
+	my @list;
+	for (my $i = 0; $i < 3; $i++) {
+		$list[$i] = $sth->fetchrow_hashref;
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return @list;
+}
+
+sub get_low {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "score: Failed to connect to database\n";
+	}
+	
+	$sth = $dbh->prepare("SELECT name, value FROM score ORDER BY value ASC LIMIT 3");
+	$sth->execute;
+	my @list;
+	for (my $i = 0; $i < 3; $i++) {
+		$list[$i] = $sth->fetchrow_hashref;
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return @list;
+}
+
 my $name;
 while (<>) {
 	if (/^msg\s+(\S+)/) {
@@ -39,7 +81,7 @@ while (<>) {
 	}
 }
 
-if (defined $name) {
+if (defined $name and not $name =~ /(-h|--high|-l|--low)/) {
 	my $val = get_score($name);
 	if ($val == "") { $val = 0; }
 	if ($val == "1") {
@@ -47,5 +89,29 @@ if (defined $name) {
 	}
 	else {
 		print "send $name has scored $val points!\n";
+	}
+}
+elsif ($name =~ /(-l|--low)/) {
+	my @list = get_low();
+	print "sendnext\n";
+	print "Loosers:\n";
+	for (my $i = 0; $i < 3; $i++) {
+		print "  $list[$i]->{'value'} $list[$i]->{'name'}\n";
+	}
+}
+elsif ($name =~ /(-l|--low)/) {
+	my @list = get_top();
+	print "sendnext\n";
+	print "Top 3:\n";
+	for (my $i = 0; $i < 3; $i++) {
+		print "  $list[$i]->{'value'} $list[$i]->{'name'}\n";
+	}
+}
+else {
+	my @list = get_top();
+	print "sendnext\n";
+	print "Top 3:\n";
+	for (my $i = 0; $i < 3; $i++) {
+		print "  $list[$i]->{'value'} $list[$i]->{'name'}\n";
 	}
 }

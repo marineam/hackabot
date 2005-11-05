@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo sendnext
+wget slashdot.org -O - 2>/dev/null | grep -A 3 -m 1  generaltitle | tail -n 1 | lynx -dump -stdin -nolist | grep . |  perl -pi -e 's/^\s*(\S*.*)/$1/'
