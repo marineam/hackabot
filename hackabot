@@ -91,8 +91,13 @@ sub runhook {
 	
 	my $ret = "ok";
 	if ( -d $dir ) {
+		my @hooks;
 		opendir(HOOKDIR, $dir);
 		while ($_ = readdir(HOOKDIR)) {
+			push(@hooks, $_);
+		}
+		closedir(HOOKDIR);
+		foreach $_ (sort @hooks) {
 			if (/^[^\.]/ and -x "$dir/$_") {
 				my $r = runmod($self, $event, $to, "$dir/$_", $txt);
 				if ($r eq "nocmd" or $r eq "noall") {
@@ -103,7 +108,6 @@ sub runhook {
 				}
 			}
 		}
-		closedir(HOOKDIR);
 	}
 	return $ret;
 }
@@ -180,8 +184,9 @@ sub runmod {
 				$self->part(split(/\s/,$1));
 			}
 			elsif (/^quit\s*(\S*.*)$/) {
+				# For some reason the leaving msg doesn't work
 				$self->quit(defined $1 ? $1 : 'Bye');
-				sleep(3);
+				sleep(1);
 				exit;
 			}
 			elsif (/^nocmd/) {

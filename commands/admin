@@ -19,7 +19,7 @@ if (defined $command) {
 	my $arg = $2;
 
 	if ($cmd eq "quit") {
-		print "quit\n";
+		print "quit $arg\n";
 	}
 	elsif ($cmd eq "nick") {
 		print "nick $arg\n";

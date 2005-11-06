@@ -39,17 +39,16 @@ while (<>) {
 	}
 }
 
-print "sendnext\n";
-
-my $send = "Commands:";
+my @commands;
 opendir(MODDIR, $MODS);
 while ($_ = readdir(MODDIR)) {
 	if (/^[^\.]/ and -x "/$MODS/$_" and getacl($_) eq 'allow') {
-		$send .= " $_";
+		push(@commands, $_);
 	}
 }
 closedir(MODDIR);
-print "$send\n";
+
+print "send Commands: " . join(" ", sort @commands) . "\n";
 
 sub getacl {
 	my $cmd = shift;
