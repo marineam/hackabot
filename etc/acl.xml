@@ -52,6 +52,20 @@
 			<person nick="philips"	action="allow" />
 		</private>
 	</command>
+	<command name="ohshit" action="deny">
+		<public chan="#osuosl-staff" action="allow" />
+		<public chan="#osuosl" action="allow" />
+		<private action="deny">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+			<person nick="morgamic"	action="allow" />
+			<person nick="polvi"	action="allow" />
+			<person nick="philips"	action="allow" />
+		</private>
+	</command>
 	<command name="volume" action="deny">
 		<public chan="#osuosl-staff" action="allow" />
 		<private action="deny">

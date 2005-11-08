@@ -2,4 +2,4 @@
 
 #echo "sendnext"
 VOL=`grep '^msg' | sed -e 's/^msg\s*//g'`
-ssh monitor@bigscreen -x "/usr/bin/amixer set Master $VOL%" > /dev/null 2>&1
+ssh monitor@bigscreen -x "/usr/bin/amixer set Master $VOL% && /usr/bin/amixer set Master unmute" > /dev/null 2>&1
