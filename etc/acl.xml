@@ -107,4 +107,5 @@
 		<public chan="#osu-chat" action="deny" />
 		<public chan="#cws" action="deny" />
 	</command>
+	<!--<command name="slogan" action="deny" msg="Sorry, http://www.sloganizer.net was broken last I checked, bug marineam if it's back" />-->
 </hackabotacl>
