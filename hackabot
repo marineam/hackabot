@@ -8,9 +8,11 @@
 # This piece is based in part on the irctest script distributed with Net::IRC
 
 use strict;
+use Socket;
 use Net::IRC;
 use XML::Simple;
 use Data::Dumper;
+use Socket;
 use IO::Handle;
 use Fcntl;
 STDOUT->autoflush(1);
@@ -29,6 +31,18 @@ my $DIR = $CONFIG->{'directory'};
 $ENV{'HACKABOT_DIR'} = $CONFIG->{'directory'};
 $ENV{'HACKABOT_ETC'} = "$CONFIG->{'directory'}/$CONFIG->{'etc'}";
 $ENV{'HACKABOT_CMD'} = "$CONFIG->{'directory'}/$CONFIG->{'commands'}";
+$ENV{'HACKABOT_SOCK'} = $CONFIG->{'socket'};
+
+if (defined($CONFIG->{'socket'})) {
+	print "hackabot: Creating control socket...\n";
+	socket(SOCK,PF_UNIX,SOCK_STREAM,0) 
+		|| die "hackabot: socket: $!";
+	unlink($CONFIG->{'socket'});
+	bind(SOCK, sockaddr_un($CONFIG->{'socket'})) 
+		|| die "hackabot: bind: $!";
+	listen(SOCK, 10);
+}
+
 
 my $irc = new Net::IRC;
 
@@ -37,6 +51,7 @@ my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
 			 Nick     => $CONFIG->{'nick'},
 			 Ircname  => $CONFIG->{'name'})
     or die "hackabot: Can't connect to IRC server.\n";
+
 
 # What to do when the bot successfully connects.
 sub on_connect {
@@ -219,6 +234,11 @@ sub runmod {
 	}
 }
 
+# What to do when a connection is recieved from the control socket
+sub on_control {
+
+}
+
 # What to do when we receive a private PRIVMSG.
 sub on_msg {
 	my ($self, $event) = @_;
@@ -271,38 +291,38 @@ sub on_disconnect {
 	$self->connect();
 }
 
-sub extopen {
-	my $conf = shift;
-	
-	my $extfifos = {};
-	my $extdir = $CONFIG->{'directory'}."/".$CONFIG->{'ext'};
-	foreach my $fifo (keys %{$CONFIG->{'extsrc'}}) {
-		my $pipe;
-		sysopen($pipe, "/$extdir/$fifo", O_RDONLY|O_NONBLOCK) or
-			die "hackabot: can't open fifo $!\n";
-		$extfifos->{$fifo} = $pipe;
-	}
-	return $extfifos;
-}
-
-sub extcheck {
-	my $conf = shift;
-	my $extfifos = shift;
-	my $conn = shift;
-
-	foreach my $fifo (keys %$extfifos) {
-		while (my $line = readline($extfifos->{$fifo})) {
-			foreach my $dest (@{$CONFIG->{'extsrc'}->{$fifo}}) {
-				if ($dest->{'type'} eq 'notice') {
-					$conn->notice($dest->{'content'}, "$line\n");
-				}
-				else {
-					$conn->privmsg($dest->{'content'}, "$line\n");
-				}
-			}
-		}
-	}
-}
+#sub extopen {
+#	my $conf = shift;
+#	
+#	my $extfifos = {};
+#	my $extdir = $CONFIG->{'directory'}."/".$CONFIG->{'ext'};
+#	foreach my $fifo (keys %{$CONFIG->{'extsrc'}}) {
+#		my $pipe;
+#		sysopen($pipe, "/$extdir/$fifo", O_RDONLY|O_NONBLOCK) or
+#			die "hackabot: can't open fifo $!\n";
+#		$extfifos->{$fifo} = $pipe;
+#	}
+#	return $extfifos;
+#}
+#
+#sub extcheck {
+#	my $conf = shift;
+#	my $extfifos = shift;
+#	my $conn = shift;
+#
+#	foreach my $fifo (keys %$extfifos) {
+#		while (my $line = readline($extfifos->{$fifo})) {
+#			foreach my $dest (@{$CONFIG->{'extsrc'}->{$fifo}}) {
+#				if ($dest->{'type'} eq 'notice') {
+#					$conn->notice($dest->{'content'}, "$line\n");
+#				}
+#				else {
+#					$conn->privmsg($dest->{'content'}, "$line\n");
+#				}
+#			}
+#		}
+#	}
+#}
 
 $conn->add_handler('msg',    \&on_msg);
 $conn->add_handler('public', \&on_public);
@@ -311,10 +331,10 @@ $conn->add_global_handler('disconnect', \&on_disconnect);
 $conn->add_global_handler(376, \&on_connect);
 $conn->add_global_handler(433, \&on_nick_taken);
 
-#$irc->start;
-my $extfifos = extopen($CONFIG);
-while (1) {
-	$irc->do_one_loop();
-	extcheck($CONFIG, $extfifos, $conn);
-}
+$irc->start;
+#my $extfifos = extopen($CONFIG);
+#while (1) {
+#	$irc->do_one_loop();
+#	extcheck($CONFIG, $extfifos, $conn);
+#}
 
