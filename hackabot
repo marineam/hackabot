@@ -15,6 +15,7 @@ use Data::Dumper;
 use Socket;
 use IO::Handle;
 use Fcntl;
+use POSIX;
 STDOUT->autoflush(1);
 
 my $cfgfile = shift;
@@ -22,50 +23,156 @@ if (not defined $cfgfile) {
 	$cfgfile = "$ENV{'HOME'}/.hackabot.xml";
 }
 
-my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
+our $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
 #print Dumper $CONFIG;
 #exit;
-
-my $DIR = $CONFIG->{'directory'};
 
 $ENV{'HACKABOT_DIR'} = $CONFIG->{'directory'};
 $ENV{'HACKABOT_ETC'} = "$CONFIG->{'directory'}/$CONFIG->{'etc'}";
 $ENV{'HACKABOT_CMD'} = "$CONFIG->{'directory'}/$CONFIG->{'commands'}";
 $ENV{'HACKABOT_SOCK'} = $CONFIG->{'socket'};
 
-if (defined($CONFIG->{'socket'})) {
-	print "hackabot: Creating control socket...\n";
-	socket(SOCK,PF_UNIX,SOCK_STREAM,0) 
-		|| die "hackabot: socket: $!";
-	unlink($CONFIG->{'socket'});
-	bind(SOCK, sockaddr_un($CONFIG->{'socket'})) 
-		|| die "hackabot: bind: $!";
-	listen(SOCK, 10);
-}
 
-
+# Start up the IRC connection.
 my $irc = new Net::IRC;
 
-print "hackabot: Creating connection to IRC server...\n";
+print "hackabot[$$]: Creating connection to IRC server...\n";
 my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
 			 Nick     => $CONFIG->{'nick'},
 			 Ircname  => $CONFIG->{'name'})
-    or die "hackabot: Can't connect to IRC server.\n";
+    or die "hackabot[$$]: Can't connect to IRC server.\n";
 
+# Child processes
+our %children = (); # keys are current child process IDs
+
+sub reaper {
+    $SIG{CHLD} = \&reaper;
+    my $pid = wait;
+    delete $children{$pid};
+}
+$SIG{CHLD} = \&reaper;
+
+sub cleanup {
+	local($SIG{CHLD}) = 'IGNORE';
+	print "hackabot[$$]: Killing children and exiting...\n";
+	kill 'INT' => keys %children;
+	exit;
+}
+$SIG{INT} = \&cleanup;
+$SIG{TERM} = \&cleanup;
+$SIG{HUP} = \&cleanup;
+
+if (defined($CONFIG->{'socket'})) {
+	my $child = fork;
+	if ($child == 0) {
+		%children = (); #the server will have children of it's own
+		sock_server($conn);
+		die "hackabot[$$]: Control socket terminated!\n";
+	}
+	elsif (not defined $child) {
+		die "ERROR: cannot fork: $!\n";
+	}
+	else {
+		$children{$child} = 1;
+	}
+}
+
+# Run the server socket (should be forked off as this won't return)
+sub sock_server {
+	my $ircconn = shift;
+
+	print "hackabot[$$]: Creating control socket...\n";
+	socket(SOCK,PF_UNIX,SOCK_STREAM,0) 
+		|| die "hackabot[$$]: socket: $!";
+	unlink($CONFIG->{'socket'});
+	bind(SOCK, sockaddr_un($CONFIG->{'socket'})) 
+		|| die "hackabot[$$]: bind: $!";
+	listen(SOCK, 10);
+
+	while (1) {
+	
+	my $paddr = accept(SOCK_C, SOCK);
+	next if not $paddr; 
+	my $child = fork;
+	if ($child == 0) {
+		SOCK_C->autoflush(1);
+		print "hackabot[$$]: Opening a control socket connection.\n";
+		my $to;
+		my $mode = "cmd";
+		while(<SOCK_C>) {
+			# Read in and run commands
+			if ($mode eq "sendnext" and defined $to) {
+				$ircconn->privmsg($to, "$_\n");
+			}
+			elsif (/^sendnext/ and defined $to) {
+				$mode = "sendnext";
+			}
+			elsif (/^send\s+(.+)$/ and defined $to) {
+				$ircconn->privmsg($to, "$1\n");
+			}
+			elsif (/^notice\s+(.+)$/ and defined $to) {
+				$ircconn->notice($to, "$1\n");
+			}
+			elsif (/^me\s+(.+)$/ and defined $to) {
+				$ircconn->me($to, "$1\n");
+			}
+			elsif (/^to\s+(\S+)$/) {
+				$to = $1;
+			}
+			elsif (/^nick\s+(\S+)$/) {
+				$ircconn->nick($1);
+			}
+			elsif (/^join\s+(\S+)\s*(\S*)$/) {
+				$ircconn->join($1, $2 ? $2 : '');
+			}
+			elsif (/^part\s+(.+)/) {
+				$ircconn->part(split(/\s/,$1));
+			}
+			elsif (/^quit\s+(\S*.*)$/) {
+				#$self->quit(defined $1 ? $1 : 'Bye');
+				$ircconn->quit();
+				close SOCK_C;
+				exit;
+			}
+			elsif (/^names\s+(\S+.*)$/) {
+				$ircconn->names(split(/\s/,$1));
+				$conn->add_global_handler(353, sub {
+  					my ($self, $event) = @_;
+					print SOCK_C @{$event->args}[4]."\n";
+				});
+			}
+			elsif (/^who\s+(\S+.*)$/) {
+				print SOCK_C $ircconn->who(split(/\s/,$1));
+			}
+		}
+		print "hackabot[$$]: Closing a control socket connection.\n";
+		close SOCK_C;
+		exit;
+	}
+	elsif (not defined $child) {
+		die "hackabot[$$]: sock_server: fork $!\n";
+	}
+	else {
+		close SOCK_C;
+		$children{$child} = 1;
+	}
+	
+	} #while(1)
+}
 
 # What to do when the bot successfully connects.
 sub on_connect {
 	my $self = shift;
 	
-	print "hackabot: Connected!\n";
+	print "hackabot[$$]: Connected!\n";
 	sleep 1;
 	foreach (@{$CONFIG->{'automsg'}}) {
-		print "hackabot: sending message to $_->{'to'}\n";
+		print "hackabot[$$]: sending message to $_->{'to'}\n";
 		$self->privmsg($_->{'to'}, $_->{'content'});
 	}
 	sleep 1;
 	foreach (@{$CONFIG->{'autojoin'}}) {
-		print "hackabot: joining $_->{'chan'}\n";
+		print "hackabot[$$]: joining $_->{'chan'}\n";
 		$self->join($_->{'chan'}, defined $_->{'password'}?$_->{'password'}:'');
 		if (defined $_->{'content'}) {
 			$self->privmsg($_->{'chan'}, $_->{'content'});
@@ -85,7 +192,7 @@ sub runcmd {
 
 	if ( not $cmd =~ /^[^\.]/ or not -x "$exe" ) {
 		if ( $CONFIG->{'verbose'} ) {
-			$self->privmsg([ @{$to} ], "Error: no such command\n");	
+			$self->privmsg($to, "Error: no such command\n");	
 		}
 		return;
 	}
@@ -137,7 +244,7 @@ sub runmod {
 	my $txt = shift;
 	
 	if (not -x "/$cmd") {
-		print "hackabot: Error: no such module /$cmd\n";	
+		print "hackabot[$$]: Error: no such module /$cmd\n";	
 		return "ok";
 	}
 
@@ -160,8 +267,8 @@ sub runmod {
 		if (defined $event->{'host'}) {
 			print TO_CHILD "host $event->{'host'}\n";
 		}
-		if (defined $event->{'to'}) {
-			print TO_CHILD "to ".join(" ",@{$event->{'to'}})."\n";
+		if (defined $to) {
+			print TO_CHILD "to $to\n";
 		}
 		if (defined $txt) {
 			print TO_CHILD "msg $txt\n";
@@ -172,22 +279,22 @@ sub runmod {
 		my $mode = "cmd";
 		while (<FROM_CHILD>) {
 			if ($mode eq "sendnext") {
-				$self->privmsg([ @{$to} ], "$_\n");
+				$self->privmsg($to, "$_\n");
 			}
 			elsif (/^sendnext/) {
 				$mode = "sendnext";
 			}
 			elsif (/^send\s*(.+)$/) {
-				$self->privmsg([ @{$to} ], "$1\n");
+				$self->privmsg($to, "$1\n");
 			}
 			elsif (/^notice\s*(.+)$/) {
-				$self->notice([ @{$to} ], "$1\n");
+				$self->notice($to, "$1\n");
 			}
 			elsif (/^me\s*(.+)$/) {
-				$self->me([ @{$to} ], "$1\n");
+				$self->me($to, "$1\n");
 			}
-			elsif (/^to\s*(.+)$/) {
-				@{$to} = split(/\s/,$1);
+			elsif (/^to\s*(\S+)$/) {
+				$to = $1;
 			}
 			elsif (/^nick\s*(\S+)$/) {
 				$self->nick($1);
@@ -200,9 +307,8 @@ sub runmod {
 			}
 			elsif (/^quit\s*(\S*.*)$/) {
 				# For some reason the leaving msg doesn't work
-				$self->quit(defined $1 ? $1 : 'Bye');
-				sleep(1);
-				exit;
+				#$self->quit(defined $1 ? $1 : 'Bye');
+				$self->quit();
 			}
 			elsif (/^nocmd/) {
 				$ret = "nocmd";
@@ -242,31 +348,30 @@ sub on_control {
 # What to do when we receive a private PRIVMSG.
 sub on_msg {
 	my ($self, $event) = @_;
-	#my @to = [ $event->nick ];
-	my @to = $event->nick;
+	my $to = $event->nick;
 	my ($msg) = ($event->args);
 
-	my $r = runhook($self, $event, \@to, "private", $msg);
+	my $r = runhook($self, $event, $to, "private", $msg);
 	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
     		my $cmd = $1;
 		my $txt = $2;
 
-		runcmd($self, $event, \@to, $cmd, $txt);
+		runcmd($self, $event, $to, $cmd, $txt);
 	}
 }
 
 # What to do when we receive channel text.
 sub on_public {
 	my ($self, $event) = @_;
-	my @to = $event->to;
+	my $to = ${$event->to}[0];
 	my ($msg) = ($event->args);
 
-	my $r = runhook($self, $event, \@to, "public", $msg);
+	my $r = runhook($self, $event, $to, "public", $msg);
 	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
     		my $cmd = $1;
 		my $txt = $2;
 
-		runcmd($self, $event, \@to, $cmd, $txt);
+		runcmd($self, $event, $to, $cmd, $txt);
 	}
 }
 
@@ -278,18 +383,28 @@ sub on_nick_taken {
     $self->nick($self->nick . "_");
 }
 
-# Reconnect to the server when we die.
+# Exit when connection is lost
 sub on_disconnect {
 	my ($self, $event) = @_;
 
-	print "hackabot: Disconnected from ", $event->from(), " (",
-	      ($event->args())[0], ").";
-	      
-	sleep(60);
-	print "hackabot: Attempting to reconnect...\n";
-	
-	$self->connect();
+	print "hackabot[$$]: Disconnected from ", $event->from(), " (",
+	      ($event->args())[0], ").\n";
+
+	cleanup;	      
 }
+
+# Reconnect to the server when we die.
+#sub on_disconnect {
+#	my ($self, $event) = @_;
+#
+#	print "hackabot: Disconnected from ", $event->from(), " (",
+#	      ($event->args())[0], ").";
+#	      
+#	sleep(60);
+#	print "hackabot: Attempting to reconnect...\n";
+#	
+#	$self->connect();
+#}
 
 #sub extopen {
 #	my $conf = shift;
@@ -324,6 +439,15 @@ sub on_disconnect {
 #	}
 #}
 
+sub blah {
+  my ($self, $event) = @_;
+
+  print "hackabot[$$]: unhandled event: ".$event->type.": ".
+  	join(",",$event->args)."\n";
+}
+#$conn->add_default_handler(\&blah);
+#$conn->add_global_handler(353, \&blah);
+
 $conn->add_handler('msg',    \&on_msg);
 $conn->add_handler('public', \&on_public);
 
@@ -331,6 +455,8 @@ $conn->add_global_handler('disconnect', \&on_disconnect);
 $conn->add_global_handler(376, \&on_connect);
 $conn->add_global_handler(433, \&on_nick_taken);
 
+
+print "hackabot[$$]: Starting irc event loop...\n";
 $irc->start;
 #my $extfifos = extopen($CONFIG);
 #while (1) {

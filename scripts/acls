@@ -38,7 +38,6 @@ if (not defined $event{'msg'} or not $event{'msg'} =~ /^!(\S*)/) {
 }
 
 if ($event{'type'} eq 'public') {
-	print "to $event{'to'}\n";
 	$event{'msg'} =~ /^!(\S*)/;
 	my $cmd = $1;
 	if (defined $ACCESS->{'command'}->{$cmd}) {
@@ -65,7 +64,6 @@ if ($event{'type'} eq 'public') {
 	}
 }	
 elsif ($event{'type'} eq 'msg') {
-	print "to $event{'nick'}\n";
 	$event{'msg'} =~ /^!(\S*)/;
 	my $cmd = $1;
 	if (defined $ACCESS->{'command'}->{$cmd}) {

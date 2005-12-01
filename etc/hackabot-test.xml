@@ -3,7 +3,7 @@
 	<commands>commands</commands>
 	<hooks>hooks</hooks>
 	<etc>etc</etc>
-	<ext>etc</ext>
+	<socket>sock</socket>
 
 	<server>irc.oregonstate.edu</server>
 	<nick>manatee_</nick>
