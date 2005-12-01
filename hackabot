@@ -12,10 +12,11 @@ use Socket;
 use Net::IRC;
 use XML::Simple;
 use Data::Dumper;
+use IPC::Open2;
 use Socket;
 use IO::Handle;
 use Fcntl;
-use POSIX;
+use threads;
 STDOUT->autoflush(1);
 
 my $cfgfile = shift;
@@ -36,126 +37,42 @@ $ENV{'HACKABOT_SOCK'} = $CONFIG->{'socket'};
 # Start up the IRC connection.
 my $irc = new Net::IRC;
 
-print "hackabot[$$]: Creating connection to IRC server...\n";
-my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
+print msg("Creating connection to IRC server...");
+my $conn : shared = $irc->newconn(Server   => ($CONFIG->{'server'}),
 			 Nick     => $CONFIG->{'nick'},
 			 Ircname  => $CONFIG->{'name'})
-    or die "hackabot[$$]: Can't connect to IRC server.\n";
-
-# Child processes
-our %children = (); # keys are current child process IDs
-
-sub reaper {
-    $SIG{CHLD} = \&reaper;
-    my $pid = wait;
-    delete $children{$pid};
-}
-$SIG{CHLD} = \&reaper;
-
-sub cleanup {
-	local($SIG{CHLD}) = 'IGNORE';
-	print "hackabot[$$]: Killing children and exiting...\n";
-	kill 'INT' => keys %children;
-	exit;
-}
-$SIG{INT} = \&cleanup;
-$SIG{TERM} = \&cleanup;
-$SIG{HUP} = \&cleanup;
+    or die msg("Can't connect to IRC server.");
 
 if (defined($CONFIG->{'socket'})) {
-	my $child = fork;
-	if ($child == 0) {
-		%children = (); #the server will have children of it's own
-		sock_server($conn);
-		die "hackabot[$$]: Control socket terminated!\n";
-	}
-	elsif (not defined $child) {
-		die "ERROR: cannot fork: $!\n";
-	}
-	else {
-		$children{$child} = 1;
-	}
+	my $t = threads->new(\&sock_server,$conn);
+	$t->detach;
 }
 
 # Run the server socket (should be forked off as this won't return)
 sub sock_server {
-	my $ircconn = shift;
-
-	print "hackabot[$$]: Creating control socket...\n";
+	print msg("Creating control socket...");
 	socket(SOCK,PF_UNIX,SOCK_STREAM,0) 
-		|| die "hackabot[$$]: socket: $!";
+		|| die msg("socket: $!");
 	unlink($CONFIG->{'socket'});
 	bind(SOCK, sockaddr_un($CONFIG->{'socket'})) 
-		|| die "hackabot[$$]: bind: $!";
+		|| die msg("bind: $!");
 	listen(SOCK, 10);
 
 	while (1) {
 	
 	my $paddr = accept(SOCK_C, SOCK);
-	next if not $paddr; 
-	my $child = fork;
-	if ($child == 0) {
+	next if not $paddr;
+	my $t = threads->new(sub {
 		SOCK_C->autoflush(1);
-		print "hackabot[$$]: Opening a control socket connection.\n";
-		my $to;
-		my $mode = "cmd";
-		while(<SOCK_C>) {
-			# Read in and run commands
-			if ($mode eq "sendnext" and defined $to) {
-				$ircconn->privmsg($to, "$_\n");
-			}
-			elsif (/^sendnext/ and defined $to) {
-				$mode = "sendnext";
-			}
-			elsif (/^send\s+(.+)$/ and defined $to) {
-				$ircconn->privmsg($to, "$1\n");
-			}
-			elsif (/^notice\s+(.+)$/ and defined $to) {
-				$ircconn->notice($to, "$1\n");
-			}
-			elsif (/^me\s+(.+)$/ and defined $to) {
-				$ircconn->me($to, "$1\n");
-			}
-			elsif (/^to\s+(\S+)$/) {
-				$to = $1;
-			}
-			elsif (/^nick\s+(\S+)$/) {
-				$ircconn->nick($1);
-			}
-			elsif (/^join\s+(\S+)\s*(\S*)$/) {
-				$ircconn->join($1, $2 ? $2 : '');
-			}
-			elsif (/^part\s+(.+)/) {
-				$ircconn->part(split(/\s/,$1));
-			}
-			elsif (/^quit\s+(\S*.*)$/) {
-				#$self->quit(defined $1 ? $1 : 'Bye');
-				$ircconn->quit();
-				close SOCK_C;
-				exit;
-			}
-			elsif (/^names\s+(\S+.*)$/) {
-				$ircconn->names(split(/\s/,$1));
-				$conn->add_global_handler(353, sub {
-  					my ($self, $event) = @_;
-					print SOCK_C @{$event->args}[4]."\n";
-				});
-			}
-			elsif (/^who\s+(\S+.*)$/) {
-				print SOCK_C $ircconn->who(split(/\s/,$1));
-			}
-		}
-		print "hackabot[$$]: Closing a control socket connection.\n";
+		print msg("Opening a control socket connection.");
+		
+		runaction(*SOCK_C,1);
+		
+		print msg("Closing a control socket connection.");
 		close SOCK_C;
-		exit;
-	}
-	elsif (not defined $child) {
-		die "hackabot[$$]: sock_server: fork $!\n";
-	}
-	else {
-		close SOCK_C;
-		$children{$child} = 1;
-	}
+	});
+	$t->detach;
+	close SOCK_C;
 	
 	} #while(1)
 }
@@ -164,20 +81,95 @@ sub sock_server {
 sub on_connect {
 	my $self = shift;
 	
-	print "hackabot[$$]: Connected!\n";
+	print msg("Connected!");
 	sleep 1;
 	foreach (@{$CONFIG->{'automsg'}}) {
-		print "hackabot[$$]: sending message to $_->{'to'}\n";
+		print msg("sending message to $_->{'to'}");
 		$self->privmsg($_->{'to'}, $_->{'content'});
 	}
 	sleep 1;
 	foreach (@{$CONFIG->{'autojoin'}}) {
-		print "hackabot[$$]: joining $_->{'chan'}\n";
+		print msg("joining $_->{'chan'}");
 		$self->join($_->{'chan'}, defined $_->{'password'}?$_->{'password'}:'');
 		if (defined $_->{'content'}) {
 			$self->privmsg($_->{'chan'}, $_->{'content'});
 		}
 	}
+}
+
+# Process and run some requests
+sub runaction {
+	my $CHILD = shift;
+	my $rw = shift;
+	my $to = shift;
+
+	my $ret = "ok";
+	my $mode = "cmd";
+	while (<$CHILD>) {
+		# Read in and run commands
+		if ($mode eq "sendnext" and defined $to) {
+			lock($conn);
+			$conn->privmsg($to, "$_\n");
+		}
+		elsif (/^sendnext/ and defined $to) {
+			$mode = "sendnext";
+		}
+		elsif (/^send\s+(.+)$/ and defined $to) {
+			lock($conn);
+			$conn->privmsg($to, "$1\n");
+		}
+		elsif (/^notice\s+(.+)$/ and defined $to) {
+			lock($conn);
+			$conn->notice($to, "$1\n");
+		}
+		elsif (/^me\s+(.+)$/ and defined $to) {
+			lock($conn);
+			$conn->me($to, "$1\n");
+		}
+		elsif (/^to\s+(\S+)$/) {
+			$to = $1;
+		}
+		elsif (/^nick\s+(\S+)$/) {
+			lock($conn);
+			$conn->nick($1);
+		}
+		elsif (/^join\s+(\S+)\s*(\S*)$/) {
+			lock($conn);
+			$conn->join($1, $2 ? $2 : '');
+		}
+		elsif (/^part\s+(.+)/) {
+			lock($conn);
+			$conn->part(split(/\s/,$1));
+		}
+		elsif (/^quit\s+(\S*.*)$/) {
+			#$self->quit(defined $1 ? $1 : 'Bye');
+			#lock($conn);
+			$conn->quit();
+		}
+		elsif ($rw && /^names\s+(\S+.*)$/) {
+			#$ircconn->names(split(/\s/,$1));
+			#$conn->add_global_handler(353, sub {
+  			#	my ($self, $event) = @_;
+			#	print $CHILD @{$event->args}[4]."\n";
+			#});
+		}
+		elsif ($rw && /^who\s+(\S+.*)$/) {
+			#print $CHILD $ircconn->who(split(/\s/,$1));
+		}
+		elsif (/^nocmd/) {
+			$ret = "nocmd";
+		}
+		elsif (/^nohook/) {
+			$ret = "nohook";
+		}
+		elsif (/^noall/) {
+			$ret = "noall";
+		}
+		else {
+			print msg("Unknown cmdline: $_");
+		}
+	}
+	return $ret;
 }
 
 # Run a !cmd line
@@ -244,100 +236,39 @@ sub runmod {
 	my $txt = shift;
 	
 	if (not -x "/$cmd") {
-		print "hackabot[$$]: Error: no such module /$cmd\n";	
+		print msg("Error: no such module /$cmd");	
 		return "ok";
 	}
 
-	pipe(FROM_PARENT, TO_CHILD) or print "ERROR: pipe: $!" and return;
-	pipe(FROM_CHILD, TO_PARENT) or print "ERROR: pipe: $!" and return;
-	TO_CHILD->autoflush(1);
-	TO_PARENT->autoflush(1);
+	local(*FROM_CHILD,*TO_CHILD);
+	my $child = open2(*FROM_CHILD,*TO_CHILD,"/$cmd", @{[]}) || die
+		msg("run_mod: Cannot fork and run /$cmd");
 
-	if (my $pid = fork) {
-		close FROM_PARENT;
-		close TO_PARENT;
-		
-		print TO_CHILD "type $event->{'type'}\n";
-		if (defined $event->{'nick'}) {
-			print TO_CHILD "nick $event->{'nick'}\n";
-		}
-		if (defined $event->{'user'}) {
-			print TO_CHILD "user $event->{'user'}\n";
-		}
-		if (defined $event->{'host'}) {
-			print TO_CHILD "host $event->{'host'}\n";
-		}
-		if (defined $to) {
-			print TO_CHILD "to $to\n";
-		}
-		if (defined $txt) {
-			print TO_CHILD "msg $txt\n";
-		}
-		close TO_CHILD;
+	
 
-		my $ret = "ok";
-		my $mode = "cmd";
-		while (<FROM_CHILD>) {
-			if ($mode eq "sendnext") {
-				$self->privmsg($to, "$_\n");
-			}
-			elsif (/^sendnext/) {
-				$mode = "sendnext";
-			}
-			elsif (/^send\s*(.+)$/) {
-				$self->privmsg($to, "$1\n");
-			}
-			elsif (/^notice\s*(.+)$/) {
-				$self->notice($to, "$1\n");
-			}
-			elsif (/^me\s*(.+)$/) {
-				$self->me($to, "$1\n");
-			}
-			elsif (/^to\s*(\S+)$/) {
-				$to = $1;
-			}
-			elsif (/^nick\s*(\S+)$/) {
-				$self->nick($1);
-			}
-			elsif (/^join\s*(\S+)\s*(\S*)$/) {
-				$self->join($1, $2 ? $2 : '');
-			}
-			elsif (/^part\s*(.+)/) {
-				$self->part(split(/\s/,$1));
-			}
-			elsif (/^quit\s*(\S*.*)$/) {
-				# For some reason the leaving msg doesn't work
-				#$self->quit(defined $1 ? $1 : 'Bye');
-				$self->quit();
-			}
-			elsif (/^nocmd/) {
-				$ret = "nocmd";
-			}
-			elsif (/^nohook/) {
-				$ret = "nohook";
-			}
-			elsif (/^noall/) {
-				$ret = "noall";
-			}
-			else {
-				print "hackbot: Unknown cmdline: $_\n";
-			}
-		}
-		close FROM_CHILD;
-		waitpid($pid,0);
-		return $ret;
+	print TO_CHILD "type $event->{'type'}\n";
+	if (defined $event->{'nick'}) {
+		print TO_CHILD "nick $event->{'nick'}\n";
 	}
-	else {
-		if (not defined $pid) {
-			print "ERROR: cannot fork: $!\n";
-			return;
-		}
-		close FROM_CHILD;
-		close TO_CHILD;
-		open(STDIN, "<&FROM_PARENT") or die "ERROR: dup $!";
-		open(STDOUT, ">&TO_PARENT") or die "ERROR: dup $!";
-		exec("/$cmd") or die "ERROR: can't exec $!";
+	if (defined $event->{'user'}) {
+		print TO_CHILD "user $event->{'user'}\n";
 	}
+	if (defined $event->{'host'}) {
+		print TO_CHILD "host $event->{'host'}\n";
+	}
+	if (defined $to) {
+		print TO_CHILD "to $to\n";
+	}
+	if (defined $txt) {
+		print TO_CHILD "msg $txt\n";
+	}
+	close TO_CHILD;
+
+	my $ret = runaction(*FROM_CHILD,0,$to);
+
+	close FROM_CHILD;
+	waitpid($child,0);
+	return $ret;
 }
 
 # What to do when a connection is recieved from the control socket
@@ -351,13 +282,16 @@ sub on_msg {
 	my $to = $event->nick;
 	my ($msg) = ($event->args);
 
-	my $r = runhook($self, $event, $to, "private", $msg);
-	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
-    		my $cmd = $1;
-		my $txt = $2;
+	my $t = threads->new(sub {
+		my $r = runhook($self, $event, $to, "private", $msg);
+		if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
+    			my $cmd = $1;
+			my $txt = $2;
 
-		runcmd($self, $event, $to, $cmd, $txt);
-	}
+			runcmd($self, $event, $to, $cmd, $txt);
+		}
+	});
+	$t->detach;
 }
 
 # What to do when we receive channel text.
@@ -366,13 +300,16 @@ sub on_public {
 	my $to = ${$event->to}[0];
 	my ($msg) = ($event->args);
 
-	my $r = runhook($self, $event, $to, "public", $msg);
-	if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
-    		my $cmd = $1;
-		my $txt = $2;
+	my $t = threads->new(sub {
+		my $r = runhook($self, $event, $to, "public", $msg);
+		if ($r ne "nocmd" and $msg =~ /^!([^\s\/]*)\s*(.*)/) {
+    			my $cmd = $1;
+			my $txt = $2;
 
-		runcmd($self, $event, $to, $cmd, $txt);
-	}
+			runcmd($self, $event, $to, $cmd, $txt);
+		}
+	});
+	$t->detach;
 }
 
 
@@ -387,10 +324,10 @@ sub on_nick_taken {
 sub on_disconnect {
 	my ($self, $event) = @_;
 
-	print "hackabot[$$]: Disconnected from ", $event->from(), " (",
-	      ($event->args())[0], ").\n";
+	print msg("Disconnected from ", $event->from(), " (",
+	      ($event->args())[0], ").");
 
-	cleanup;	      
+	exit;	      
 }
 
 # Reconnect to the server when we die.
@@ -439,11 +376,16 @@ sub on_disconnect {
 #	}
 #}
 
+sub msg {
+	my $msg = shift;
+	return "hackabot[".threads->self->tid."]: $msg\n";
+}
+
 sub blah {
   my ($self, $event) = @_;
 
-  print "hackabot[$$]: unhandled event: ".$event->type.": ".
-  	join(",",$event->args)."\n";
+  print msg("unhandled event: ".$event->type.": ".
+  	join(",",$event->args));
 }
 #$conn->add_default_handler(\&blah);
 #$conn->add_global_handler(353, \&blah);
@@ -456,7 +398,7 @@ $conn->add_global_handler(376, \&on_connect);
 $conn->add_global_handler(433, \&on_nick_taken);
 
 
-print "hackabot[$$]: Starting irc event loop...\n";
+print msg("Starting irc event loop...");
 $irc->start;
 #my $extfifos = extopen($CONFIG);
 #while (1) {
