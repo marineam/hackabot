@@ -17,7 +17,13 @@ use Socket;
 use IO::Handle;
 use Fcntl;
 use threads;
+use threads::shared;
+#use Thread::Semaphore;
 STDOUT->autoflush(1);
+
+# Semaphores to control some things between threads
+#my $S_names = new Thread::Semaphore;
+
 
 my $cfgfile = shift;
 if (not defined $cfgfile) {
@@ -36,12 +42,14 @@ $ENV{'HACKABOT_SOCK'} = $CONFIG->{'socket'};
 
 # Start up the IRC connection.
 my $irc = new Net::IRC;
+#share($irc);
 
 print msg("Creating connection to IRC server...");
-my $conn : shared = $irc->newconn(Server   => ($CONFIG->{'server'}),
+my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
 			 Nick     => $CONFIG->{'nick'},
 			 Ircname  => $CONFIG->{'name'})
     or die msg("Can't connect to IRC server.");
+#share($conn);
 
 if (defined($CONFIG->{'socket'})) {
 	my $t = threads->new(\&sock_server,$conn);
@@ -147,11 +155,14 @@ sub runaction {
 			$conn->quit();
 		}
 		elsif ($rw && /^names\s+(\S+.*)$/) {
-			#$ircconn->names(split(/\s/,$1));
-			#$conn->add_global_handler(353, sub {
-  			#	my ($self, $event) = @_;
-			#	print $CHILD @{$event->args}[4]."\n";
-			#});
+			#$S_names->down;		# Set names semaphore
+			$conn->add_global_handler(353, sub {
+  				my ($self, $event) = @_;
+				print $CHILD @{$event->args}[4]."\n";
+				$self->add_global_hadnler(353, sub {});
+			#	$S_names->up;
+			});
+			$conn->names(split(/\s/,$1));
 		}
 		elsif ($rw && /^who\s+(\S+.*)$/) {
 			#print $CHILD $ircconn->who(split(/\s/,$1));
@@ -269,11 +280,6 @@ sub runmod {
 	close FROM_CHILD;
 	waitpid($child,0);
 	return $ret;
-}
-
-# What to do when a connection is recieved from the control socket
-sub on_control {
-
 }
 
 # What to do when we receive a private PRIVMSG.

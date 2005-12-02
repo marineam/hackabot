@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+# Hackabot -- Version 2
+
+use strict;
+use XML::Simple;
+use Data::Dumper;
+
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	$cfgfile = "$ENV{'HOME'}/.hackabot.xml";
+}
+
+our $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
+#print Dumper $CONFIG;
+#exit;
+
+$ENV{'HACKABOT_DIR'} = $CONFIG->{'directory'};
+$ENV{'HACKABOT_ETC'} = "$CONFIG->{'directory'}/$CONFIG->{'etc'}";
+$ENV{'HACKABOT_CMD'} = "$CONFIG->{'directory'}/$CONFIG->{'commands'}";
+$ENV{'HACKABOT_SOCK'} = $CONFIG->{'socket'};
+
+
+# Start up the IRC connection.
+my $irc = new Net::IRC;
+#share($irc);
+
+print msg("Creating connection to IRC server...");
+my $conn = $irc->newconn(Server   => ($CONFIG->{'server'}),
+			 Nick     => $CONFIG->{'nick'},
+			 Ircname  => $CONFIG->{'name'})
+    or die msg("Can't connect to IRC server.");
+#share($conn);

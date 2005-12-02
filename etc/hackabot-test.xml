@@ -2,6 +2,7 @@
 	<directory>/home/manatee/hackabot</directory>
 	<commands>commands</commands>
 	<hooks>hooks</hooks>
+	<lib>lib</lib>
 	<etc>etc</etc>
 	<socket>sock</socket>
 
