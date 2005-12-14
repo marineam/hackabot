@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# The Python rewrite of the ever famous Hackabot (aka manatee) 
+# The Python rewrite of the ever famous Hackabot 
 #
 # This code is under the GPL 2.0 and all that good jazz.
 
