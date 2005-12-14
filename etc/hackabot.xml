@@ -3,28 +3,23 @@
 	<commands>commands</commands>
 	<hooks>hooks</hooks>
 	<etc>etc</etc>
-	<ext>etc</ext>
+	<socket>sock</socket>
 
 	<server>irc.oregonstate.edu</server>
+	<port>6667</port>
 	<nick>manatee</nick>
 	<name>Most certainly not the OSL logo!</name>
 
-	<automsg to="nickserv">identify beaverdamnit</automsg>
-	<automsg to="chanserv">invite #osuosl-staff</automsg>
+	<automsg to="nickserv" msg="identify beaverdamnit" />
+	<automsg to="chanserv" msg="invite #osuosl-staff" />
 	
 	<!--<autojoin chan="#osuosl-test" />-->
 	<autojoin chan="#osuosl" />
-	<autojoin chan="#osuosl-staff" />
-	<autojoin chan="#osu-lug" />
+	<autojoin chan="#osuosl-staff" msg="Now with 50% more seacow!" />
+	<autojoin chan="#osu-lug" msg="Go Beavs!" />
 	<autojoin chan="#foss-anonymous" />
 	<autojoin chan="#osu-chat" />
 	<autojoin chan="#cws" />
-
-	<extsrc>
-		<!--<x-nagios type="msg">manatee</x-nagios>-->
-		<!--<x-nagios type="notice">#osuosl-test</x-nagios>-->
-		<x-nagios type="notice">#osuosl-staff</x-nagios>
-	</extsrc>
 
 	<verbose>0</verbose>
 </hackabot>
