@@ -13,6 +13,7 @@ threads. Hopefully python will prove itself to be much better.
 """
 
 import string
+import time
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n 
 from amara import binderytools
@@ -27,7 +28,17 @@ class Hackabot(SingleServerIRCBot):
 	def on_nicknameinuse(self, irc, event):
 		irc.nick(irc.get_nickname() + "_")
 
-	#def on_welcome(self, irc, event):
+	def on_welcome(self, irc, event):
+		time.sleep(1)
+		for i in range(0, len(self.config.automsg)):
+			irc.privmsg(str(self.config.automsg[i].to),
+					str(self.config.automsg[i].msg))
+		time.sleep(1)
+		for i in range(0, len(self.config.autojoin)):
+			irc.join(str(self.config.autojoin[i].chan))
+			irc.privmsg(str(self.config.autojoin[i].chan),
+					str(self.config.automsg[i].msg))
+
 		#c.join(self.channel)
 
 	def on_privmsg(self, irc, event):
