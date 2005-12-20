@@ -37,7 +37,7 @@ if (not defined $event{'msg'} or not $event{'msg'} =~ /^!(\S*)/) {
 	exit;
 }
 
-if ($event{'type'} eq 'public') {
+if ($event{'type'} eq 'pubmsg') {
 	$event{'msg'} =~ /^!(\S*)/;
 	my $cmd = $1;
 	if (defined $ACCESS->{'command'}->{$cmd}) {
@@ -63,7 +63,7 @@ if ($event{'type'} eq 'public') {
 
 	}
 }	
-elsif ($event{'type'} eq 'msg') {
+elsif ($event{'type'} eq 'privmsg') {
 	$event{'msg'} =~ /^!(\S*)/;
 	my $cmd = $1;
 	if (defined $ACCESS->{'command'}->{$cmd}) {

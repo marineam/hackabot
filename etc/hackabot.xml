@@ -13,7 +13,7 @@
 	<automsg to="nickserv" msg="identify beaverdamnit" />
 	<automsg to="chanserv" msg="invite #osuosl-staff" />
 	
-	<!--<autojoin chan="#osuosl-test" />-->
+	<!--<autojoin chan="#manatee-test" />-->
 	<autojoin chan="#osuosl" />
 	<autojoin chan="#osuosl-staff" msg="Now with 50% more seacow!" />
 	<autojoin chan="#osu-lug" msg="Go Beavs!" />

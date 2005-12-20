@@ -13,9 +13,14 @@ threads. Hopefully python will prove itself to be much better.
 """
 
 import string
+import thread
+import socket
 import time
+import sys
+import os
+import re
 from ircbot import SingleServerIRCBot
-from irclib import nm_to_n 
+from irclib import nm_to_n, nm_to_u, nm_to_h 
 from amara import binderytools
 
 class Hackabot(SingleServerIRCBot):
@@ -23,51 +28,188 @@ class Hackabot(SingleServerIRCBot):
 		# TODO: Semivalidate 'file' before actually using it.
 		self.config = binderytools.bind_file(file).hackabot
 		self.msg("Setting up irc object for "+str(self.config.server)+"...")
+		os.putenv("HACKABOT_DIR", str(self.config.directory))
+		os.putenv("HACKABOT_ETC", \
+			str(self.config.directory)+"/"+str(self.config.etc))
+		os.putenv("HACKABOT_CMD", \
+			str(self.config.directory)+"/"+str(self.config.commands))
+		os.putenv("HACKABOT_SOCK", \
+			str(self.config.directory)+"/"+str(self.config.socket))
+
 		SingleServerIRCBot.__init__(self, [(self.config.server.xml_text_content(), int(self.config.port.xml_text_content()))], self.config.nick.xml_text_content(), self.config.name.xml_text_content())
 
-	def on_nicknameinuse(self, irc, event):
-		irc.nick(irc.get_nickname() + "_")
+	def on_nicknameinuse(self, c, event):
+		self.connection.nick(irc.get_nickname() + "_")
 
-	def on_welcome(self, irc, event):
+	def on_welcome(self, c, event):
 		time.sleep(1)
-		for i in range(0, len(self.config.automsg)):
-			irc.privmsg(str(self.config.automsg[i].to),
-					str(self.config.automsg[i].msg))
+		self.msg("Connected!")
+		thread.start_new_thread(self.server,tuple())
+		for automsg in self.config.automsg:
+			self.msg("sending msg to "+str(automsg.to))
+			self.connection.privmsg(str(automsg.to), str(automsg.msg))
 		time.sleep(1)
-		for i in range(0, len(self.config.autojoin)):
-			irc.join(str(self.config.autojoin[i].chan))
-			irc.privmsg(str(self.config.autojoin[i].chan),
-					str(self.config.automsg[i].msg))
+		for autojoin in self.config.autojoin:
+			self.msg("joining "+str(autojoin.chan))
+			self.connection.join(str(autojoin.chan))
+			if hasattr(autojoin, 'msg'):
+				self.connection.privmsg(str(autojoin.chan), str(autojoin.msg))
 
-		#c.join(self.channel)
+	def on_privmsg(self, c, event):
+        	to = nm_to_n(event.source())
+		thread.start_new_thread(self.do_msg,(event,to))
 
-	def on_privmsg(self, irc, event):
-        	nick = nm_to_n(event.source())
-		irc.privmsg(nick,"What?")
+	def on_pubmsg(self, c, event):
+		to = event.target()
+		thread.start_new_thread(self.do_msg,(event,to))
 
-	#def on_pubmsg(self, irc, event):
+	def do_msg(self, event, to):
+		nick = nm_to_n(event.source())
+		r = self.do_hook(event, to)
+		if r != "noall" and r != "nocmd":
+			self.do_cmd(event, to)
+
+	def do_hook(self, event, to):
+		ret = "ok"
+		dir = "/"+str(self.config.directory)+\
+			"/"+str(self.config.hooks)+\
+			"/"+event.eventtype()
+
+		hooks = os.listdir(dir)
+		for hook in hooks:
+			if re.match(r'\.', hook):
+				continue
+
+			r = self.do_prog(event, to, dir+"/"+hook, \
+				"hook", event.arguments()[0])
+			if r == "noall" or r == "nohook":
+				ret = r
+				break
+			elif r == "nocmd":
+				ret = r
+		return ret
+
+	def do_cmd(self, event, to):
+		c = re.match(r'!([^\s/]+)\s*(.*)', event.arguments()[0])
+		if (not c):
+			return
+
+		cmd = "/"+str(self.config.directory)+\
+			"/"+str(self.config.commands)+\
+			"/"+c.group(1)
+		msg = c.group(2)
+		
+		return self.do_prog(event, to, cmd, "command", msg)
+	
+	def do_prog(self, event, to, cmd, arg, msg):
+		if not os.access(cmd,os.X_OK):
+			return
+		
+		write,read = os.popen2(cmd)
+		write.write("type "+event.eventtype()+"\n")
+		write.write("nick "+nm_to_n(event.source())+"\n")
+		write.write("user "+nm_to_u(event.source())+"\n")
+		write.write("host "+nm_to_h(event.source())+"\n")
+		write.write("to "+to+"\n")
+		write.write("msg "+msg+"\n")
+		write.close()
+
+		ret = self.process(read, to)
+		read.close()
+		return ret
+	
+	def process(self, sockfile, to = None):
+		ret = "ok"
+		sendnext = False
+		rw = (sockfile.mode != 'r')
+
+		while True:
+			line = sockfile.readline().strip()
+			if not line:
+				break
+
+			if to and sendnext:
+				self.connection.privmsg(to, line)
+			elif to and re.match(r'sendnext', line):
+				sendnext = True
+			elif to and re.match(r'send\s+(.+)',line):
+				c = re.match(r'send\s+(.+)',line)
+				self.connection.privmsg(to, c.group(1))
+			elif to and re.match(r'notice\s+(.+)',line):
+				c = re.match(r'notice\s+(.+)',line)
+				self.connection.notice(to, c.group(1))
+			elif to and re.match(r'me\s+(.+)',line):
+				c = re.match(r'me\s+(.+)',line)
+				self.connection.action(to, c.group(1))
+			elif to and re.match(r'action\s+(.+)',line):
+				c = re.match(r'action\s+(.+)',line)
+				self.connection.action(to, c.group(1))
+			elif re.match(r'to\s+(\S+)',line):
+				c = re.match(r'to\s+(\S+)',line)
+				to = c.group(1)
+			elif re.match(r'nick\s+(\S+)',line):
+				c = re.match(r'nick\s+(\S+)',line)
+				self.connection.nick(c.group(1))
+			elif re.match(r'join\s+(\S+)',line):
+				c = re.match(r'join\s+(\S+)',line)
+				self.connection.join(c.group(1))
+			elif re.match(r'part\s+(\S+)',line):
+				c = re.match(r'part\s+(\S+)',line)
+				self.connection.part(c.group(1))
+			elif re.match(r'quit\s+(.*)',line):
+				c = re.match(r'quit\s+(.*)',line)
+				self.msg("Exiting!")
+				self.disconnect(c.group(1))
+				self.connection.execute_delayed(1,sys.exit)
+			elif rw and re.match(r'names\s+(#\S*)',line):
+				c = re.match(r'names\s+(#\S*)',line)
+				chan = c.group(1)
+				if self.channels.has_key(chan):
+					list = self.channels[chan].users()
+					names = " "+string.join(list," ")
+				else:
+					names = ""
+				sockfile.write("names "+chan+names+"\n")
+				sockfile.flush()
+			elif re.match(r'nocmd',line):
+				ret = "nocmd"
+			elif re.match(r'nohook',line):
+				ret = "nohook"
+			elif re.match(r'noall',line):
+				ret = "noall"
+			else:
+				self.msg("Unknown request: "+line)
+		return ret
+	
+	def server(self):
+		file = "/"+str(self.config.directory)+ \
+			"/"+str(self.config.socket)
+
+		self.msg("Creating control socket...")
+		listen = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		os.unlink(file)
+		listen.bind(file)
+		listen.listen(5)
+
+		while True:
+			client,c = listen.accept()
+			thread.start_new_thread(self.servclient,(client,))
+		#what should I do with this:
+		listen.close()
+	
+	def servclient(self, client):
+		self.msg("New control socket connection.")
+		self.process(client.makefile('r+'))
+		self.msg("Closing control socket connection.")
+		client.close()
 
 	def msg(self, txt):
-		print "hackabot: ",txt
+		print "hackabot:",txt
 
 def main():
-	import sys
 	if len(sys.argv) != 2:
-		print "Usage: ",argv[0]," path/to/config.xml"
+		print "Usage:",sys.argv[0],"path/to/config.xml"
 		sys.exit(1)
-
-	#s = string.split(sys.argv[1], ":", 1)
-	#server = s[0]
-	#if len(s) == 2:
-	#	try:
-	#		port = int(s[1])
-	#	except ValueError:
-	#		print "Error: Erroneous port."
-	#		sys.exit(1)
-	#else:
-	#	port = 6667
-	#channel = sys.argv[2]
-	#nickname = sys.argv[3]
 
 	bot = Hackabot(sys.argv[1])
 	bot.start()

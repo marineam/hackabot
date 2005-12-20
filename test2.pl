@@ -5,8 +5,16 @@ use Socket;
 use IO::Handle;
 use Fcntl;
 
-my $addr = sockaddr_un("/home/marineam/hackabot/sock");
-my $proto = getprotobyname('tcp');
+
+my $sock = shift;
+if (not defined $sock) {
+	$sock = $ENV{'HACKABOT_SOCK'}
+}
+if (not defined $sock) {
+	die "Socket location unknown!\n"
+}
+
+my $addr = sockaddr_un($sock);
 
 socket(CONN,PF_UNIX,SOCK_STREAM,0);
 connect(CONN, $addr);
