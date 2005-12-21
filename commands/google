@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Do you feel lucky?
+# !google search phrase
+##HACKABOT_HELP##
+
 use strict;
 use URI::Escape;
 
