@@ -81,7 +81,7 @@ class Hackabot(SingleServerIRCBot):
 				continue
 
 			r = self.do_prog(event, to, dir+"/"+hook, \
-				"hook", event.arguments()[0])
+				event.arguments()[0])
 			if r == "noall" or r == "nohook":
 				ret = r
 				break
@@ -99,9 +99,9 @@ class Hackabot(SingleServerIRCBot):
 			"/"+c.group(1)
 		msg = c.group(2)
 		
-		return self.do_prog(event, to, cmd, "command", msg)
+		return self.do_prog(event, to, cmd, msg)
 	
-	def do_prog(self, event, to, cmd, arg, msg):
+	def do_prog(self, event, to, cmd, msg):
 		if not os.access(cmd,os.X_OK):
 			return
 		
@@ -198,9 +198,9 @@ class Hackabot(SingleServerIRCBot):
 		listen.close()
 	
 	def servclient(self, client):
-		self.msg("New control socket connection.")
+		#self.msg("New control socket connection.")
 		self.process(client.makefile('r+'))
-		self.msg("Closing control socket connection.")
+		#self.msg("Closing control socket connection.")
 		client.close()
 
 	def msg(self, txt):
