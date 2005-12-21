@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Everything needs a slogan!
+# !slogan something
+##HACKABOT_HELP##
+
 use strict;
 use LWP::Simple;
 

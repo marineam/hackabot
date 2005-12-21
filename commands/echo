@@ -1,4 +1,9 @@
 #!/bin/bash
 
+##HACKABOT_HELP##
+# The most basic command!
+# !echo something to say
+##HACKABOT_HELP##
+
 echo "sendnext"
 grep '^msg' | sed -e 's/^msg\s*//g'

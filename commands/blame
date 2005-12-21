@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Blame someone in the channel for the horrible things they did.
+# !blame [something bad]
+##HACKABOT_HELP##
+
 use strict;
 use URI::Escape;
 

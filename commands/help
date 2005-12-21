@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# List and get help for the available commands
+# !help [command name]
+##HACKABOT_HELP##
+
 use strict;
 
 use XML::Simple;
@@ -34,21 +39,55 @@ while (<>) {
 	elsif (/^nick\s*(\S*)/) {
 		$event{'nick'} = $1;
 	}
-	elsif (/^msg\s*(.*)/) {
+	elsif (/^msg\s*(\S+)/) {
 		$event{'msg'} = $1;
 	}
 }
 
-my @commands;
-opendir(MODDIR, $MODS);
-while ($_ = readdir(MODDIR)) {
-	if (/^[^\.]/ and -x "/$MODS/$_" and getacl($_) eq 'allow') {
-		push(@commands, $_);
+if (defined $event{'msg'}) {
+	showhelp($event{'msg'});
+}
+else {
+	showcmds();
+}
+	
+
+sub showhelp {
+	my $cmd = shift;
+	if ( not -r "$MODS/$cmd" or not getacl($cmd) ) {
+		return;
+	}
+	open(CMD, "$MODS/$cmd");
+	
+	my $inhelp = 0;
+	while (<CMD>) {
+		if (/^##HACKABOT_HELP##/) {
+			if ($inhelp) {
+				last;
+			}
+			else {
+				$inhelp = 1;
+			}
+		}
+		elsif ($inhelp) {
+			s/^#\s*//;
+			print "send ".$_;
+		}
 	}
 }
-closedir(MODDIR);
 
-print "send Commands: " . join(" ", sort @commands) . "\n";
+sub showcmds {
+	my @commands;
+	opendir(MODDIR, $MODS);
+	while ($_ = readdir(MODDIR)) {
+		if (/^[^\.]/ and -x "/$MODS/$_" and getacl($_) eq 'allow') {
+			push(@commands, $_);
+		}
+	}
+	closedir(MODDIR);
+
+	print "send Commands: " . join(" ", sort @commands) . "\n";
+}
 
 sub getacl {
 	my $cmd = shift;

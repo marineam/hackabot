@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Tell someone rude and confusing!
+# !insult [#chan] nick
+##HACKABOT_HELP##
+
 use strict;
 
 use LWP::Simple;

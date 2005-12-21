@@ -1,4 +1,9 @@
 #!/bin/bash
 
+##HACKABOT_HELP##
+# Deep Thoughts By Jack Handy
+# !deepthought
+##HACKABOT_HELP##
+
 echo sendnext
 fortune $HACKABOT_DIR/cookies/deepthoughts

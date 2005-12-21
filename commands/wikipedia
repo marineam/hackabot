@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Get the url of a wikipedia article
+# !wikipedia some article
+##HACKABOT_HELP##
+
 use strict;
 use URI::Escape;
 

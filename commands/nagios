@@ -5,6 +5,11 @@
 # Copyright 2005 Michael Marineau
 # Licensed under the GPLv2
 
+##HACKABOT_HELP##
+# Query nagios for current alerts
+# !nagios host hostname | service hostname service | problem [host|service]
+##HACKABOT_HELP##
+
 use strict;
 use LWP::Simple;
 use XML::Simple;

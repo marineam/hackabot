@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+##HACKABOT_HELP##
+# When was someone last seen and where? (defaults to all chanels)
+# !seen [here | #chan] nick
+##HACKABOT_HELP##
+
 use strict;
 use DBI;
 use Time::localtime;

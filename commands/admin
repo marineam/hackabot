@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Run Administrative tasks
+# !admin join #chan | part #chan | nick name | quit msg
+##HACKABOT_HELP##
+
 use strict;
 
 use XML::Simple;

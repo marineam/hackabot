@@ -4,6 +4,11 @@ use vars qw($VERSION %IRSSI $dbhost $dbname $dbuser $dbpass);
 #use Irssi;
 use DBI;
 
+##HACKABOT_HELP##
+# Recommends a place you should eat.
+# !lunch
+##HACKABOT_HELP##
+
 $VERSION = "1.2";
 %IRSSI = (
     author => 'mccammos',

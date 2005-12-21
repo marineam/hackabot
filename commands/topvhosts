@@ -1,6 +1,11 @@
 #!/bin/bash
 # List the most popular vhosts
 
+##HACKABOT_HELP##
+# What are current number of requests for the top vhosts on ftp-*.osuosl.org
+# !topvhosts
+##HACKABOT_HELP##
+
 echo "sendnext"
 echo "ftp-chi.osuosl.org:"
 lynx -width=1000 -dump http://ftp-chi.osuosl.org/server-status | \

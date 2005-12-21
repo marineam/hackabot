@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+##HACKABOT_HELP##
+# Apply a find/replace regex to your last statement
+# !s/find/replace/
+##HACKABOT_HELP##
+
 use strict;
 use DBI;
 use Time::localtime;

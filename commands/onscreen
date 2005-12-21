@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##HACKABOT_HELP##
+# Display a url on bigscreen
+# !onscreen url
+##HACKABOT_HELP##
+
 echo "sendnext"
 URL="`grep '^msg' | sed -e 's/^msg\s*//g'`"
 ssh monitor@bigscreen -x "~/on-web \"$URL\""

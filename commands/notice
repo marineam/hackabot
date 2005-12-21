@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Send a notice message
+# !notice [#chan] something to say
+##HACKABOT_HELP##
+
 use strict;
 
 use XML::Simple;

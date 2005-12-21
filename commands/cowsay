@@ -1,5 +1,10 @@
 #!/usr/bin/perl -w
 
+##HACKABOT_HELP##
+# Flood IRC with ascii cows!
+# !cowsay -l | [-f critter] something to say
+##HACKABOT_HELP##
+
 use strict;
 
 my @allow = ( "bunny", "default", "koala", "small", "tux" );

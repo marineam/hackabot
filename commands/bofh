@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##HACKABOT_HELP##
+# Teh BOFH!
+# !bofh
+##HACKABOT_HELP##
+
 echo sendnext
 fortune bofh-excuses | grep -v '^$' | tr '\n' ' '
 echo
