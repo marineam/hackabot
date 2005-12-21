@@ -124,7 +124,7 @@ class Hackabot(SingleServerIRCBot):
 		rw = (sockfile.mode != 'r')
 
 		while True:
-			line = sockfile.readline().strip()
+			line = sockfile.readline().rstrip("\n")
 			if not line:
 				break
 
