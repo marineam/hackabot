@@ -24,7 +24,7 @@ if (defined $msg and defined $chan) {
 	$names =~ s/\smanatee_*//g;
 	my @list = split(/\s+/, $names);
 	my $name = $list[int(rand(@list))];
-	print "me blames $name for $msg\n";
+	print "me blames $name for $msg.\n";
 }
 else {
 	die "blame: All info not found :-/\n";
