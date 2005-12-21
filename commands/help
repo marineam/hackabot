@@ -53,7 +53,7 @@ print "send Commands: " . join(" ", sort @commands) . "\n";
 sub getacl {
 	my $cmd = shift;
 
-if ($event{'type'} eq 'public') {
+if ($event{'type'} eq 'pubmsg') {
 	if (defined $ACCESS->{'command'}->{$cmd}) {
 		if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}) {
 			if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
@@ -71,7 +71,7 @@ if ($event{'type'} eq 'public') {
 		return $ACCESS->{'default'}->{'action'};
 	}
 }
-elsif ($event{'type'} eq 'msg') {
+elsif ($event{'type'} eq 'privmsg') {
 
 	if (defined $ACCESS->{'command'}->{$cmd}) {
 		if (defined $ACCESS->{'command'}->{$cmd}->{'private'}) {
