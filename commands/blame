@@ -17,6 +17,16 @@ while (<>) {
 	}
 }
 
+my @canned = (
+	"Windows NT",
+	"morning breath",
+	"world hunger",
+	"global warming",
+	"Bush" );
+if (not defined $msg) {
+	$msg = $canned[int(rand(@canned))];
+}
+
 if (defined $msg and defined $chan) {
 	my $names = `echo "names $chan" | $ENV{'HACKABOT_DIR'}/scripts/client`;
 	chomp $names;
