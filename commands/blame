@@ -107,7 +107,7 @@ sub add_blame {
 		$chan = 'NULL';
 	}
 	
-	my $ret = "Successfully added...";
+	my $ret = "Successfully added.";
 	$dbh->do("INSERT blame SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
 
 	$dbh->disconnect;
