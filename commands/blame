@@ -47,7 +47,12 @@ if (defined $msg and $msg =~ /^--add\s+(.+)/) {
 		$ret = add_blame($blame, $nick, $chan);
 	}
 	print "send $nick: $ret\n";
-	exit
+	exit;
+}
+
+if ($privmsg) {
+	print "send I blame you!!!\n";
+	exit;
 }
 
 if (not defined $msg) {
