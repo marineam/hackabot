@@ -2,38 +2,59 @@
 
 ##HACKABOT_HELP##
 # Blame someone in the channel for the horrible things they did.
-# !blame [something bad]
+# !blame [something bad] | !blame --add something bad
 ##HACKABOT_HELP##
 
 use strict;
-use URI::Escape;
+use DBI;
+use Time::localtime;
 
-my ($chan, $msg);
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+my $privmsg = 0;
+my ($chan, $msg, $nick);
 while (<>) {
 	if (/^type\s+privmsg/) {
-		print "send I blame you!";
-		exit;
+		$privmsg = 1;
 	}
 	elsif (/^to\s+(.+)/) {
 		$chan = $1;
+	}
+	elsif (/^nick\s+(.+)/) {
+		$nick = $1;
 	}
 	elsif (/^msg\s+(.+)/) {
 		$msg = $1;
 	}
 }
 
-my @canned = (
-	"Windows NT",
-	"morning breath",
-	"world hunger",
-	"global warming",
-	"Bush" );
-if (not defined $msg) {
-	$msg = $canned[int(rand(@canned))];
+if (not defined $nick or not defined $chan) {
+	die "blame: not all info was given.\n";
 }
 
+if (defined $msg and $msg =~ /^--add\s+(.+)/) {
+	my $blame = $1;
+	chomp $blame;
+	my $ret;
+	if ($privmsg) {
+		$ret = add_blame($blame, $nick);
+	}
+	else {
+		$ret = add_blame($blame, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit
+}
+
+if (not defined $msg) {
+	$msg = 	get_blame();
+}
 if (defined $msg and defined $chan) {
-	my $names = `echo "names $chan" | $ENV{'HACKABOT_DIR'}/scripts/client`;
+	my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
 	chomp $names;
 	$names =~ s/^\S+\s+\S+\s+//;
 	$names =~ s/\smanatee_*//g;
@@ -41,6 +62,55 @@ if (defined $msg and defined $chan) {
 	my $name = $list[int(rand(@list))];
 	print "me blames $name for $msg.\n";
 }
-else {
-	die "blame: All info not found :-/\n";
+
+
+sub get_blame {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "blame: Failed to connect to database\n";
+	}
+	
+	$sth = $dbh->prepare("SELECT text FROM blame ORDER BY RAND() LIMIT 1");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'text'};
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub add_blame {
+	my $txt = shift;
+	my $nick = shift;
+	my $chan = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		print STDERR "blame: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't add it. :-(";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+	
+	$txt = $dbh->quote($txt);
+	$nick = $dbh->quote($nick);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = 'NULL';
+	}
+	
+	my $ret = "Successfully added...";
+	$dbh->do("INSERT blame SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
 }
