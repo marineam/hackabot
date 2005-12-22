@@ -39,7 +39,7 @@ class Hackabot(SingleServerIRCBot):
 		SingleServerIRCBot.__init__(self, [(self.config.server.xml_text_content(), int(self.config.port.xml_text_content()))], self.config.nick.xml_text_content(), self.config.name.xml_text_content())
 
 	def on_nicknameinuse(self, c, event):
-		self.connection.nick(irc.get_nickname() + "_")
+		self.connection.nick(self.connection.get_nickname() + "_")
 
 	def on_welcome(self, c, event):
 		time.sleep(1)
