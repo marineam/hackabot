@@ -6,5 +6,8 @@
 ##HACKABOT_HELP##
 
 #echo "sendnext"
-VOL=`grep '^msg' | sed -e 's/^msg\s*//g'`
+VOL=`grep '^msg' | sed -e 's/^msg\s*//g' | perl -p -e 's/\D*(\d+).*/$1/g;'`
+if [ "$VOL" == "" ]; then
+	echo "send Usage !volume ##"
+fi
 ssh monitor@bigscreen -x "/usr/bin/amixer set Master $VOL% && /usr/bin/amixer set Master unmute" > /dev/null 2>&1
