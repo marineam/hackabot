@@ -5,13 +5,13 @@
 ##HACKABOT_HELP##
 
 MSG=`grep '^msg' | sed -e 's/^msg\s*//g'`
-echo $MSG
 FIRST=`echo "$MSG" | awk '{print $1}'`
 LAST=`echo "$MSG" | awk '{print $2}'`
 
 MAXRESULTS=1000
 
 echo sendnext
+echo Going to search google...
 for i in `seq 0 10 $MAXRESULTS`
 do 
     URL="http://www.google.com/search?q=$FIRST&start=$i"
