@@ -4,13 +4,16 @@ use strict;
 use XML::Simple;
 
 my $cfgfile = shift;
-if (not defined $cfgfile) {
-	$cfgfile = "$ENV{'HOME'}/.hackabot.xml";
+my $chan = shift;
+
+if (not defined $chan) {
+	die "Usage: nagios-email config.xml #chan";
 }
 
-my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin', qr/^x-/]);
+my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin']);
 
-my $fifo = "/".$CONFIG->{'directory'}."/".$CONFIG->{'ext'}."/x-nagios";
+my $client = "/".$CONFIG->{'directory'}."/scripts/client";
+my $socket = "/".$CONFIG->{'directory'}."/".$CONFIG->{'socket'};
 
 my $data;
 my $inhead = 1;
@@ -31,6 +34,10 @@ while (<>) {
 	}
 }
 chomp($data);
-open(FIFO, ">", $fifo);
-print(FIFO "$data\n");
-close(FIFO);
+
+open(CLIENT, "| $client $socket");
+print(CLIENT "to $chan\n");
+print(CLIENT "notice $data\n");
+close(CLIENT);
+#print("to $chan\n");
+#print("notice $data\n");
