@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Display a url on bigscreen
-# !onscreen url
+# !onscreen on | off | reset | URL
 ##HACKABOT_HELP##
 
 echo "sendnext"
