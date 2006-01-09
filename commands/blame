@@ -49,6 +49,19 @@ if (defined $msg and $msg =~ /^--add\s+(.+)/) {
 	print "send $nick: $ret\n";
 	exit;
 }
+if (defined $msg and $msg =~ /^--list/) {
+	my $ret;
+	if ($privmsg) {
+		$ret = list_blame();
+	}
+	else {
+		$ret = "Please don't flood public channels with --list\n";
+	}
+	print "sendnext";
+	print "$nick: All the horrible things I know:\n";
+	print $ret;
+	exit;
+}
 
 if ($privmsg) {
 	print "send I blame you!!!\n";
@@ -81,6 +94,28 @@ sub get_blame {
 	$sth->execute;
 	my $row = $sth->fetchrow_hashref;
 	my $value = $row->{'text'};
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub list_blame {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "blame: Failed to connect to database\n";
+	}
+	
+	$sth = $dbh->prepare("SELECT text FROM blame");
+	$sth->execute;
+	my $row;
+	my $value;
+	while ($row = $sth->fetchrow_hashref) {
+		my $value .= $row->{'text'}."\n";
+	}
 	$sth->finish();
 
 	$dbh->disconnect;
