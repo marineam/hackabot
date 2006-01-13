@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Blame someone in the channel for the horrible things they did.
-# !blame [something bad] | !blame --add something bad
+# !blame [something bad] | --add something bad | --list
 ##HACKABOT_HELP##
 
 use strict;
@@ -57,9 +57,10 @@ if (defined $msg and $msg =~ /^--list/) {
 	else {
 		$ret = "Please don't flood public channels with --list\n";
 	}
-	print "sendnext";
+	print "sendnext\n";
 	print "$nick: All the horrible things I know:\n";
 	print $ret;
+	print "$nick: And that is the end of the list.";
 	exit;
 }
 
@@ -109,16 +110,20 @@ sub list_blame {
 		die "blame: Failed to connect to database\n";
 	}
 	
-	$sth = $dbh->prepare("SELECT text FROM blame");
+	$sth = $dbh->prepare("SELECT text FROM blame WHERE 1");
 	$sth->execute;
 	my $row;
 	my $value;
 	while ($row = $sth->fetchrow_hashref) {
-		my $value .= $row->{'text'}."\n";
+		$value .= $row->{'text'}."\n";
 	}
 	$sth->finish();
 
 	$dbh->disconnect;
+
+	if (not defined $value) {
+		$value = "Nothing found in the db :-/";
+	}
 
 	return $value;
 }
