@@ -7,7 +7,9 @@
 
 use strict;
 
-my @allow = ( "bunny", "default", "koala", "small", "tux" );
+my @allow = ( "bunny", "default", "koala", "small", "tux", "beaver" );
+
+$ENV{'COWPATH'} = "/usr/share/cowsay/cows:".$ENV{'HACKABOT_DIR'}."/cows";
 
 my $msg;
 while (<>) {
