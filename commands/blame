@@ -91,11 +91,20 @@ sub get_blame {
 		die "blame: Failed to connect to database\n";
 	}
 	
-	$sth = $dbh->prepare("SELECT text FROM blame ORDER BY RAND() LIMIT 1");
+	my $time = `date "+%y%m%d%H%M"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+
+	$sth = $dbh->prepare("SELECT id,text,lastused FROM blame ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
 	$sth->execute;
 	my $row = $sth->fetchrow_hashref;
 	my $value = $row->{'text'};
+	my $id = $row->{'id'};
 	$sth->finish();
+
+	$id = $dbh->quote($id);
+	$dbh->do("UPDATE blame SET lastused = $time WHERE id = $id") 
+		or $value .= " and the inability to update the blame database";
 
 	$dbh->disconnect;
 
