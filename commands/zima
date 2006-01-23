@@ -1,0 +1,29 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Who want's a Zima?
+# !zima [#chan] nick
+##HACKABOT_HELP##
+
+use strict;
+
+use XML::Simple;
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my $msg;
+while (<>) {
+	if (/^msg\s+(\S+.*)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg) {
+	if ($msg =~ /(#\S+)\s+(.+)/) {
+		print "to $1\n";
+		print "send Waah waah! $2 wants a Zima!\n";
+	}
+	else {
+		print "send Waah waah! $msg wants a Zima!\n";
+	}
+}
