@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Everything needs a slogan!
+# !slogan something
+##HACKABOT_HELP##
+
+use strict;
+use LWP::Simple;
+
+my ($nick, $msg);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s*(.*)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $nick and defined $msg) {
+	my $page = get("http://www.sloganizer.net/?slogan=$msg");
+	$page =~ /<p class="slogan">.<b>(.*)<\/b>.<\/p>/;
+	my $slogan = $1;
+
+	print "send $nick: $slogan";
+}
+else {
+	die "slogan: nick or message not defined :-/\n";
+}
