@@ -12,7 +12,7 @@
 
 	<automsg to="nickserv" msg="identify beaverdamnit" />
 	
-	<autojoin chan="#manatee-test" msg="I'm here punk!" />
+	<autojoin chan="#manatee" msg="I'm here punk!" />
 
 	<verbose>0</verbose>
 </hackabot>

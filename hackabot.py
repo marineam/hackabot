@@ -66,11 +66,11 @@ class Hackabot(SingleServerIRCBot):
 	def privmsg(self, to, txt):
 		self.connection.privmsg(to, txt)
 	
-		nickmask = self.connection.nickname + \
-			+ "!" + self.connection.username + \
+		nickmask = self.connection.nickname \
+			+ "!" + self.connection.username \
 			+ "@" + self.connection.localhost
 
-		if re.match(r'#',line):
+		if re.match(r'#',to):
 			self.do_hook(Event("pubsnd", nickmask, to, [txt]),to)
 		else:
 			self.do_hook(Event("privsnd", nickmask, to, [txt]),to)
@@ -168,11 +168,15 @@ class Hackabot(SingleServerIRCBot):
 			elif re.match(r'part\s+(\S+)',line):
 				c = re.match(r'part\s+(\S+)',line)
 				self.connection.part(c.group(1))
-			elif re.match(r'quit\s+(.*)',line):
-				c = re.match(r'quit\s+(.*)',line)
+			elif re.match(r'quit\s*(.*)',line):
+				c = re.match(r'quit\s*(.*)',line)
 				self.msg("Exiting!")
 				self.disconnect(c.group(1))
 				self.connection.execute_delayed(1,sys.exit)
+			elif re.match(r'chservop\s+(\S+)\s*(\S*)',line):
+				c = re.match(r'chservop\s+(\S+)\s*(\S*)',line)
+				self.connection.privmsg("ChanServ", 
+					"op "+c.group(1)+" "+c.group(2))
 			elif rw and re.match(r'names\s+(#\S*)',line):
 				c = re.match(r'names\s+(#\S*)',line)
 				chan = c.group(1)
