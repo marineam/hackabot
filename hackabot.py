@@ -20,7 +20,7 @@ import sys
 import os
 import re
 from ircbot import SingleServerIRCBot
-from irclib import nm_to_n, nm_to_u, nm_to_h 
+from irclib import nm_to_n, nm_to_u, nm_to_h, Event 
 from amara import binderytools
 
 class Hackabot(SingleServerIRCBot):
@@ -47,13 +47,13 @@ class Hackabot(SingleServerIRCBot):
 		thread.start_new_thread(self.server,tuple())
 		for automsg in self.config.automsg:
 			self.msg("sending msg to "+str(automsg.to))
-			self.connection.privmsg(str(automsg.to), str(automsg.msg))
+			self.privmsg(str(automsg.to), str(automsg.msg))
 		time.sleep(1)
 		for autojoin in self.config.autojoin:
 			self.msg("joining "+str(autojoin.chan))
 			self.connection.join(str(autojoin.chan))
 			if hasattr(autojoin, 'msg'):
-				self.connection.privmsg(str(autojoin.chan), str(autojoin.msg))
+				self.privmsg(str(autojoin.chan), str(autojoin.msg))
 
 	def on_privmsg(self, c, event):
         	to = nm_to_n(event.source())
@@ -62,6 +62,18 @@ class Hackabot(SingleServerIRCBot):
 	def on_pubmsg(self, c, event):
 		to = event.target()
 		thread.start_new_thread(self.do_msg,(event,to))
+
+	def privmsg(self, to, txt):
+		self.connection.privmsg(to, txt)
+	
+		nickmask = self.connection.nickname + \
+			+ "!" + self.connection.username + \
+			+ "@" + self.connection.localhost
+
+		if re.match(r'#',line):
+			self.do_hook(Event("pubsnd", nickmask, to, [txt]),to)
+		else:
+			self.do_hook(Event("privsnd", nickmask, to, [txt]),to)
 
 	def do_msg(self, event, to):
 		nick = nm_to_n(event.source())
@@ -129,12 +141,12 @@ class Hackabot(SingleServerIRCBot):
 				break
 
 			if to and sendnext:
-				self.connection.privmsg(to, line)
+				self.privmsg(to, line)
 			elif to and re.match(r'sendnext', line):
 				sendnext = True
 			elif to and re.match(r'send\s+(.+)',line):
 				c = re.match(r'send\s+(.+)',line)
-				self.connection.privmsg(to, c.group(1))
+				self.privmsg(to, c.group(1))
 			elif to and re.match(r'notice\s+(.+)',line):
 				c = re.match(r'notice\s+(.+)',line)
 				self.connection.notice(to, c.group(1))
