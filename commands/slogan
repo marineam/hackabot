@@ -7,6 +7,7 @@
 
 use strict;
 use LWP::Simple;
+use URI::Escape;
 
 my ($nick, $msg);
 while (<>) {
@@ -19,6 +20,7 @@ while (<>) {
 }
 
 if (defined $nick and defined $msg) {
+	$msg = uri_escape($msg);
 	my $page = get("http://www.sloganizer.net/en/?slogan=$msg");
 	$page =~ /<p class="slogan">.<b>(.*)<\/b>.<\/p>/;
 	my $slogan = $1;
