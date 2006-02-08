@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#if grep '^nick mviron' >/dev/null; then
-#	echo "send mviron: What is your opinion of cows?"
-#fi
