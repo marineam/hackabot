@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Send a /me message
+# !action [#chan] something to do
+##HACKABOT_HELP##
+
+use strict;
+
+use XML::Simple;
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my $msg;
+while (<>) {
+	if (/^msg\s*(.*)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg) {
+	if ($msg =~ /(#\S+)\s+(.+)/) {
+		print "to $1\n";
+		print "me $2\n";
+	}
+	elsif ($msg =~ /(.+)/) {
+		print "me $1\n";
+	}
+	else {
+		print "send Usage: !action [#chan] Something to do";
+	}
+}
