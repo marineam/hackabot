@@ -6,4 +6,4 @@
 ##HACKABOT_HELP##
 
 echo sendnext
-fortune $HACKABOT_DIR/cookies/chucknorris
+fortune -s $HACKABOT_DIR/cookies/chucknorris
