@@ -13,13 +13,14 @@
 	<automsg to="nickserv" msg="identify beaverdamnit" />
 	<automsg to="chanserv" msg="invite #osuosl-staff" />
 	
-	<!--<autojoin chan="#manatee-test" />-->
 	<autojoin chan="#osuosl" />
-	<autojoin chan="#osuosl-staff" msg="Now with 50% more seacow!" />
-	<autojoin chan="#osu-lug" msg="Go Beavs!" />
+	<autojoin chan="#osuosl-staff" />
+	<autojoin chan="#osu-lug" />
 	<autojoin chan="#foss-anonymous" />
 	<autojoin chan="#osu-chat" />
 	<autojoin chan="#cws" />
+	<autojoin chan="#maintain-dev" />
+	<autojoin chan="#manatee" msg="Now with 50% more seacow!" />
 
 	<verbose>0</verbose>
 </hackabot>

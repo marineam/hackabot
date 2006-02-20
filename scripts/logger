@@ -10,11 +10,10 @@ my $dbname = 'manatee-data';
 my $dbuser = 'manatee-data';
 my $dbpass = 'AvjQAc91hH';
 
-my $privmsg = 0;
-my ($chan, $msg, $nick);
+my ($type, $chan, $msg, $nick);
 while (<>) {
-	if (/^type\s+privmsg/) {
-		$privmsg = 1;
+	if (/^type\s+(\S+)/) {
+		$type = $1;
 	}
 	elsif (/^nick\s*(\S*)/) {
 		$nick = $1;
@@ -30,7 +29,7 @@ while (<>) {
 	}
 }
 
-if (defined $msg and defined $nick and (defined $chan or $privmsg)) {
+if (defined $msg and defined $nick and defined $type and defined $chan) {
 	my ($dbh, $sth);
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -41,16 +40,21 @@ if (defined $msg and defined $nick and (defined $chan or $privmsg)) {
 	my $time = `date "+%F %R"`;
 	chomp $time;
 
+	if ($type =~ m/msg/) {
+		$type = "msg";
+	}
+
 	$nick = $dbh->quote($nick);
 	$msg = $dbh->quote($msg);
 	$time = $dbh->quote($time);
-	if (not $privmsg) {
+	$type = $dbh->quote($type);
+	if ($chan =~ m/^#/) {
 		$chan = $dbh->quote($chan);
-		$dbh->do("INSERT log SET date = $time, text = $msg, chan = $chan, nick = $nick") or die "log: DB stuff failed.\n";
 	}
 	else {
-		$dbh->do("INSERT log SET date = $time, text = $msg, nick = $nick") or die "log: DB stuff failed.\n";
+		$chan = "NULL";
 	}
+	$dbh->do("INSERT log SET date = $time, text = $msg, chan = $chan, nick = $nick, type = $type") or die "log: DB stuff failed.\n";
 
 	$dbh->disconnect;
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 
 ##HACKABOT_HELP##
-# Apply a find/replace regex to your last statement
-# !s/find/replace/
+# Apply a find/replace regex to a message (last 50 lines only)
+# !s/find/replace/[g]          (g will match other people too)
 ##HACKABOT_HELP##
 
 use strict;
@@ -20,9 +20,10 @@ sub replace {
 	my $chan = shift;
 	my $find = shift;
 	my $replace = shift;
+	my $option = shift;
 	my ($dbh, $sth);
 	my $row;
-	my $ret;
+	my $ret = "$nick: Sorry, I can't match the expression '$find'.\n";
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
 	if (!$dbh) {
@@ -32,24 +33,47 @@ sub replace {
 	my $qnick = $dbh->quote($nick);
 	$chan = $dbh->quote($chan);
 
-	$sth = $dbh->prepare("SELECT text FROM seen_quotes WHERE nick = $qnick AND chan = $chan");
-	$sth->execute();
-	if ($row = $sth->fetchrow_hashref and $row->{'text'} =~ m/$find/) {
-		my $text = $row->{'text'};
-		$text =~ s/$find/$replace/g;
-		$ret = "$nick really said: $text"; 
+	for (my $i = 0; $i < 50; $i++) {
+		if (defined $option and $option eq "g") {
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan ORDER BY id DESC LIMIT 1 OFFSET $i");
+		} else {
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan ORDER BY id DESC LIMIT 1 OFFSET $i");
+		}
+		$sth->execute();
+		if ($row = $sth->fetchrow_hashref()) {
+			if ($row->{'text'} =~ m/^!/) {
+				$sth->finish();
+				next;
+			}
+			if ($row->{'text'} =~ m/$find/) {
+				my $text = $row->{'text'};
+				$text =~ s/$find/$replace/g;
+				if ($row->{'type'} eq "msg") {
+					$ret = "$row->{'nick'} actually meant: $text";
+				}
+				elsif ($row->{'type'} eq "action") {
+					$ret = "correction: * $row->{'nick'} $text";
+				}
+				else {
+					$ret = "ERROR: unknown type: $row->{'type'}.";
+				}
+				$sth->finish();
+				last;
+			}
+		}
+		else {
+			$sth->finish();
+			last;
+		}
+		$sth->finish();
 	}
-	else {
-		$ret = "$nick: Sorry, I can't match the string '$find'.\n";
-	}
-	$sth->finish();
 
 	$dbh->disconnect;
 
 	return $ret;
 }
 
-my ($nick, $chan, $find, $replace, $arg);
+my ($nick, $chan, $find, $replace, $arg, $option);
 while (<>) {
 	if (/^nick\s*(\S*)/) {
 		$nick = $1;
@@ -57,14 +81,15 @@ while (<>) {
 	if (/^to\s*(\S*)/) {
 		$chan = $1;
 	}
-	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\//) {
+	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/(.?)/) {
 		$find = $1;
 		$replace = $2;
+		$option = $3;
 	}
 }
 
 if (defined $nick and defined $chan and defined $find and defined $replace) {
-	print "send " . replace($nick, $chan, $find, $replace);
+	print "send " . replace($nick, $chan, $find, $replace, $option);
 }
 else {
 	die "s: malformed request\n";

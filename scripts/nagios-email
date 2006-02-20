@@ -19,11 +19,11 @@ my $data;
 my $inhead = 1;
 while (<>) {
 	chomp;
-	if (/^Subject:/ and $inhead = 1) {
+	if (/^Subject:/ and $inhead == 1) {
 		s/^Subject:\s*//;
 		$data = $_;
 	}
-	elsif (/^$/) {
+	elsif (/^$/ and $inhead == 1) {
 		$inhead = 0;
 	}
 	elsif (/^Info/ and $inhead == 0) {

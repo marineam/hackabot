@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+
+use strict;
+use XML::Simple;
+
+my $cfgfile = shift;
+
+if (not defined $cfgfile) {
+	die "Usage: email config.xml";
+}
+
+my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin']);
+
+my $client = "/".$CONFIG->{'directory'}."/scripts/client";
+my $socket = "/".$CONFIG->{'directory'}."/".$CONFIG->{'socket'};
+
+my ($to,$data);
+my $inhead = 1;
+$data = "";
+while (<>) {
+	chomp;
+	if (/^Subject:\s*(\S+)/ and $inhead == 1) {
+		$to = $1;
+	}
+	elsif (/^$/ and $inhead == 1) {
+		$inhead = 0;
+	}
+	elsif ($inhead == 0) {
+		$data = "$data\n$_";
+	}
+}
+my $msg = "";
+foreach (split(/\n/, $data)) {
+	s/^\s*//g;
+	s/\s*$//g;
+	if (/\S/) {
+		$msg .= "$_\n";
+	}
+}
+
+if (not defined $to) {
+	die "subject was empty!\n";
+}
+if ($msg eq "") {
+	die "body was empty!\n";
+}
+
+open(CLIENT, "| $client $socket");
+print(CLIENT "to $to\n");
+print(CLIENT "sendnext\n");
+print(CLIENT $msg);
+close(CLIENT);
+

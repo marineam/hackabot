@@ -1,0 +1,9 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Chuck Norris Facts (as seen at chucknorrisfacts.com)
+# !chucknorris
+##HACKABOT_HELP##
+
+echo sendnext
+fortune $HACKABOT_DIR/cookies/chucknorris

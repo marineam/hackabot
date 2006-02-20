@@ -1,0 +1,14 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Some futurama quotes
+# !futurama
+##HACKABOT_HELP##
+
+echo sendnext
+fortune=`fortune -s $HACKABOT_DIR/cookies/futurama | tr '	' '    '`
+while [ `echo $fortune | wc -l` != "1" ]
+do
+	fortune=`fortune -s $HACKABOT_DIR/cookies/futurama | tr '   ' '    '`
+done
+echo $fortune
