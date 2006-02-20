@@ -6,4 +6,4 @@
 ##HACKABOT_HELP##
 
 echo sendnext
-fortune $HACKABOT_DIR/cookies/deepthoughts
+fortune -n 400 -s $HACKABOT_DIR/cookies/deepthoughts
