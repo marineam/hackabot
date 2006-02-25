@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Get the answers to life!
+# !answer
+##HACKABOT_HELP##
+
+use strict;
+
+my ($nick);
+while (<>) {
+	if (/^nick\s+(\S+)/) {
+		$nick = $1;
+	}
+}
+
+my @answers = (
+"It is certain.",
+"My sources say no.",
+"My sources say yes.",
+"Most likely not.",
+"UMMM.. No.",
+"Without a doubt.",
+"Very doubtful.",
+"No",
+"Yes",
+"I don't care.",
+"Heck Yea!");
+
+defined $nick or die;
+
+print "send $nick: ".$answers[int(rand(@answers))];
+
