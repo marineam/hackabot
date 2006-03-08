@@ -101,7 +101,7 @@
 		<public chan="#osu-chat" action="deny" />
 	</command>
 	<command name="insult" action="allow">
-		<public chan="#osu-chat" action="deny" />
+		<!--<public chan="#osu-chat" action="deny" />-->
 	</command>
 	<command name="lunch" action="allow">
 		<public chan="#osu-chat" action="deny" />

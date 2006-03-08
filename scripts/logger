@@ -40,8 +40,12 @@ if (defined $msg and defined $nick and defined $type and defined $chan) {
 	my $time = `date "+%F %R"`;
 	chomp $time;
 
-	if ($type =~ m/msg/) {
+	if ($type =~ m/msg/ or $type =~ m/snd/) {
 		$type = "msg";
+	}
+
+	if (not ($type eq "msg" or $type eq "action" or $type eq "notice")) {
+		die "logger: Unknown type '$type', add it to the enum!\n";
 	}
 
 	$nick = $dbh->quote($nick);
