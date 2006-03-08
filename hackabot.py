@@ -65,11 +65,11 @@ class Hackabot(SingleServerIRCBot):
 
 	def on_action(self, c, event):
 		to = event.target()
-		thread.start_new_thread(self.do_msg,(event,to))
+		thread.start_new_thread(self.do_hook,(event,to))
 
 	def on_notice(self, c, event):
 		to = event.target()
-		thread.start_new_thread(self.do_msg,(event,to))
+		thread.start_new_thread(self.do_hook,(event,to))
 
 	def privmsg(self, to, txt):
 		self.connection.privmsg(to, txt)
@@ -82,6 +82,24 @@ class Hackabot(SingleServerIRCBot):
 			self.do_hook(Event("pubsnd", nickmask, to, [txt]),to)
 		else:
 			self.do_hook(Event("privsnd", nickmask, to, [txt]),to)
+
+	def action(self, to, txt):
+		self.connection.action(to, txt)
+	
+		nickmask = self.connection.nickname \
+			+ "!" + self.connection.username \
+			+ "@" + self.connection.localhost
+
+		self.do_hook(Event("action", nickmask, to, [txt]),to)
+
+	def notice(self, to, txt):
+		self.connection.notice(to, txt)
+	
+		nickmask = self.connection.nickname \
+			+ "!" + self.connection.username \
+			+ "@" + self.connection.localhost
+
+		self.do_hook(Event("notice", nickmask, to, [txt]),to)
 
 	def do_msg(self, event, to):
 		nick = nm_to_n(event.source())
@@ -157,13 +175,13 @@ class Hackabot(SingleServerIRCBot):
 				self.privmsg(to, c.group(1))
 			elif to and re.match(r'notice\s+(.+)',line):
 				c = re.match(r'notice\s+(.+)',line)
-				self.connection.notice(to, c.group(1))
+				self.notice(to, c.group(1))
 			elif to and re.match(r'me\s+(.+)',line):
 				c = re.match(r'me\s+(.+)',line)
-				self.connection.action(to, c.group(1))
+				self.action(to, c.group(1))
 			elif to and re.match(r'action\s+(.+)',line):
 				c = re.match(r'action\s+(.+)',line)
-				self.connection.action(to, c.group(1))
+				self.action(to, c.group(1))
 			elif re.match(r'to\s+(\S+)',line):
 				c = re.match(r'to\s+(\S+)',line)
 				to = c.group(1)
