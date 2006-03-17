@@ -9,6 +9,16 @@ use strict;
 
 my @allow = ( "bunny", "default", "koala", "small", "tux", "beaver", "owl", "shamrock", "clover" );
 
+my $default = `basename $0`;
+chomp $default;
+
+if ($default eq "cowsay") {
+	$default = "default";
+}
+else {
+	$default =~ s/say$//;
+}
+
 $ENV{'COWPATH'} = "/usr/share/cowsay/cows:".$ENV{'HACKABOT_DIR'}."/cows";
 
 my $msg;
@@ -55,7 +65,7 @@ sub cowsay {
 	my $msg = shift;
 	my $cow = shift;
 	if (not defined $cow) {
-		$cow = "default";
+		$cow = $default;
 	}
 	print "sendnext\n";
 	system("cowsay", "-f", $cow, $msg);
