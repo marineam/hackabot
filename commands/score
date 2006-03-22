@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Print scores from something++ and something-- statements
-# !score [something | --low | --high]
+# !score [something | --low | --high | --nicks]
 ##HACKABOT_HELP##
 
 use strict;
