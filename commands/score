@@ -37,15 +37,39 @@ sub get_score {
 	return $value;
 }
 
-sub get_top {
+sub get_list {
+	my $order = shift;
+	my $chan = shift;
 	my ($dbh, $sth);
-
+	
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
 	if (!$dbh) {
 		die "score: Failed to connect to database\n";
 	}
-	
-	$sth = $dbh->prepare("SELECT name, value FROM score ORDER BY value DESC LIMIT 3");
+
+	if ($order eq "low") {
+		$order = "ASC";
+	}
+	elsif ($order eq "high") {
+		$order = "DESC";
+	}
+	else {
+		die "Unknown order $order\n";
+	}
+
+	my $where = "";
+	if (defined $chan) {
+		my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
+		chomp $names;
+		$names =~ s/^\S+\s+\S+\s+//;
+		$where = "WHERE 0";
+		foreach $_ (split(/\s+/, $names)) {
+			$_ = $dbh->quote($_);
+			$where .= " OR name = $_";
+		}
+	}	
+
+	$sth = $dbh->prepare("SELECT name, value FROM score $where ORDER BY value $order LIMIT 3");
 	$sth->execute;
 	my @list;
 	for (my $i = 0; $i < 3; $i++) {
@@ -58,35 +82,19 @@ sub get_top {
 	return @list;
 }
 
-sub get_low {
-	my ($dbh, $sth);
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "score: Failed to connect to database\n";
-	}
-	
-	$sth = $dbh->prepare("SELECT name, value FROM score ORDER BY value ASC LIMIT 3");
-	$sth->execute;
-	my @list;
-	for (my $i = 0; $i < 3; $i++) {
-		$list[$i] = $sth->fetchrow_hashref;
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	return @list;
-}
-
-my $name;
+my ($name, $chan);
 while (<>) {
-	if (/^msg\s+(\S+)/) {
+	if (/^msg\s+(\S+.*)/) {
 		$name = $1;
 	}
+	elsif (/^to\s+(#\S+)/) {
+		$chan = $1;
+	}
 }
 
-if (defined $name and not $name =~ /(-h|--high|-l|--low)/) {
+if (defined $name and not $name =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+	$name =~ s/^(\S+)/$1/;
 	my $val = get_score($name);
 	if ($val == "") { $val = 0; }
 	if ($val == "1") {
@@ -96,24 +104,29 @@ if (defined $name and not $name =~ /(-h|--high|-l|--low)/) {
 		print "send $name has scored $val points!\n";
 	}
 }
-elsif ($name =~ /(-l|--low)/) {
-	my @list = get_low();
+elsif (defined $name and $name =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+	my $order;
+	my $nicks;
+	
+	$order = ($name =~ /(-l|--low)/)? "low" : "high";
+	$nicks = ($name =~ /(-n|--nicks)/)? $chan : undef;
+	
+	my @list = get_list($order, $nicks);
 	print "sendnext\n";
-	print "Loosers:\n";
-	for (my $i = 0; $i < 3; $i++) {
-		print "  $list[$i]->{'value'} $list[$i]->{'name'}\n";
+	
+	if ($order eq "high") {
+		print "Top 3:\n";
 	}
-}
-elsif ($name =~ /(-h|--high)/) {
-	my @list = get_top();
-	print "sendnext\n";
-	print "Top 3:\n";
+	else {
+		print "Loosers:\n";
+	}
+	
 	for (my $i = 0; $i < 3; $i++) {
 		print "  $list[$i]->{'value'} $list[$i]->{'name'}\n";
 	}
 }
 else {
-	my @list = get_top();
+	my @list = get_list("high");
 	print "sendnext\n";
 	print "Top 3:\n";
 	for (my $i = 0; $i < 3; $i++) {
