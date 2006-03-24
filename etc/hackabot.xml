@@ -15,6 +15,7 @@
 	
 	<autojoin chan="#osuosl" />
 	<autojoin chan="#osuosl-staff" />
+	<autojoin chan="#osuosl-infra" />
 	<autojoin chan="#osu-lug" />
 	<autojoin chan="#foss-anonymous" />
 	<autojoin chan="#osu-chat" />
