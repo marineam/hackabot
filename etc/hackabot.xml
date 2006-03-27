@@ -20,6 +20,7 @@
 	<autojoin chan="#foss-anonymous" />
 	<autojoin chan="#osu-chat" />
 	<autojoin chan="#cws" />
+	<autojoin chan="#maintain" />
 	<autojoin chan="#maintain-dev" />
 	<autojoin chan="#manatee" msg="Now with 50% more seacow!" />
 
