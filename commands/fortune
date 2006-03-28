@@ -1,9 +1,55 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-echo "sendnext"
-fortune=`fortune -s | tr '	' '    '`
-while [ `echo $fortune | wc -l` != "1" ]
-do
-	fortune=`fortune -s | tr '   ' '    '`
-done
-echo $fortune
+##HACKABOT_HELP##
+# Random Stuff
+# !fortune [#chan] [something or list]
+##HACKABOT_HELP##
+
+use strict;
+
+my $default = `basename $0`;
+chomp $default;
+
+if ($default eq "fortune") {
+	$default = "";
+}
+
+my $msg;
+while (<>) {
+	if (/^msg\s*(.*)/) {
+		$msg = $1;
+	}
+}
+
+if (not defined $msg) {
+	$msg = "";
+}
+
+if ($msg =~ /^(#\S+)/) {
+	print "to $1\n";
+	print "sendnext\n";
+	if ($msg =~ /^#\S+\s+([a-z]+)/) {
+		print fortune($2);
+	}
+	else {
+		print fortune($default);
+	}
+}
+else {
+	print "sendnext\n";
+	if ($msg =~ /^([a-z]+)/) {
+		print fortune($1);
+	}
+	else {
+		print fortune($default);
+	}
+}
+
+sub fortune {
+	my $type = shift;
+
+	my $text = `fortune -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
+	chomp $text;
+
+	return $text;
+}
