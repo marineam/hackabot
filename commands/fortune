@@ -48,8 +48,23 @@ else {
 sub fortune {
 	my $type = shift;
 
-	my $text = `fortune -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
-	chomp $text;
+	my $text = "";
+	if ($type eq "list") {
+		my @files;
+		opendir(DIR, "$ENV{'HACKABOT_DIR'}/cookies");
+		while ($_ = readdir(DIR)) {
+			if (/^[^\.].*\.dat$/) {
+				s/\.dat$//;
+				push(@files, $_);
+			}
+		}
+		closedir(DIR);
+		$text = "Fortunes: ".join(" ", sort @files);
+	}
+	else {
+		$text = `fortune -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
+		chomp $text;
+	}
 
 	return $text;
 }
