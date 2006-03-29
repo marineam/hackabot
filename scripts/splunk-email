@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+use strict;
+use XML::Simple;
+
+my $cfgfile = shift;
+my $chan = shift;
+
+if (not defined $chan) {
+	die "Usage: splunk-email config.xml #chan";
+}
+
+my $CONFIG = XMLin($cfgfile, ForceArray => ['automsg', 'autojoin']);
+
+my $client = "/".$CONFIG->{'directory'}."/scripts/client";
+my $socket = "/".$CONFIG->{'directory'}."/".$CONFIG->{'socket'};
+
+my $inhead = 1;
+my $inresult = 0;
+my $name;
+my $result;
+while (<>) {
+	chomp;
+	if (/^$/ and $inhead == 1) {
+		$inhead = 0;
+	}
+	elsif (/triggered with the result/ and $inhead == 0) {
+		$inresult = 1;
+	}
+	elsif (/\S+/ and $inhead == 0 and $inresult == 1) {
+		$result = $_;
+		$inresult = 0;
+	}
+	elsif (/Splunk Name : (\S+.*)/ and $inhead == 0 and $inresult == 0) {
+		$name = $1;
+	}	
+}
+
+if (not defined $name or not defined $result) {
+	die;
+}
+
+chomp($name);
+chomp($result);
+
+open(CLIENT, "| $client $socket");
+print(CLIENT "to $chan\n");
+print(CLIENT "notice $name | $result\n");
+close(CLIENT);
+#print("to $chan\n");
+#print("notice $data\n");
