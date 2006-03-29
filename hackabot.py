@@ -130,8 +130,12 @@ class Hackabot(SingleServerIRCBot):
 			if re.match(r'\.', hook):
 				continue
 
-			r = self.do_prog(event, to, dir+"/"+hook, \
-				event.arguments()[0])
+			if len(event.arguments()) > 0:
+				arg = event.arguments()[0]
+			else
+				arg = ""
+
+			r = self.do_prog(event, to, dir+"/"+hook, arg)
 			if r == "noall" or r == "nohook":
 				ret = r
 				break
