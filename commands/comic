@@ -71,16 +71,23 @@ sub get_log {
 		$chan = $dbh->quote($chan);
 	}
 
-	$sth = $dbh->prepare("SELECT id,nick,text FROM log WHERE chan = $chan ORDER BY id DESC LIMIT $num OFFSET 1");
+	$sth = $dbh->prepare("SELECT id,nick,text,type FROM log WHERE chan = $chan ORDER BY id DESC LIMIT $num OFFSET 1");
 	$sth->execute;
 
 	my $ret = "";
 	my $row;
 	while ($row = $sth->fetchrow_hashref) {
-		$ret = $row->{'nick'}.": ".$row->{'text'}."\n".$ret;
+		if (not ($row->{'type'} eq "msg" or 
+				$row->{'type'} eq "notice" or
+				$row->{'type'} eq "action")) {
+			next;
+		}
+		$ret = $row->{'text'}."\n".$ret;
+		if ($row->{'type'} eq "action") {
+			$ret = "/me ".$ret;
+		}
+		$ret = $row->{'nick'}.": ".$ret;
 	}
-	$sth->finish();
-
 	$dbh->disconnect;
 
 	return $ret;
