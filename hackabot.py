@@ -71,6 +71,18 @@ class Hackabot(SingleServerIRCBot):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
 
+	def on_join(self, c, event):
+		to = event.target()
+		thread.start_new_thread(self.do_hook,(event,to))
+
+	def on_part(self, c, event):
+		to = event.target()
+		thread.start_new_thread(self.do_hook,(event,to))
+
+	def on_quit(self, c, event):
+		to = event.target()
+		thread.start_new_thread(self.do_hook,(event,to))
+
 	def privmsg(self, to, txt):
 		self.connection.privmsg(to, txt)
 	
