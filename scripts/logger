@@ -29,7 +29,7 @@ while (<>) {
 	}
 }
 
-if (defined $msg and defined $nick and defined $type and defined $chan) {
+if (defined $nick and defined $type) {
 	my ($dbh, $sth);
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -44,15 +44,22 @@ if (defined $msg and defined $nick and defined $type and defined $chan) {
 		$type = "msg";
 	}
 
-	if (not ($type eq "msg" or $type eq "action" or $type eq "notice")) {
+	if (not ($type eq "msg" or $type eq "action" or $type eq "notice" or
+		$type eq "join" or $type eq "part" or $type eq "quit")) {
 		die "logger: Unknown type '$type', add it to the enum!\n";
 	}
 
 	$nick = $dbh->quote($nick);
-	$msg = $dbh->quote($msg);
 	$time = $dbh->quote($time);
 	$type = $dbh->quote($type);
-	if ($chan =~ m/^#/) {
+	
+	if (defined $msg) {
+		$msg = $dbh->quote($msg);
+	}
+	else {
+		$msg = "NULL";
+	}
+	if (defined $chan and $chan =~ m/^#/) {
 		$chan = $dbh->quote($chan);
 	}
 	else {

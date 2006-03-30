@@ -132,8 +132,8 @@ class Hackabot(SingleServerIRCBot):
 
 			if len(event.arguments()) > 0:
 				arg = event.arguments()[0]
-			else
-				arg = ""
+			else:
+				arg = None
 
 			r = self.do_prog(event, to, dir+"/"+hook, arg)
 			if r == "noall" or r == "nohook":
@@ -164,8 +164,10 @@ class Hackabot(SingleServerIRCBot):
 		write.write("nick "+nm_to_n(event.source())+"\n")
 		write.write("user "+nm_to_u(event.source())+"\n")
 		write.write("host "+nm_to_h(event.source())+"\n")
-		write.write("to "+to+"\n")
-		write.write("msg "+msg+"\n")
+		if isinstance(to, str):
+			write.write("to "+to+"\n")
+		if isinstance(msg, str):
+			write.write("msg "+msg+"\n")
 		write.close()
 
 		ret = self.process(read, to)
