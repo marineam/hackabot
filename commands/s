@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Apply a find/replace regex to a message (last 50 lines only)
-# !s/find/replace/[g]          (g will match other people too)
+# !s/find/replace/[gi]         (g will match other people too)
 ##HACKABOT_HELP##
 
 use strict;
@@ -34,10 +34,10 @@ sub replace {
 	$chan = $dbh->quote($chan);
 
 	for (my $i = 0; $i < 50; $i++) {
-		if (defined $option and $option eq "g") {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan ORDER BY id DESC LIMIT 1 OFFSET $i");
+		if (defined $option and $option =~ /g/) {
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT 1 OFFSET $i");
 		} else {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan ORDER BY id DESC LIMIT 1 OFFSET $i");
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT 1 OFFSET $i");
 		}
 		$sth->execute();
 		if ($row = $sth->fetchrow_hashref()) {
@@ -47,7 +47,28 @@ sub replace {
 			}
 			if ($row->{'text'} =~ m/$find/) {
 				my $text = $row->{'text'};
-				$text =~ s/$find/$replace/g;
+				$replace =~ s/(?<!\\)[\\\$]([1-9])/__REPLACEMENT_$1__/g;
+				
+				my @match;
+				if (defined $option and $option =~ /i/) {
+					$text =~ s/$find/$replace/gi;
+					for (my $j = 1; $j <= 9; $j++) {
+						no strict 'refs';
+						$match[$j] = ${"$j"};
+					}
+				}
+				else {
+					$text =~ s/$find/$replace/g;
+					for (my $j = 1; $j <= 9; $j++) {
+						no strict 'refs';
+						$match[$j] = ${"$j"};
+					}
+				}
+				
+				for (my $j = 1; $j <= 9; $j++) {
+					$text =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
+				}
+				
 				if ($row->{'type'} eq "msg") {
 					$ret = "$row->{'nick'} actually meant: $text";
 				}
@@ -81,7 +102,7 @@ while (<>) {
 	if (/^to\s*(\S*)/) {
 		$chan = $1;
 	}
-	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/(.?)/) {
+	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/([ig]*)/) {
 		$find = $1;
 		$replace = $2;
 		$option = $3;
