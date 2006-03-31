@@ -206,6 +206,9 @@ class Hackabot(SingleServerIRCBot):
 			elif re.match(r'nick\s+(\S+)',line):
 				c = re.match(r'nick\s+(\S+)',line)
 				self.connection.nick(c.group(1))
+			elif re.match(r'topic\s+(.+)',line):
+				c = re.match(r'topic\s+(.+)',line)
+				self.connection.topic(to, c.group(1))
 			elif re.match(r'join\s+(\S+)',line):
 				c = re.match(r'join\s+(\S+)',line)
 				self.connection.join(c.group(1))

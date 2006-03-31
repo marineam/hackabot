@@ -1,0 +1,165 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Set a rantom topic from a given list
+# !topic [something] | --add something | --list
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use Time::localtime;
+
+# specify your database connection parameters here
+my $dbhost = 'db0.osuosl.org';
+my $dbname = 'manatee-data';
+my $dbuser = 'manatee-data';
+my $dbpass = 'AvjQAc91hH';
+
+my $privmsg = 0;
+my ($chan, $msg, $nick);
+while (<>) {
+	if (/^type\s+privmsg/) {
+		$privmsg = 1;
+	}
+	elsif (/^to\s+(.+)/) {
+		$chan = $1;
+	}
+	elsif (/^nick\s+(.+)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s+(.+)/) {
+		$msg = $1;
+	}
+}
+
+if (not defined $nick or not defined $chan) {
+	die "topic: not all info was given.\n";
+}
+
+if (defined $msg and $msg =~ /^--add\s+(.+)/) {
+	my $topic = $1;
+	chomp $topic;
+	my $ret;
+	if ($privmsg) {
+		$ret = add_topic($topic, $nick);
+	}
+	else {
+		$ret = add_topic($topic, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit;
+}
+if (defined $msg and $msg =~ /^--list/) {
+	my $ret;
+	if ($privmsg) {
+		$ret = list_topic();
+	}
+	else {
+		$ret = "Please don't flood public channels with --list\n";
+	}
+	print "sendnext\n";
+	print "$nick: All the topics I know:\n";
+	print $ret;
+	print "$nick: And that is the end of the list.";
+	exit;
+}
+
+if ($privmsg) {
+	print "send Uh, this isn't a channel...\n";
+	exit;
+}
+
+if (not defined $msg) {
+	$msg = 	get_topic();
+}
+if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
+	print "to $chan\n";
+	print "topic $msg\n";
+}
+
+
+sub get_topic {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "topic: Failed to connect to database\n";
+	}
+	
+	my $time = `date "+%y%m%d%H%M"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+
+	$sth = $dbh->prepare("SELECT id,text,lastused FROM topic ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'text'};
+	my $id = $row->{'id'};
+	$sth->finish();
+
+	$id = $dbh->quote($id);
+	$dbh->do("UPDATE topic SET lastused = $time WHERE id = $id") 
+		or $value .= " and the inability to update the topic database";
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub list_topic {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "topic: Failed to connect to database\n";
+	}
+	
+	$sth = $dbh->prepare("SELECT text FROM topic WHERE 1");
+	$sth->execute;
+	my $row;
+	my $value;
+	while ($row = $sth->fetchrow_hashref) {
+		$value .= $row->{'text'}."\n";
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	if (not defined $value) {
+		$value = "Nothing found in the db :-/";
+	}
+
+	return $value;
+}
+
+sub add_topic {
+	my $txt = shift;
+	my $nick = shift;
+	my $chan = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		print STDERR "topic: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't add it. :-(";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+	
+	$txt = $dbh->quote($txt);
+	$nick = $dbh->quote($nick);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = 'NULL';
+	}
+	
+	my $ret = "Successfully added.";
+	$dbh->do("INSERT topic SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
+}
