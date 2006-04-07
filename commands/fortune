@@ -62,7 +62,7 @@ sub fortune {
 		$text = "Fortunes: ".join(" ", sort @files);
 	}
 	else {
-		$text = `fortune -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
+		$text = `fortune -n 190 -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
 		chomp $text;
 	}
 
