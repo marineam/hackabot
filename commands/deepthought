@@ -1,9 +1,0 @@
-#!/bin/bash
-
-##HACKABOT_HELP##
-# Deep Thoughts By Jack Handy
-# !deepthought
-##HACKABOT_HELP##
-
-echo sendnext
-fortune -n 400 -s $HACKABOT_DIR/cookies/deepthoughts
