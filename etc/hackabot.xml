@@ -12,6 +12,7 @@
 
 	<automsg to="nickserv" msg="identify beaverdamnit" />
 	<automsg to="chanserv" msg="invite #osuosl-staff" />
+	<automsg to="chanserv" msg="invite #foss-anonymous" />
 	
 	<autojoin chan="#osuosl" />
 	<autojoin chan="#osuosl-staff" />
@@ -22,7 +23,16 @@
 	<autojoin chan="#cws" />
 	<autojoin chan="#maintain" />
 	<autojoin chan="#maintain-dev" />
+	<autojoin chan="#osu-cs411" />
 	<autojoin chan="#manatee" msg="Now with 50% more seacow!" />
 
 	<verbose>0</verbose>
+	<cmdconfig>
+		<topic>
+			<topicmask chan="#osuosl" msg="OSUOSL :: " />
+			<topicmask chan="#osuosl-staff" msg="OSUOSL :: " />
+			<topicmask chan="#osuosl-infra" msg="OSUOSL :: " />
+			<!--<topicmask chan="#manatee" msg="Manatee :: " />-->
+		</topic>
+	</cmdconfig>
 </hackabot>

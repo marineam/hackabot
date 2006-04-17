@@ -8,12 +8,18 @@
 use strict;
 use DBI;
 use Time::localtime;
+use XML::Simple;
 
 # specify your database connection parameters here
 my $dbhost = 'db0.osuosl.org';
 my $dbname = 'manatee-data';
 my $dbuser = 'manatee-data';
 my $dbpass = 'AvjQAc91hH';
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}, 
+	ForceArray => ['automsg', 'autojoin', 'topicmask'],
+	KeyAttr => { topicmask => "+chan" });
+my $CMDCFG = $CONFIG->{'cmdconfig'}->{'topic'};
 
 my $privmsg = 0;
 my ($chan, $msg, $nick);
@@ -73,6 +79,11 @@ if (not defined $msg) {
 	$msg = 	get_topic();
 }
 if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
+
+	if (defined $CMDCFG->{'topicmask'}->{$chan}->{'msg'}) {
+		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$msg;
+	}
+
 	print "to $chan\n";
 	print "topic $msg\n";
 }

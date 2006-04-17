@@ -28,6 +28,7 @@ class Hackabot(SingleServerIRCBot):
 		# TODO: Semivalidate 'file' before actually using it.
 		self.config = binderytools.bind_file(file).hackabot
 		self.msg("Setting up irc object for "+str(self.config.server)+"...")
+		os.putenv("HACKABOT_CFG", file)
 		os.putenv("HACKABOT_DIR", str(self.config.directory))
 		os.putenv("HACKABOT_ETC", \
 			str(self.config.directory)+"/"+str(self.config.etc))

@@ -29,6 +29,7 @@
 			<person nick="chizu"	action="allow" />
 		</public>
 		<public chan="#osuosl-staff" action="allow" />
+		<public chan="#osuosl-infra" action="allow" />
 		<private action="deny"
 		msg="You're not special enough.">
 			<person nick="marineam" action="allow" />
@@ -40,6 +41,7 @@
 	</command>
 	<command name="onscreen" action="deny">
 		<public chan="#osuosl-staff" action="allow" />
+		<public chan="#osuosl-infra" action="allow" />
 		<public chan="#osuosl" action="allow" />
 		<private action="deny">
 			<person nick="marineam" action="allow" />
@@ -54,6 +56,7 @@
 	</command>
 	<command name="ohshit" action="deny">
 		<public chan="#osuosl-staff" action="allow" />
+		<public chan="#osuosl-infra" action="allow" />
 		<public chan="#osuosl" action="allow" />
 		<private action="deny">
 			<person nick="marineam" action="allow" />
@@ -106,6 +109,20 @@
 	<command name="lunch" action="allow">
 		<public chan="#osu-chat" action="deny" />
 		<public chan="#cws" action="deny" />
+	</command>
+	<command name="xinetd_bullies" action="deny">
+		<public chan="#osuosl-infra" action="allow" />
+		<public chan="#osuosl-staff" action="allow" />
+		<private action="deny">
+			<person nick="marineam" action="allow" />
+			<person nick="cshields" action="allow" />
+			<person nick="raema"	action="allow" />
+			<person nick="emsearcy"	action="allow" />
+			<person nick="chizu"	action="allow" />
+			<person nick="morgamic"	action="allow" />
+			<person nick="polvi"	action="allow" />
+			<person nick="philips"	action="allow" />
+		</private>
 	</command>
 	<!--<command name="slogan" action="deny" msg="Sorry, http://www.sloganizer.net was broken last I checked, bug marineam if it's back" />-->
 </hackabotacl>
