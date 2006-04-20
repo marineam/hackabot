@@ -32,6 +32,8 @@
 			<topicmask chan="#osuosl" msg="OSUOSL :: " />
 			<topicmask chan="#osuosl-staff" msg="OSUOSL :: " />
 			<topicmask chan="#osuosl-infra" msg="OSUOSL :: " />
+			<topicmask chan="#foss-anonymous"
+						msg="#foss-anonymous :: " />
 			<!--<topicmask chan="#manatee" msg="Manatee :: " />-->
 		</topic>
 	</cmdconfig>
