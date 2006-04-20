@@ -1,40 +1,39 @@
 <hackabot>
-	<directory>/home/manatee/hackabot</directory>
+	<directory>/home/hackabot/hackabot</directory>
 	<commands>commands</commands>
 	<hooks>hooks</hooks>
 	<etc>etc</etc>
 	<socket>sock</socket>
 
-	<server>irc.oregonstate.edu</server>
+	<server>irc.something.net</server>
 	<port>6667</port>
-	<nick>manatee</nick>
-	<name>Most certainly not the OSL logo!</name>
+	<nick>hackabot</nick>
+	<name>A spiffy little bot</name>
 
-	<automsg to="nickserv" msg="identify beaverdamnit" />
-	<automsg to="chanserv" msg="invite #osuosl-staff" />
-	<automsg to="chanserv" msg="invite #foss-anonymous" />
-	
-	<autojoin chan="#osuosl" />
-	<autojoin chan="#osuosl-staff" />
-	<autojoin chan="#osuosl-infra" />
-	<autojoin chan="#osu-lug" />
-	<autojoin chan="#foss-anonymous" />
-	<autojoin chan="#osu-chat" />
-	<autojoin chan="#cws" />
-	<autojoin chan="#maintain" />
-	<autojoin chan="#maintain-dev" />
-	<autojoin chan="#osu-cs411" />
-	<autojoin chan="#manatee" msg="Now with 50% more seacow!" />
+	<!-- Send these messages just after connecting but before joining -->
+	<!-- This is useful for talking with chanserv and nickserv -->
+	<automsg to="nickserv" msg="identify something" />
+	<automsg to="chanserv" msg="invite #somechan" />
 
-	<verbose>0</verbose>
+	<!-- Chanels to auto join. msg and password are optional -->
+	<autojoin chan="#somechan" />
+	<autojoin chan="#amazing" msg="I'm here!" />
+	<autojoin chan="#private" password="pass" />
+
+	<!-- Command specific config options -->
 	<cmdconfig>
 		<topic>
-			<topicmask chan="#osuosl" msg="OSUOSL :: " />
-			<topicmask chan="#osuosl-staff" msg="OSUOSL :: " />
-			<topicmask chan="#osuosl-infra" msg="OSUOSL :: " />
-			<topicmask chan="#foss-anonymous"
-						msg="#foss-anonymous :: " />
-			<!--<topicmask chan="#manatee" msg="Manatee :: " />-->
+			<!-- topic mask prepends msg before every topic -->
+			<topicmask chan="#somechan" msg="CoolPeople :: " />
 		</topic>
+		<google>
+			<apikey>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</apikey>
+		</google>
+		<database>
+			<host>dbhost.some.org</host>
+			<user>dbuser</user>
+			<name>dbname</name>
+			<pass>dbpass</pass>
+		</database>
 	</cmdconfig>
 </hackabot>
