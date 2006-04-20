@@ -1,0 +1,90 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# What has more hits on google?
+# !googlefight word1 word2 (quoted phrases are also supported)
+##HACKABOT_HELP##
+
+use strict;
+use Net::Google;
+use URI::Escape;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $CMDCFG = $CONFIG->{'cmdconfig'}->{'google'};
+
+my ($nick, $word1, $word2, $msg);
+while (<>) {
+	if (/^nick\s+(\S+)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s+(\S.*\S)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg) {
+	if ($msg =~ /^("[^"]+")/) {
+		$word1 = $1;
+	}
+	elsif ($msg =~ /^('[^']+')/) {
+		$word1 = $1;
+	}
+	elsif ($msg =~ /^(\S+)/) {
+		$word1 = $1;
+	}
+	
+	if ($msg =~ /("[^"]+")$/) {
+		$word2 = $1;
+	}
+	elsif ($msg =~ /('[^']+')$/) {
+		$word2 = $1;
+	}
+	elsif ($msg =~ /(\S+)$/) {
+		$word2 = $1;
+	}
+}
+
+if (defined $nick and defined $word1 and defined $word2) {
+	my $hits1 = gethits($word1);
+	my $hits2 = gethits($word2);
+
+	my $result;
+	if ($hits1 > $hits2) {
+		$result = "$word1 wins with ".$hits1.". vs. $word2 with ".$hits2.", a difference of ". ($hits1 - $hits2) ." results.";
+	}
+	elsif ($hits1 < $hits2) {
+		$result = "$word2 wins with ".$hits2." vs. $word1 with ".$hits1.", a difference of ". ($hits2 - $hits1) ." results.";
+	}
+	elsif ($hits1 == $hits2) {
+		$result = "It is a draw between $word1 and $word2 with ".$hits1." results.";
+	}
+	else {
+		$result = "I'm confused!";
+	}
+
+	print "send $nick: $result";
+}
+else {
+	die "googlefight: nick or message not defined :-/\n";
+}
+
+sub gethits {
+	my $word = shift;
+
+	if (not defined $word) {
+		return 0;
+	}
+
+	my $google = Net::Google->new(key=>$CMDCFG->{'apikey'});
+	my $search = $google->search();
+
+	$search->query($word);
+	my @responses = @{$search->response()};
+	if (defined $responses[0]) {
+		return int($responses[0]->estimatedTotalResultsCount());
+	}
+	else {
+		return 0;
+	}
+}
