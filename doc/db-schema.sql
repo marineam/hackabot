@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 -- 
 -- Host: db0.osuosl.org
--- Generation Time: Mar 08, 2006 at 11:49 AM
+-- Generation Time: Apr 28, 2006 at 10:27 PM
 -- Server version: 4.0.24
 -- PHP Version: 4.3.10-16
 -- 
@@ -38,11 +38,11 @@ CREATE TABLE `log` (
   `id` int(10) NOT NULL auto_increment,
   `nick` varchar(20) NOT NULL default '',
   `chan` varchar(20) default NULL,
-  `text` varchar(255) NOT NULL default '',
-  `type` enum('msg','action','notice') NOT NULL default 'msg',
+  `text` varchar(255) default NULL,
+  `type` enum('msg','action','notice','join','part','quit') NOT NULL default 'msg',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) TYPE=MyISAM AUTO_INCREMENT=51788 ;
+) TYPE=MyISAM AUTO_INCREMENT=132022 ;
 
 -- --------------------------------------------------------
 
@@ -121,5 +121,22 @@ CREATE TABLE `seen_quotes` (
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`),
   UNIQUE KEY `INDEX` (`nick`,`chan`)
-) TYPE=MyISAM AUTO_INCREMENT=520 ;
+) TYPE=MyISAM AUTO_INCREMENT=654 ;
 
+-- --------------------------------------------------------
+
+-- 
+-- Table structure for table `topic`
+-- 
+
+CREATE TABLE `topic` (
+  `id` int(10) NOT NULL auto_increment,
+  `text` varchar(255) NOT NULL default '',
+  `nick` varchar(20) default NULL,
+  `chan` varchar(20) default NULL,
+  `date` varchar(20) default NULL,
+  `lastused` int(10) NOT NULL default '1',
+  PRIMARY KEY  (`id`),
+  KEY `lastused` (`lastused`),
+  KEY `lastused_2` (`lastused`)
+) TYPE=MyISAM AUTO_INCREMENT=14 ;
