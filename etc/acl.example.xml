@@ -1,0 +1,24 @@
+<hackabotacl>
+	<!-- default applies if not command specific block exists -->
+	<default action="allow" />
+	<!-- override the default block for a single command -->
+	<command name="somecommand" action="deny" msg="Go away..." >
+		<public chan="#somechan" action="deny"
+		msg="You're not special enough.">
+			<person nick="coolguy" action="allow" />
+		</public>
+		<private action="deny"
+		msg="You're not special enough.">
+			<person nick="coolguy" action="allow" />
+		</private>
+	</command>
+	<!-- example of a chan that hates cows -->
+	<command name="cowsay" action="allow">
+		<public chan="#cranky" action="deny" >
+			<person nick="someone" action="allow" />
+		</public>
+	</command>
+	<!-- example for when sloganizer breaks -->
+	<!--<command name="slogan" action="deny" 
+	msg="Sorry, http://www.sloganizer.net was broken last I checked" />-->
+</hackabotacl>
