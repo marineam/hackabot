@@ -52,9 +52,14 @@ class Hackabot(SingleServerIRCBot):
 		time.sleep(1)
 		for autojoin in self.config.autojoin:
 			self.msg("joining "+str(autojoin.chan))
-			self.connection.join(str(autojoin.chan))
+			if hasattr(autojoin, 'password'):
+				self.connection.join(str(autojoin.chan), \
+					str(autojoin.password))
+			else:
+				self.connection.join(str(autojoin.chan))
 			if hasattr(autojoin, 'msg'):
-				self.privmsg(str(autojoin.chan), str(autojoin.msg))
+				self.privmsg(str(autojoin.chan), \
+					str(autojoin.msg))
 
 	def on_privmsg(self, c, event):
         	to = nm_to_n(event.source())
