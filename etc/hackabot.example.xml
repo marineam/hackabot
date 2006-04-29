@@ -31,8 +31,8 @@
 		</google>
 		<database>
 			<host>dbhost.some.org</host>
-			<user>dbuser</user>
 			<name>dbname</name>
+			<user>dbuser</user>
 			<pass>dbpass</pass>
 		</database>
 	</cmdconfig>
