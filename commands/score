@@ -8,12 +8,15 @@
 use strict;
 use DBI;
 use Time::localtime;
+use XML::Simple;
 
-# specify your database connection parameters here
-my $dbhost = 'db0.osuosl.org';
-my $dbname = 'manatee-data';
-my $dbuser = 'manatee-data';
-my $dbpass = 'AvjQAc91hH';
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
 
 sub get_score {
 	my $name = shift;
