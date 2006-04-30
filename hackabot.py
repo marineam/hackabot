@@ -37,7 +37,7 @@ class Hackabot(SingleServerIRCBot):
 		os.putenv("HACKABOT_SOCK", \
 			str(self.config.directory)+"/"+str(self.config.socket))
 
-		SingleServerIRCBot.__init__(self, [(self.config.server.xml_text_content(), int(self.config.port.xml_text_content()))], self.config.nick.xml_text_content(), self.config.name.xml_text_content())
+		SingleServerIRCBot.__init__(self, [(str(self.config.server), int(str(self.config.port)))], str(self.config.nick), str(self.config.name))
 
 	def on_nicknameinuse(self, c, event):
 		self.connection.nick(self.connection.get_nickname() + "_")
@@ -256,7 +256,13 @@ class Hackabot(SingleServerIRCBot):
 
 		self.msg("Creating control socket...")
 		listen = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		os.unlink(file)
+	
+		# Ignore an unlink error since it might not exist
+		try:
+			os.unlink(file)
+		except OSError:
+			pass
+
 		listen.bind(file)
 		listen.listen(5)
 
