@@ -1,0 +1,22 @@
+PATH=/usr/local/bin:/usr/bin:/bin
+
+:0
+* From:.*nagios@osuosl.org
+* Subject:.*(twist|oliver).osuosl.org
+| $HOME/hackabot/scripts/nagios-email $HOME/hackabot/etc/hackabot.xml "#osu-lug"
+
+:0
+* From:.*nagios@osuosl.org
+| $HOME/hackabot/scripts/nagios-email $HOME/hackabot/etc/hackabot.xml "#osuosl-infra"
+
+:0
+* From:.*livesplunk@osuosl.org.*
+| $HOME/hackabot/scripts/splunk-email $HOME/hackabot/etc/hackabot.xml "#osuosl-infra"
+
+:0
+* From:.*@.*(osuosl.org|mozilla.org)
+| $HOME/hackabot/scripts/email $HOME/hackabot/etc/hackabot.xml
+
+:0:
+* .*
+/dev/null
