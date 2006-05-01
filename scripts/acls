@@ -52,15 +52,37 @@ if ($event{'type'} eq 'pubmsg') {
 					$ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'msg'});
 			}
 		}
+		elsif (defined $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}) {
+			doaction($ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'action'}, 
+				$event{'nick'},
+				$ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'msg'});
+		}
 		else {
 			doaction($ACCESS->{'command'}->{$cmd}->{'action'}, $event{'nick'},
 				$ACCESS->{'command'}->{$cmd}->{'msg'});
 		}
 	}
 	else {
-		doaction($ACCESS->{'default'}->{'action'}, $event{'nick'}, 
-			$ACCESS->{'default'}->{'msg'});
-
+		if (defined $ACCESS->{'default'}->{'public'}->{$event{'to'}}) {
+			if (defined $ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
+				doaction($ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'}, 
+					$event{'nick'},
+					$ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'msg'});
+			}
+			else {
+				doaction($ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'action'}, $event{'nick'},
+					$ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'msg'});
+			}
+		}
+		elsif (defined $ACCESS->{'default'}->{'person'}->{$event{'nick'}}) {
+			doaction($ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'action'}, 
+				$event{'nick'},
+				$ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'msg'});
+		}
+		else {
+			doaction($ACCESS->{'default'}->{'action'}, $event{'nick'}, 
+				$ACCESS->{'default'}->{'msg'});
+		}
 	}
 }	
 elsif ($event{'type'} eq 'privmsg') {
@@ -78,15 +100,37 @@ elsif ($event{'type'} eq 'privmsg') {
 					$ACCESS->{'command'}->{$cmd}->{'private'}->{'msg'});
 			}
 		}
+		elsif (defined $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}) {
+			doaction($ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'action'}, 
+				$event{'nick'},
+				$ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'msg'});
+		}
 		else {
 			doaction($ACCESS->{'command'}->{$cmd}->{'action'}, $event{'nick'},
 				$ACCESS->{'command'}->{$cmd}->{'msg'});
 		}
 	}
 	else {
-		doaction($ACCESS->{'default'}->{'action'}, $event{'nick'}, 
-			$ACCESS->{'default'}->{'msg'});
-
+		if (defined $ACCESS->{'default'}->{'private'}->{$event{'to'}}) {
+			if (defined $ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
+				doaction($ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'}, 
+					$event{'nick'},
+					$ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'msg'});
+			}
+			else {
+				doaction($ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'action'}, $event{'nick'},
+					$ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'msg'});
+			}
+		}
+		elsif (defined $ACCESS->{'default'}->{'person'}->{$event{'nick'}}) {
+			doaction($ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'action'}, 
+				$event{'nick'},
+				$ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'msg'});
+		}
+		else {
+			doaction($ACCESS->{'default'}->{'action'}, $event{'nick'}, 
+				$ACCESS->{'default'}->{'msg'});
+		}
 	}
 }	
 
