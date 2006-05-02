@@ -51,13 +51,13 @@ if (defined $nick and defined $word1 and defined $word2) {
 
 	my $result;
 	if ($hits1 > $hits2) {
-		$result = "$word1 wins with ".$hits1.". vs. $word2 with ".$hits2.", a difference of ". ($hits1 - $hits2) ." results.";
+		$result = "$word1 wins with ".commafy($hits1).". vs. $word2 with ".commafy($hits2).", a difference of ". commafy($hits1 - $hits2) ." results.";
 	}
 	elsif ($hits1 < $hits2) {
-		$result = "$word2 wins with ".$hits2." vs. $word1 with ".$hits1.", a difference of ". ($hits2 - $hits1) ." results.";
+		$result = "$word2 wins with ".commafy($hits2)." vs. $word1 with ".commafy($hits1).", a difference of ". commafy($hits2 - $hits1) ." results.";
 	}
 	elsif ($hits1 == $hits2) {
-		$result = "It is a draw between $word1 and $word2 with ".$hits1." results.";
+		$result = "It is a draw between $word1 and $word2 with ".commafy($hits1)." results.";
 	}
 	else {
 		$result = "I'm confused!";
@@ -66,7 +66,13 @@ if (defined $nick and defined $word1 and defined $word2) {
 	print "send $nick: $result";
 }
 else {
-	die "googlefight: nick or message not defined :-/\n";
+	die "googlefight: nick or message not defined :-/ ($nick $word1 $word2)\n";
+}
+
+sub commafy {
+	$_=reverse shift;
+	s/(...)(?=.)/$1,/g;
+	return reverse $_;
 }
 
 sub gethits {
