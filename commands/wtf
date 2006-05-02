@@ -102,7 +102,7 @@ sub get_wtf {
 	my $row = $sth->fetchrow_hashref;
 	my $id = $row->{'id'};
 	my $value;
-	if (defined $row) {
+	if (defined $row->{'acronym'}) {
 		$value = $row->{'acronym'}.": ".$row->{'text'};
 	}
 	elsif (defined $wtf) {
