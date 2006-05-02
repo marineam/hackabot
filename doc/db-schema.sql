@@ -1,20 +1,12 @@
--- phpMyAdmin SQL Dump
--- version 2.7.0-pl2
--- http://www.phpmyadmin.net
--- 
--- Host: db0.osuosl.org
--- Generation Time: Apr 28, 2006 at 10:27 PM
--- Server version: 4.0.24
--- PHP Version: 4.3.10-16
--- 
--- Database: `manatee-data`
--- 
+-- MySQL dump 9.11
+--
+-- Host: db0.osuosl.org    Database: manatee_data
+-- ------------------------------------------------------
+-- Server version	4.0.24_Debian-10sarge1-log
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `blame`
--- 
+--
 
 CREATE TABLE `blame` (
   `id` int(10) NOT NULL auto_increment,
@@ -24,15 +16,12 @@ CREATE TABLE `blame` (
   `date` varchar(20) default NULL,
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
-  KEY `lastused` (`lastused`),
-  KEY `lastused_2` (`lastused`)
-) TYPE=MyISAM AUTO_INCREMENT=42 ;
+  KEY `lastused` (`lastused`)
+) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `log`
--- 
+--
 
 CREATE TABLE `log` (
   `id` int(10) NOT NULL auto_increment,
@@ -42,13 +31,11 @@ CREATE TABLE `log` (
   `type` enum('msg','action','notice','join','part','quit') NOT NULL default 'msg',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) TYPE=MyISAM AUTO_INCREMENT=132022 ;
+) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `quotes`
--- 
+--
 
 CREATE TABLE `quotes` (
   `id` int(10) unsigned NOT NULL auto_increment,
@@ -56,13 +43,11 @@ CREATE TABLE `quotes` (
   `nick` varchar(20) NOT NULL default '',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) TYPE=MyISAM AUTO_INCREMENT=1 ;
+) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `reminder`
--- 
+--
 
 CREATE TABLE `reminder` (
   `id` int(10) NOT NULL auto_increment,
@@ -73,13 +58,11 @@ CREATE TABLE `reminder` (
   `created` varchar(20) default NULL,
   PRIMARY KEY  (`id`),
   KEY `time` (`time`)
-) TYPE=MyISAM AUTO_INCREMENT=1 ;
+) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `score`
--- 
+--
 
 CREATE TABLE `score` (
   `name` varchar(50) NOT NULL default '',
@@ -90,11 +73,9 @@ CREATE TABLE `score` (
   PRIMARY KEY  (`name`)
 ) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `seen`
--- 
+--
 
 CREATE TABLE `seen` (
   `nick` varchar(20) NOT NULL default '',
@@ -107,11 +88,9 @@ CREATE TABLE `seen` (
   PRIMARY KEY  (`nick`)
 ) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `seen_quotes`
--- 
+--
 
 CREATE TABLE `seen_quotes` (
   `id` int(10) NOT NULL auto_increment,
@@ -121,13 +100,11 @@ CREATE TABLE `seen_quotes` (
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`),
   UNIQUE KEY `INDEX` (`nick`,`chan`)
-) TYPE=MyISAM AUTO_INCREMENT=654 ;
+) TYPE=MyISAM;
 
--- --------------------------------------------------------
-
--- 
+--
 -- Table structure for table `topic`
--- 
+--
 
 CREATE TABLE `topic` (
   `id` int(10) NOT NULL auto_increment,
@@ -137,6 +114,24 @@ CREATE TABLE `topic` (
   `date` varchar(20) default NULL,
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
-  KEY `lastused` (`lastused`),
-  KEY `lastused_2` (`lastused`)
-) TYPE=MyISAM AUTO_INCREMENT=14 ;
+  KEY `lastused` (`lastused`)
+) TYPE=MyISAM;
+
+--
+-- Table structure for table `wtf`
+--
+
+CREATE TABLE `wtf` (
+  `id` int(10) NOT NULL auto_increment,
+  `acronym_i` varchar(20) NOT NULL default '',
+  `acronym` varchar(20) NOT NULL default '',
+  `text` varchar(255) NOT NULL default '',
+  `nick` varchar(20) default NULL,
+  `chan` varchar(20) default NULL,
+  `date` varchar(20) default NULL,
+  `lastused` int(10) NOT NULL default '1',
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `acronym_i` (`acronym_i`),
+  KEY `lastused` (`lastused`)
+) TYPE=MyISAM;
+
