@@ -7,8 +7,5 @@
 
 echo "sendnext"
 echo "Hackabot :: Version [something between 0 and 1]"
-echo "This software is under the GPL, bla bla bla..."
 echo "URLs: https://lug.oregonstate.edu/svn/hackabot/"
 echo "      https://lug.oregonstate.edu/websvn/"
-echo "Written by Michael Marineau and various OSUOSL staff."
-echo "And a special thanks to Kees Cook for finding the first security hole!"
