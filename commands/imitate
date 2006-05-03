@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Say something random! Uses the previous lines as input
-# !imitate [lines]
+# !imitate [nick] [lines]
 ##HACKABOT_HELP##
 
 import string
@@ -24,12 +24,13 @@ imitatecfg = fullcfg.cmdconfig.imitate
 
 #maxwords = int(str(imitatecfg.maxwords))
 #wordlength = int(str(imitatecfg.wordlenth))
-maxwords = 50
+maxwords = 40
 wordlength = 4
 maxlines = 50
 
 evtype = "none"
 chan = "none"
+nick = None
 for line in sys.stdin.readlines():
 	if re.match(r'type\s+(\S+)', line):
 		c = re.match(r'type\s+(\S+)', line)
@@ -37,6 +38,20 @@ for line in sys.stdin.readlines():
 	elif re.match(r'to\s+(\S+)', line):
 		c = re.match(r'to\s+(\S+)', line)
 		chan = c.group(1)
+	elif re.match(r'msg\s+(\d+)', line):
+		c = re.match(r'msg\s+(\d+)', line)
+		maxlines = int(c.group(1))
+	elif re.match(r'msg\s+(\S+)', line):
+		c = re.match(r'msg\s+(\S+)', line)
+		nick = c.group(1)
+	#	c = re.match(r'msg\s+\S+\s+(\d+)', line)
+#		if c:
+#			maxlines = int(c.group(1))
+
+
+if chan == "none" or evtype == "none":
+	sys.stderr.write("imitate: chan or event type undefined")
+	sys.exit(1)
 
 if evtype != "pubmsg":
 	print "send This is not a channel!"
@@ -50,9 +65,14 @@ except MySQLdb.Error, e:
 	sys.exit(1)
 
 max = db.escape_string(str(maxlines))
-chan = db.escape_string(str(chan))
+chan = db.escape_string(chan)
 cursor = db.cursor()
-cursor.execute("SELECT id, nick, chan, text, type FROM log WHERE chan = '"+chan+"' AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT "+max)
+if nick:
+	nick = db.escape_string(nick)
+	nickq = " AND nick = '"+nick+"' "
+else:
+	nickq = " "
+cursor.execute("SELECT id, nick, chan, text, type FROM log WHERE chan = '"+chan+"' AND ( type = 'msg' OR type = 'action' ) "+nickq+" ORDER BY id DESC LIMIT "+max)
 rows = cursor.fetchall()
 cursor.close()
 db.close()
@@ -99,5 +119,8 @@ while not len(re.split(" ", result)) < maxwords:
 
 imitation = result[:len(result)-wordlength]
 
-print "send", imitation
+if len(imitation) == 0:
+	print "send Sorry, I wasn't able to imitate anything."
+else:
+	print "send", imitation
 
