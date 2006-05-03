@@ -20,7 +20,7 @@ if (config == None):
 
 fullcfg = binderytools.bind_file(config).hackabot
 database = fullcfg.cmdconfig.database
-imitatecfg = fullcfg.cmdconfig.imitate
+#imitatecfg = fullcfg.cmdconfig.imitate
 
 #maxwords = int(str(imitatecfg.maxwords))
 #wordlength = int(str(imitatecfg.wordlenth))
@@ -44,9 +44,9 @@ for line in sys.stdin.readlines():
 	elif re.match(r'msg\s+(\S+)', line):
 		c = re.match(r'msg\s+(\S+)', line)
 		nick = c.group(1)
-	#	c = re.match(r'msg\s+\S+\s+(\d+)', line)
-#		if c:
-#			maxlines = int(c.group(1))
+		c = re.match(r'msg\s+\S+\s+(\d+)', line)
+		if c:
+			maxlines = int(c.group(1))
 
 
 if chan == "none" or evtype == "none":
