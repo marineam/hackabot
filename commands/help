@@ -96,22 +96,37 @@ if ($event{'type'} eq 'pubmsg') {
 	if (defined $ACCESS->{'command'}->{$cmd}) {
 		if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}) {
 			if (defined $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
-				return $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'}; 
+				return $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'} ;
 			}
 			else {
 				return $ACCESS->{'command'}->{$cmd}->{'public'}->{$event{'to'}}->{'action'};
 			}
+		}
+		elsif (defined $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}) {
+			return $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'action'}; 
 		}
 		else {
 			return $ACCESS->{'command'}->{$cmd}->{'action'};
 		}
 	}
 	else {
-		return $ACCESS->{'default'}->{'action'};
+		if (defined $ACCESS->{'default'}->{'public'}->{$event{'to'}}) {
+			if (defined $ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
+				return $ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'}; 
+			}
+			else {
+				return $ACCESS->{'default'}->{'public'}->{$event{'to'}}->{'action'};
+			}
+		}
+		elsif (defined $ACCESS->{'default'}->{'person'}->{$event{'nick'}}) {
+			return $ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'action'};
+		}
+		else {
+			return $ACCESS->{'default'}->{'action'};
+		}
 	}
-}
+}	
 elsif ($event{'type'} eq 'privmsg') {
-
 	if (defined $ACCESS->{'command'}->{$cmd}) {
 		if (defined $ACCESS->{'command'}->{$cmd}->{'private'}) {
 			if (defined $ACCESS->{'command'}->{$cmd}->{'private'}->{'person'}->{$event{'nick'}}) {
@@ -121,12 +136,28 @@ elsif ($event{'type'} eq 'privmsg') {
 				return $ACCESS->{'command'}->{$cmd}->{'private'}->{'action'};
 			}
 		}
+		elsif (defined $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}) {
+			return $ACCESS->{'command'}->{$cmd}->{'person'}->{$event{'nick'}}->{'action'};
+		}
 		else {
 			return $ACCESS->{'command'}->{$cmd}->{'action'};
 		}
 	}
 	else {
-		return $ACCESS->{'default'}->{'action'};
+		if (defined $ACCESS->{'default'}->{'private'}->{$event{'to'}}) {
+			if (defined $ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'person'}->{$event{'nick'}}) {
+				return $ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'person'}->{$event{'nick'}}->{'action'};
+			}
+			else {
+				return $ACCESS->{'default'}->{'private'}->{$event{'to'}}->{'action'};
+			}
+		}
+		elsif (defined $ACCESS->{'default'}->{'person'}->{$event{'nick'}}) {
+			return $ACCESS->{'default'}->{'person'}->{$event{'nick'}}->{'action'};
+		}
+		else {
+			return $ACCESS->{'default'}->{'action'};
+		}
 	}
 }	
 
