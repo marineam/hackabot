@@ -72,7 +72,7 @@ if nick:
 	nickq = " AND nick = '"+nick+"' "
 else:
 	nickq = " "
-cursor.execute("SELECT id, nick, chan, text, type FROM log WHERE chan = '"+chan+"' AND ( type = 'msg' OR type = 'action' ) "+nickq+" ORDER BY id DESC LIMIT "+max)
+cursor.execute("SELECT id, nick, chan, text, type FROM log WHERE chan = '"+chan+"' AND ( type = 'msg' OR type = 'action' ) "+nickq+" AND text NOT LIKE '!%' ORDER BY id DESC LIMIT "+max)
 rows = cursor.fetchall()
 cursor.close()
 db.close()
@@ -85,9 +85,6 @@ for row in rows:
 	c = re.match(r'\S+:\s*(.*)', line)
 	if c:
 		line = c.group(1)
-	c = re.match(r'!', line)
-	if c:
-		continue
 	
 	text += " "+string.lower(line)
 text += "@"*wordlength
