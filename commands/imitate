@@ -20,16 +20,26 @@ if (config == None):
 
 fullcfg = binderytools.bind_file(config).hackabot
 database = fullcfg.cmdconfig.database
-#imitatecfg = fullcfg.cmdconfig.imitate
 
-#maxwords = int(str(imitatecfg.maxwords))
-#wordlength = int(str(imitatecfg.wordlenth))
+# Defaults:
 maxwords = 40
-wordlength = 4
+wordlength = 5
 maxlines = 50
+limitlines = 200
 
-evtype = "none"
-chan = "none"
+if hasattr(fullcfg.cmdconfig, 'imitate'):
+	imitatecfg = fullcfg.cmdconfig.imitate
+	if hasattr(imitatecfg, 'maxwords'):
+		maxwords = int(str(imitatecfg.maxwords))
+	if hasattr(imitatecfg, 'wordlength'):
+		wordlength = int(str(imitatecfg.wordlength))
+	if hasattr(imitatecfg, 'maxlines'):
+		maxlines = int(str(imitatecfg.maxlines))
+	if hasattr(imitatecfg, 'limitlines'):
+		limitlines = int(str(imitatecfg.maxlines))
+
+evtype = None
+chan = None
 nick = None
 for line in sys.stdin.readlines():
 	if re.match(r'type\s+(\S+)', line):
@@ -48,14 +58,16 @@ for line in sys.stdin.readlines():
 		if c:
 			maxlines = int(c.group(1))
 
-
-if chan == "none" or evtype == "none":
+if chan == None or evtype == None:
 	sys.stderr.write("imitate: chan or event type undefined")
 	sys.exit(1)
 
 if evtype != "pubmsg":
 	print "send This is not a channel!"
 	sys.exit()
+
+if maxlines > limitlines:
+	maxlines = limitlines
 
 try:
 	db = MySQLdb.connect(host=str(database.host), db=str(database.name), \

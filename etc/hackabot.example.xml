@@ -29,6 +29,12 @@
 		<google>
 			<apikey>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</apikey>
 		</google>
+		<!--<imitate>
+			<maxwords>40</maxwords>
+			<wordlength>5</wordlength>
+			<maxlines>50</maxlines>
+			<limitlines>200</limitlines>
+		</imitate>-->
 		<database>
 			<host>dbhost.some.org</host>
 			<name>dbname</name>
