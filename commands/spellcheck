@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+##HACKABOT_HELP##
+
+use strict;
+use Net::Google;
+use URI::Escape;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $CMDCFG = $CONFIG->{'cmdconfig'}->{'google'};
+
+my ($nick, $word1, $word2, $msg);
+while (<>) {
+	if (/^nick\s+(\S+)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s+(\S.*\S)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $nick and defined $msg) {
+	chomp($msg);
+	
+	my $google = Net::Google->new(key=>$CMDCFG->{'apikey'},debug=>0);
+	my $result = $google->spelling(phrase=>$msg)->suggest();
+
+	if (not defined $result) {
+		$result = "No result (probably spelled correctly or beyond hope)";
+	}
+
+	print "send $nick: $result";
+}
+else {
+	die "spellcheck: nick or message not defined :-/\n";
+}
+
