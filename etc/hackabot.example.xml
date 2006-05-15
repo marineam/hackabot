@@ -26,6 +26,10 @@
 			<!-- topic mask prepends msg before every topic -->
 			<topicmask chan="#somechan" msg="CoolPeople :: " />
 		</topic>
+		<seen>
+			<!-- don't print messages in here elsewhere -->
+			<privatechan chan="#private" />
+		</seen>
 		<google>
 			<apikey>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</apikey>
 		</google>

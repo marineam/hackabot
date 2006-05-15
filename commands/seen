@@ -10,7 +10,10 @@ use DBI;
 use Time::localtime;
 use XML::Simple;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}, 
+	ForceArray => ['privatechan'],
+	KeyAttr => { privatechan => "+chan" });
+my $CMDCFG = $CONFIG->{'cmdconfig'}->{'seen'};
 my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
 
 my $dbhost = $DBCFG->{'host'};
@@ -21,6 +24,8 @@ my $dbpass = $DBCFG->{'pass'};
 sub seen {
 	my $nick = shift;
 	my $asker = shift;
+	my $chan = shift;
+	my $where = shift;
 	my ($dbh, $sth);
 	my $row;
 	my $ret;
@@ -29,78 +34,39 @@ sub seen {
 	if (!$dbh) {
 		die "see: Failed to connect to database\n";
 	}
+
+	my $restrict = "";
+	if (defined $where) {
+		$restrict .= " AND chan = ".$dbh->quote($where);
+	}
+	foreach my $priv (keys %{$CMDCFG->{"privatechan"}}) {
+		if ($priv eq $chan) {
+			next;
+		}
+		$restrict .= " AND chan != ".$dbh->quote($priv);
+	}
+	print STDERR $chan.":".$restrict."\n";
 	
 	$nick = $dbh->quote($nick);
 
-	$sth = $dbh->prepare("SELECT q.date, q.text, q.chan FROM seen_quotes AS q, seen AS s WHERE s.nick = $nick AND s.quote_id = q.id");
+	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( type = 'msg' OR type = 'join' OR type = 'part' OR type = 'quit' ) $restrict ORDER BY id DESC LIMIT 1");
 	$sth->execute();
 	if ($row = $sth->fetchrow_hashref) {
-		$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
+		if ($row->{'type'} eq "msg") {
+			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
+		}
+		elsif ($row->{'type'} eq "join") {
+			$ret = "$asker: $nick was last seen joining $row->{'chan'} at $row->{'date'}.\n";
+		}
+		elsif ($row->{'type'} eq "part") {
+			$ret = "$asker: $nick was last seen leaving $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
+		}
+		elsif ($row->{'type'} eq "quit") {
+			$ret = "$asker: $nick was last seen quitting with \"$row->{'text'}\" at $row->{'date'}.\n";
+		}
 	}
 	else {
 		$ret = "$asker: Sorry, I haven't seen $nick.\n";
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	return $ret;
-}
-
-sub seen_here {
-	my $nick = shift;
-	my $asker = shift;
-	my $chan = shift;
-	my ($dbh, $sth);
-	my $row;
-	my $ret;
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "see: Failed to connect to database\n";
-	}
-	
-	$nick = $dbh->quote($nick);
-	$chan = $dbh->quote($chan);
-
-	$sth = $dbh->prepare("SELECT date, text FROM seen_quotes WHERE nick = $nick AND chan = $chan");
-	$sth->execute();
-	if ($row = $sth->fetchrow_hashref) {
-		$ret = "$asker: $nick was last seen in here saying \"$row->{'text'}\" at $row->{'date'}.\n";
-	}
-	else {
-		$ret = "$asker: Sorry, I haven't seen $nick here.\n";
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	return $ret;
-}
-
-sub seen_where {
-	my $nick = shift;
-	my $asker = shift;
-	my $chan = shift;
-	my ($dbh, $sth);
-	my $row;
-	my $ret;
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "see: Failed to connect to database\n";
-	}
-	
-	$nick = $dbh->quote($nick);
-	$chan = $dbh->quote($chan);
-
-	$sth = $dbh->prepare("SELECT date, text FROM seen_quotes WHERE nick = $nick AND chan = $chan");
-	$sth->execute();
-	if ($row = $sth->fetchrow_hashref) {
-		$ret = "$asker: $nick was last seen in $chan saying \"$row->{'text'}\" at $row->{'date'}.\n";
-	}
-	else {
-		$ret = "$asker: Sorry, I haven't seen $nick in $chan.\n";
 	}
 	$sth->finish();
 
@@ -133,13 +99,13 @@ while (<>) {
 
 if (defined $nick and defined $asker, and defined $chan) {
 	if ($where eq "here") {
-		print "send " . seen_here($nick, $asker, $chan);
+		print "send " . seen($nick, $asker, $chan, $chan);
 	}
 	elsif ($where eq "all") {
-		print "send " . seen($nick, $asker);
+		print "send " . seen($nick, $asker, $chan);
 	}
 	else {
-		print "send " . seen_where($nick, $asker, $where);
+		print "send " . seen($nick, $asker, $chan, $where);
 	}
 }
 else {
