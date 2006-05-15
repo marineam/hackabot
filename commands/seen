@@ -49,11 +49,14 @@ sub seen {
 	
 	$nick = $dbh->quote($nick);
 
-	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( type = 'msg' OR type = 'join' OR type = 'part' OR type = 'quit' ) $restrict ORDER BY id DESC LIMIT 1");
+	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( type = 'msg' OR type = 'action' OR type = 'notice' OR type = 'join' OR type = 'part' OR type = 'quit' ) $restrict ORDER BY id DESC LIMIT 1");
 	$sth->execute();
 	if ($row = $sth->fetchrow_hashref) {
-		if ($row->{'type'} eq "msg") {
+		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
 			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
+		}
+		if ($row->{'type'} eq "action") {
+			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"/me $row->{'text'}\" at $row->{'date'}.\n";
 		}
 		elsif ($row->{'type'} eq "join") {
 			$ret = "$asker: $nick was last seen joining $row->{'chan'} at $row->{'date'}.\n";
