@@ -1,0 +1,207 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Fire people!
+# !fire [someone | --value | --low | --high | --nicks]
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+sub add_score {
+	my $name = shift;
+	my $nick = shift;
+	my $chan = shift;
+	my ($dbh, $sth);
+	
+	my $val = 1;
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "fire: Failed to connect to database\n";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+
+	$nick = $dbh->quote($nick);
+	$chan = $dbh->quote($chan);
+	$time = $dbh->quote($time);
+	$name = $dbh->quote($name);
+
+	$dbh->do("INSERT fire SET date = $time, name = $name, value = (value + $val), chan = $chan, nick = $nick") or
+	$dbh->do("UPDATE fire SET date = $time, value = (value + $val), chan = $chan, nick = $nick WHERE name = $name") or
+	die "see: DB stuff failed.\n";
+	
+	$sth = $dbh->prepare("SELECT value FROM fire WHERE name = $name");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'value'};
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub get_score {
+	my $name = shift;
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "fire: Failed to connect to database\n";
+	}
+	
+	$name = $dbh->quote($name);
+	
+	$sth = $dbh->prepare("SELECT value FROM fire WHERE name = $name");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'value'};
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub get_list {
+	my $order = shift;
+	my $chan = shift;
+	my ($dbh, $sth);
+	
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "fire: Failed to connect to database\n";
+	}
+
+	if ($order eq "low") {
+		$order = "ASC";
+	}
+	elsif ($order eq "high") {
+		$order = "DESC";
+	}
+	else {
+		die "Unknown order $order\n";
+	}
+
+	my $where = "";
+	if (defined $chan) {
+		my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
+		chomp $names;
+		$names =~ s/^\S+\s+\S+\s+//;
+		$where = "WHERE 0";
+		foreach $_ (split(/\s+/, $names)) {
+			$_ = $dbh->quote($_);
+			$where .= " OR name = $_";
+		}
+	}	
+
+	$sth = $dbh->prepare("SELECT name, value FROM fire $where ORDER BY value $order LIMIT 3");
+	$sth->execute;
+	my @list;
+	my $row;
+	for (my $i = 0; $i < 3 and ($row = $sth->fetchrow_hashref); $i++) {
+		$list[$i] = $row;
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return @list;
+}
+
+
+my ($name, $nick, $chan, $type);
+while (<>) {
+	if (/^msg\s+(\S+.*)/) {
+		$name = $1;
+	}
+	elsif (/^to\s+(#\S+)/) {
+		$chan = $1;
+	}
+	elsif (/^nick\s+(\S+)/) {
+		$nick = $1;
+	}
+	elsif (/^type\s+(\S+)/) {
+		$type = $1;
+	}
+}
+
+if (defined $name and not $name =~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
+	if ($type ne "pubmsg") {
+		print "send $nick: This isn't a channel! If you are going to fire people, do it in public damnit.\n";
+		exit;
+	}
+	
+	$name =~ /^(\S+)/;
+	my $val = add_score($1, $nick, $chan);
+	if ($val eq "1") {
+		print "send $name is fired!\n";
+	}
+	elsif ($val =~ /^1.$/) {
+		print "send $name is fired for the ${val}th time!\n";
+	}
+	elsif ($val =~ /1$/) {
+		print "send $name is fired for the ${val}st time!\n";
+	}
+	elsif ($val =~ /2$/) {
+		print "send $name is fired for the ${val}nd time!\n";
+	}
+	elsif ($val =~ /3$/) {
+		print "send $name is fired for the ${val}rd time!\n";
+	}
+	else {
+		print "send $name is fired for the ${val}th time!\n";
+	}
+}
+elsif (defined $name and $name =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+	my $order;
+	my $nicks;
+	
+	$order = ($name =~ /(-l|--low)/)? "low" : "high";
+	$nicks = ($name =~ /(-n|--nicks)/)? $chan : undef;
+	
+	my @list = get_list($order, $nicks);
+	print "sendnext\n";
+	
+	if ($order eq "high") {
+		print "Sooo toasted:\n";
+	}
+	else {
+		print "A little toasted:\n";
+	}
+	
+	foreach $_ (@list) {
+		print "  $_->{'value'} $_->{'name'}\n";
+	}
+}
+elsif (defined $name and $name =~ /(-v|--value)/) {
+	$name =~ s/(-v|--value)\s+(\S+)/$2/;
+	my $val = get_score($name);
+	if ($val == "") { $val = 0; }
+	if ($val == "1") {
+		print "send $name has been fired $val time!\n";
+	}
+	else {
+		print "send $name has been fired $val times!\n";
+	}
+}
+else {
+	my @list = get_list("high");
+	print "sendnext\n";
+	print "Sooo toasted:\n";
+	foreach $_ (@list) {
+		print "  $_->{'value'} $_->{'name'}\n";
+	}
+}
