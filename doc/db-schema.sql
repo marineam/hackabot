@@ -20,6 +20,19 @@ CREATE TABLE `blame` (
 ) TYPE=MyISAM;
 
 --
+-- Table structure for table `fire`
+--
+
+CREATE TABLE `fire` (
+  `name` varchar(50) NOT NULL default '',
+  `value` int(10) NOT NULL default '0',
+  `nick` varchar(20) default NULL,
+  `chan` varchar(20) default NULL,
+  `date` varchar(20) default NULL,
+  PRIMARY KEY  (`name`)
+) TYPE=MyISAM;
+
+--
 -- Table structure for table `log`
 --
 
@@ -71,35 +84,6 @@ CREATE TABLE `score` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) TYPE=MyISAM;
-
---
--- Table structure for table `seen`
---
-
-CREATE TABLE `seen` (
-  `nick` varchar(20) NOT NULL default '',
-  `quote_date` varchar(20) default NULL,
-  `quote_chan` varchar(20) default NULL,
-  `quote_txt` varchar(255) default NULL,
-  `quote_id` int(10) default NULL,
-  `quit_date` varchar(20) default NULL,
-  `quit_txt` varchar(255) default NULL,
-  PRIMARY KEY  (`nick`)
-) TYPE=MyISAM;
-
---
--- Table structure for table `seen_quotes`
---
-
-CREATE TABLE `seen_quotes` (
-  `id` int(10) NOT NULL auto_increment,
-  `nick` varchar(20) NOT NULL default '',
-  `chan` varchar(20) NOT NULL default '',
-  `text` varchar(255) NOT NULL default '',
-  `date` varchar(20) NOT NULL default '',
-  PRIMARY KEY  (`id`),
-  UNIQUE KEY `INDEX` (`nick`,`chan`)
 ) TYPE=MyISAM;
 
 --
