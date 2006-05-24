@@ -53,20 +53,6 @@ if (defined $msg and $msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
 	print "send $nick: $ret\n";
 	exit;
 }
-if (defined $msg and $msg =~ /^--list/) {
-	my $ret;
-	if ($privmsg) {
-		$ret = list_wtf();
-	}
-	else {
-		$ret = "Please don't flood public channels with --list\n";
-	}
-	print "sendnext\n";
-	print "$nick: All the topics I know:\n";
-	print $ret;
-	print "$nick: And that is the end of the list.";
-	exit;
-}
 
 my $wtf;
 if (defined $msg) {
