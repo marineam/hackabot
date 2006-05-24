@@ -1,0 +1,139 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Ping a group of people at once!
+# !group name [msg] | --add name nick1 [nick2... ]
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use Time::localtime;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}); 
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+my $privmsg = 0;
+my ($chan, $msg, $nick);
+while (<>) {
+	if (/^type\s+privmsg/) {
+		$privmsg = 1;
+	}
+	elsif (/^to\s+(.+)/) {
+		$chan = $1;
+	}
+	elsif (/^nick\s+(.+)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s+(\S.+)/) {
+		$msg = $1;
+	}
+}
+
+if (not defined $nick or not defined $chan) {
+	die "group: not all info was given.\n";
+}
+
+if (not defined $msg) {
+	exit;
+}
+elsif ($msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
+	my $group = $1;
+	my $text = $2;
+	chomp $text;
+	$text =~ s/\s+/,/g; #incase it was space sperated
+	$text =~ s/,,/,/g;  #incase it was space and , seperated
+
+	my $ret;
+	if ($privmsg) {
+		$ret = add_group($group, $text, $nick);
+	}
+	else {
+		$ret = add_group($group, $text, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit;
+}
+else {
+	$msg =~ /(\S+)\s*(\S*.*)/;
+	my $group = $1;
+	my $text = $2;
+	my $names = get_group($group);
+
+	if (not defined $names) {
+		print "send Sorry, I don't have a record for that group\n";
+	}
+	elsif (defined $text) {
+		print "send $names: $text\n";
+	}
+	else {
+		print "send $names\n";
+	}
+}
+
+
+sub get_group {
+	my $group = shift;
+	my ($dbh, $sth);
+
+	if (not defined $group) {
+		die "group: group undefined\n";
+	}
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "group: Failed to connect to database\n";
+	}
+	
+	$group = $dbh->quote($group);
+	
+	$sth = $dbh->prepare("SELECT name,names FROM `group` WHERE name = $group");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value;
+	if (defined $row->{'names'}) {
+		$value = $row->{'names'};
+	}
+	$sth->finish();
+
+	return $value;
+}
+
+sub add_group {
+	my $group = shift;
+	my $text = shift;
+	my $nick = shift;
+	my $chan = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		print STDERR "group: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't add it. :-(";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+	
+	$group = $dbh->quote($group);
+	$text = $dbh->quote($text);
+	$nick = $dbh->quote($nick);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = 'NULL';
+	}
+	
+	my $ret = "Successfully added.";
+	$dbh->do("INSERT `group` SET name = $group, names = $text, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
+}
