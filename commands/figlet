@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo sendnext
-grep '^msg' | sed -e 's/^msg *//g' | figlet
+grep '^msg' | sed -e 's/^msg *//g' | figlet -w 60
