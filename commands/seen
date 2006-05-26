@@ -45,7 +45,6 @@ sub seen {
 		}
 		$restrict .= " AND chan != ".$dbh->quote($priv);
 	}
-	print STDERR $chan.":".$restrict."\n";
 	
 	$nick = $dbh->quote($nick);
 
