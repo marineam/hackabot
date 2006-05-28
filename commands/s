@@ -34,7 +34,12 @@ sub replace {
 	}
 	
 	my $qnick = $dbh->quote($nick);
-	$chan = $dbh->quote($chan);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = "NULL";
+	}
 
 	for (my $i = 0; $i < 50; $i++) {
 		if (defined $option and $option =~ /g/) {
@@ -97,12 +102,15 @@ sub replace {
 	return $ret;
 }
 
-my ($nick, $chan, $find, $replace, $arg, $option);
+my ($nick, $chan, $find, $replace, $arg, $option, $type);
 while (<>) {
-	if (/^nick\s*(\S*)/) {
+	if (/^type\s*(\S*)/) {
+		$type = $1;
+	}
+	elsif (/^nick\s*(\S*)/) {
 		$nick = $1;
 	}
-	if (/^to\s*(\S*)/) {
+	elsif (/^to\s*(\S*)/) {
 		$chan = $1;
 	}
 	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/([ig]*)/) {
@@ -112,9 +120,13 @@ while (<>) {
 	}
 }
 
-if (defined $nick and defined $chan and defined $find and defined $replace) {
+if (defined $type and $type ne "pubmsg") {
+	$chan = undef;
+}
+
+if (defined $nick and defined $find and defined $replace) {
 	print "send " . replace($nick, $chan, $find, $replace, $option);
 }
-else {
-	die "s: malformed request\n";
-}
+#else {
+#	die "s: malformed request\n";
+#}
