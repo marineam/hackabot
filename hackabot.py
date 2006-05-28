@@ -73,7 +73,11 @@ class Hackabot(SingleServerIRCBot):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
 
-	def on_notice(self, c, event):
+	def on_pubnotice(self, c, event):
+		to = event.target()
+		thread.start_new_thread(self.do_hook,(event,to))
+
+	def on_privnotice(self, c, event):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
 
@@ -117,7 +121,10 @@ class Hackabot(SingleServerIRCBot):
 			+ "!" + self.connection.username \
 			+ "@" + self.connection.localhost
 
-		self.do_hook(Event("notice", nickmask, to, [txt]),to)
+		if re.match(r'#',to):
+			self.do_hook(Event("pubnotice", nickmask, to, [txt]),to)
+		else:
+			self.do_hook(Event("privnotice", nickmask, to, [txt]),to)
 
 	def do_msg(self, event, to):
 		nick = nm_to_n(event.source())

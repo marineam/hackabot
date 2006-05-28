@@ -46,6 +46,9 @@ if (defined $nick and defined $type) {
 	if ($type =~ m/msg/ or $type =~ m/snd/) {
 		$type = "msg";
 	}
+	elsif ($type =~ m/notice/) {
+		$type = "notice";
+	}
 
 	if (not ($type eq "msg" or $type eq "action" or $type eq "notice" or
 		$type eq "join" or $type eq "part" or $type eq "quit")) {
