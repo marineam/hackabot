@@ -48,7 +48,8 @@ sub seen {
 	
 	$nick = $dbh->quote($nick);
 
-	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( type = 'msg' OR type = 'action' OR type = 'notice' OR type = 'join' OR type = 'part' OR type = 'quit' ) $restrict ORDER BY id DESC LIMIT 1");
+	# Ignore priv for msg, action, notice so chan IS NULL only for quit
+	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( ( ( type = 'msg' OR type = 'action' OR type = 'notice' OR type = 'join' OR type = 'part' ) AND chan IS NOT NULL  $restrict ) OR ( type = 'quit' AND chan IS NULL ) ) ORDER BY id DESC LIMIT 1");
 	$sth->execute();
 	if ($row = $sth->fetchrow_hashref) {
 		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
@@ -77,8 +78,7 @@ sub seen {
 	return $ret;
 }
 
-my $where = "all";
-my ($nick, $asker, $chan);
+my ($nick, $asker, $chan, $where);
 while (<>) {
 	if (/^nick\s*(\S*)/) {
 		$asker = $1;
@@ -102,9 +102,6 @@ while (<>) {
 if (defined $nick and defined $asker, and defined $chan) {
 	if ($where eq "here") {
 		print "send " . seen($nick, $asker, $chan, $chan);
-	}
-	elsif ($where eq "all") {
-		print "send " . seen($nick, $asker, $chan);
 	}
 	else {
 		print "send " . seen($nick, $asker, $chan, $where);
