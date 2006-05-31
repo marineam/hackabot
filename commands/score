@@ -121,7 +121,7 @@ elsif (defined $name and $name =~ /(-h|--high|-l|--low|-n|--nicks)/) {
 		print "Top 3:\n";
 	}
 	else {
-		print "Loosers:\n";
+		print "Losers:\n";
 	}
 	
 	for (my $i = 0; $i < 3; $i++) {
