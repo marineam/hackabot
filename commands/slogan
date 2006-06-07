@@ -8,6 +8,7 @@
 use strict;
 use LWP::Simple;
 use URI::Escape;
+use HTML::Entities;
 
 my ($nick, $msg);
 while (<>) {
@@ -24,6 +25,8 @@ if (defined $nick and defined $msg) {
 	my $page = get("http://www.sloganizer.net/en/?slogan=$msg");
 	$page =~ /<p class="slogan">.<b>(.*)<\/b>.<\/p>/;
 	my $slogan = $1;
+
+	$slogan = decode_entities($slogan);
 
 	print "send $nick: $slogan";
 }
