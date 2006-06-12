@@ -159,7 +159,7 @@ elsif (defined $chan and $msg =~ /^([a-z])$/i) {
 	}
 	else {
 		if (length($wrong) > 0) {
-			$wrong .= ", ";
+			$wrong .= ",";
 		}
 		$wrong .= lc($char);
 	}
@@ -240,17 +240,17 @@ sub getshow {
 
 	my $result = "";
 	$result .= ($num >= 1)? " O " : "   ";
-	$result .= "$guess\n";
+	$result .= " $guess\n";
 	if (length($wrong) > 0 or $num > 1 or defined $final) {
 		$result .= ($num >= 3)? "/" : " ";
 		$result .= ($num >= 2)? "|" : " ";
 		$result .= ($num >= 4)? "\\" : " ";
-		$result .= "$wrong\n";
+		$result .= " $wrong\n";
 	}
 	if (defined $final or $num >= 5) {
 		$result .= ($num >= 5)? "/" : " ";
 		$result .= ($num >= 6)? " \\" : "  ";
-		$result .= (defined $final)? $final : "";
+		$result .= (defined $final)? " $final" : "";
 		$result .= "\n";
 	}
 
