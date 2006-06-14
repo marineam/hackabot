@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Simple little reminder
+# !remindme minutes <message you want to be reminded>
+##HACKABOT_HELP##
+
+use strict;
+
+my ($nick, $msg, $time);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s*([0-9]+)\s+(.*)/) {
+		$time = $1;
+		$msg = 	$2;
+	}
+}
+
+if (defined $nick and defined $msg and defined $time) {
+	$time = $time*60;
+
+	sleep $time;
+
+	print "send $nick: Times up!! *$msg*";
+}
+else {
+	die "remindme: nick, minutes, or message not defined!!\n";
+}
