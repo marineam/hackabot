@@ -250,7 +250,7 @@ sub getshow {
 	my $result = "";
 	$result .= ($num >= 1)? " O " : "   ";
 	$result .= " $guess\n";
-	if (length($wrong) > 0 or $num > 1 or defined $final) {
+	if (length($wrong) > 0 or $num > 1) {
 		$result .= ($num >= 3)? "/" : " ";
 		$result .= ($num >= 2)? "|" : " ";
 		$result .= ($num >= 4)? "\\" : " ";
