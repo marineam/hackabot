@@ -169,7 +169,7 @@ elsif (defined $chan and $msg =~ /^([a-z])$/i) {
 		$final = "'win'";
 	}
 	elsif (getwrong($wrong) >= 6) {
-		$final = "'loose'";
+		$final = "'lose'";
 		$guess = $phrase;
 	}
 	else {
@@ -196,12 +196,22 @@ elsif (defined $chan) {
 
 	my $qchan = $dbh->quote($chan);
 
-	$sth = $dbh->prepare("SELECT guess, wrong, final FROM hangman "
+	$sth = $dbh->prepare("SELECT phrase, guess, wrong, final FROM hangman "
 		."WHERE chan = $qchan AND state = 0");
 	$sth->execute;
 	my ($row, $phrase, $update);
 	
 	$row = $sth->fetchrow_hashref;
+	$sth->finish;
+	if (defined $row->{'phrase'} and $row->{'phrase'} =~ /^$msg$/i) {
+		$row->{'guess'} = $row->{'phrase'};
+		$row->{'final'} = "'win'";
+		
+		my $qguess = $dbh->quote($row->{'guess'});
+		$dbh->do("UPDATE hangman SET guess = $qguess, "
+			."final = 'win' WHERE chan = $qchan AND state = 0")
+			or die("hangman: db update failed\n");
+	}	
 	if (defined $row->{'guess'} and defined $row->{'wrong'}) {
 		print "sendnext\n";
 		print getshow($row->{'guess'}, $row->{'wrong'}, $row->{'final'});
@@ -209,7 +219,6 @@ elsif (defined $chan) {
 	else {
 		print "send No hangman game.";
 	}
-	$sth->finish;
 	
 	$dbh->disconnect;
 }
@@ -234,8 +243,8 @@ sub getshow {
 	my $num = getwrong($wrong);
 
 	if (defined $final) {
-		$final =~ s/win/Game Over: You WIN!/;
-		$final =~ s/loose/Game Over: You LOOSE!/;
+		$final =~ s/.*win.*/Game Over: You WIN!/;
+		$final =~ s/.*lose.*/Game Over: You LOSE!/;
 	}
 
 	my $result = "";
