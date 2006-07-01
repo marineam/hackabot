@@ -2,7 +2,8 @@
 
 ##HACKABOT_HELP##
 # Ping a group of people at once!
-# !group name [msg] | --add name nick1 [nick2... ]
+# !group name [msg] | --add name nick1 [...] | --del name
+# !group name --[add|del] nick [...]
 ##HACKABOT_HELP##
 
 use strict;
@@ -56,6 +57,68 @@ elsif ($msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
 	else {
 		$ret = add_group($group, $text, $nick, $chan);
 	}
+	print "send $nick: $ret\n";
+	exit;
+}
+elsif ($msg =~ /^(\S+)\s+--add\s+(\S.*)/) {
+	my $group = $1;
+	my $text = $2;
+	chomp $text;
+	$text =~ s/\s+/,/g; #incase it was space sperated
+	$text =~ s/,,/,/g;  #incase it was space and , seperated
+
+	my $names = get_group($group);
+	if (not defined $names) {
+		print "send Sorry, I don't have a record for that group\n";
+		exit;
+	}
+
+	$text = "$names,$text";
+
+	my $ret;
+	if ($privmsg) {
+		$ret = edit_group($group, $text, $nick);
+	}
+	else {
+		$ret = edit_group($group, $text, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit;
+}
+elsif ($msg =~ /^(\S+)\s+--del\s+(\S.*)/) {
+	my $group = $1;
+	my $text = $2;
+	chomp $text;
+	$text =~ s/\s+/,/g; #incase it was space sperated
+	$text =~ s/,,/,/g;  #incase it was space and , seperated
+
+	my $names = get_group($group);
+	if (not defined $names) {
+		print "send Sorry, I don't have a record for that group\n";
+		exit;
+	}
+
+	foreach my $name (split(/,/,$text)) {
+		$names =~ s/,$name$// or 
+		$names =~ s/,$name,/,/ or
+		$names =~ s/^$name,// or
+		$names =~ s/^$name$//;
+	}
+
+	my $ret;
+	if ($privmsg) {
+		$ret = edit_group($group, $names, $nick);
+	}
+	else {
+		$ret = edit_group($group, $names, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit;
+}
+elsif ($msg =~ /^--del\s+(\S+)/) {
+	my $group = $1;
+
+	my $ret = delete_group($group);
 	print "send $nick: $ret\n";
 	exit;
 }
@@ -132,6 +195,59 @@ sub add_group {
 	
 	my $ret = "Successfully added.";
 	$dbh->do("INSERT `group` SET name = $group, names = $text, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+sub edit_group {
+	my $group = shift;
+	my $text = shift;
+	my $nick = shift;
+	my $chan = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		print STDERR "group: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't update it. :-(";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+	
+	$group = $dbh->quote($group);
+	$text = $dbh->quote($text);
+	$nick = $dbh->quote($nick);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = 'NULL';
+	}
+	
+	my $ret = "Successfully updated.";
+	$dbh->do("UPDATE `group` SET names = $text, nick = $nick, chan = $chan, date = $time WHERE name = $group") or $ret = "I'm a failure! I couldn't update it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
+}
+
+sub delete_group {
+	my $group = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		print STDERR "group: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't delete it. :-(";
+	}
+	
+	$group = $dbh->quote($group);
+	
+	my $ret = "If the group was there it is gone now.";
+	$dbh->do("DELETE FROM `group` WHERE name = $group") or $ret = "I'm a failure! I couldn't delete it. :-(";
 
 	$dbh->disconnect;
 
