@@ -1,0 +1,9 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Do some math with the good old bc
+# !bc expression
+##HACKABOT_HELP##
+
+echo "sendnext"
+grep '^msg' | sed -e 's/^msg\s*//g' | bc
