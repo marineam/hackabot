@@ -1,7 +1,5 @@
 #!/bin/bash
 
-trap - ALRM
-
 HOST="`grep ^msg | sed -e 's/^msg\s*//' | sed -e 's/\s.*//'`"
 
 echo sendnext
