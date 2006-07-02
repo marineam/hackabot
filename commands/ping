@@ -1,0 +1,24 @@
+#!/bin/bash
+
+trap - ALRM
+
+HOST="`grep ^msg | sed -e 's/^msg\s*//' | sed -e 's/\s.*//'`"
+
+echo sendnext
+RESULT=$(ping -c 1 -W 2 "$HOST")
+
+case "$?" in
+	0)
+		echo "$RESULT" | grep '^64' | sed -e 's/^64 bytes from //' | sed -e 's/icmp_seq=.*time=//'
+		;;
+	1)
+		echo "no responce from host"
+		;;
+	2)
+		echo "unknown host"
+		;;
+	*)
+		echo "unknown ping return value: $?"
+		;;
+esac
+
