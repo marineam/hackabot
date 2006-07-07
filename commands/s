@@ -56,25 +56,31 @@ sub replace {
 			if ($row->{'text'} =~ m/$find/) {
 				my $text = $row->{'text'};
 				$replace =~ s/(?<!\\)[\\\$]([1-9])/__REPLACEMENT_$1__/g;
-				
-				my @match;
-				if (defined $option and $option =~ /i/) {
-					$text =~ s/$find/$replace/gi;
+
+				my $lastpos = 0;
+				while ($text =~ m/$find/gc) {
+					my $pos = pos($text);
+					my $str = substr($text,$lastpos,$pos-$lastpos);
+
+					if (defined $option and $option =~ /i/) {
+						$str =~ s/$find/$replace/gi;
+					}
+					else {
+						$str =~ s/$find/$replace/g;
+					}
+
+					my @match;
 					for (my $j = 1; $j <= 9; $j++) {
 						no strict 'refs';
 						$match[$j] = ${"$j"};
 					}
-				}
-				else {
-					$text =~ s/$find/$replace/g;
-					for (my $j = 1; $j <= 9; $j++) {
-						no strict 'refs';
-						$match[$j] = ${"$j"};
+ 					for (my $j = 1; $j <= 9; $j++) {
+						$str =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
 					}
-				}
-				
-				for (my $j = 1; $j <= 9; $j++) {
-					$text =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
+
+					$text = substr($text,0,$lastpos).$str.substr($text,$pos);
+					$lastpos = $lastpos+length($str);
+					pos($text) = $lastpos;
 				}
 				
 				if ($row->{'type'} eq "msg") {
