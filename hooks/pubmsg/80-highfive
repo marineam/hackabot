@@ -1,0 +1,18 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use IO::Handle;
+STDOUT->autoflush(1);
+
+my ($msg);
+while (<>) {
+	if (/^msg\s+(o\/|\\o)\s*$/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg) {
+	print "send \\o\n" if ($msg eq "o/");
+	print "send o/\n" if ($msg eq "\\o");
+}
