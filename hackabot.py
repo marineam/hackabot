@@ -139,6 +139,7 @@ class Hackabot(SingleServerIRCBot):
 			"/"+event.eventtype()
 
 		hooks = os.listdir(dir)
+		hooks.sort()
 		for hook in hooks:
 			if re.match(r'\.', hook):
 				continue
