@@ -43,16 +43,12 @@ sub replace {
 
 	for (my $i = 0; $i < 50; $i++) {
 		if (defined $option and $option =~ /g/) {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT 1 OFFSET $i");
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
 		} else {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT 1 OFFSET $i");
+			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
 		}
 		$sth->execute();
 		if ($row = $sth->fetchrow_hashref()) {
-			if ($row->{'text'} =~ m/^!/) {
-				$sth->finish();
-				next;
-			}
 			if ($row->{'text'} =~ m/$find/) {
 				my $text = $row->{'text'};
 				$replace =~ s/(?<!\\)[\\\$]([1-9])/__REPLACEMENT_$1__/g;
@@ -60,6 +56,11 @@ sub replace {
 				my $lastpos = 0;
 				while ($text =~ m/$find/gc) {
 					my $pos = pos($text);
+					if ($pos == $lastpos) {
+						$sth->finish();
+						$dbh->disconnect;
+						return "Crap! I almost went into an infinate loop...\n";
+					}
 					my $str = substr($text,$lastpos,$pos-$lastpos);
 
 					if (defined $option and $option =~ /i/) {

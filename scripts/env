@@ -1,0 +1,62 @@
+#!/usr/bin/perl -w
+
+use strict;
+use DBI;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+my ($msg, $type, $nick, $chan);
+while (<>) {
+	if (/^type\s+(\S+)/) {
+		$type = $1;
+	}
+	elsif (/^nick\s+(\S+)/) {
+		$nick = $1;
+	}
+	elsif (/^to\s+(\S+)/) {
+		$chan = $1;
+	}
+	elsif (/^msg\s+(.*)/) {
+		$msg = $1;
+	}
+}
+
+if (defined $msg and defined $type and defined $chan and defined $nick
+		and $msg =~ /^(![^\s\/]+)(.*![*\^\$].*)$/) {
+	my $cmd = $1;
+	my $arg = $2;
+	
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 }) or die "env: Failed to connect to database\n";
+	
+	$chan = $dbh->quote($chan);
+	$nick = $dbh->quote($nick);
+
+	my $sth;
+	if ($type ne "privmsg") {
+		$sth = $dbh->prepare("SELECT text FROM log WHERE chan = $chan AND ( type = 'msg' OR type = 'action' ) ORDER BY id DESC LIMIT 1");
+	}
+	else {
+		$sth = $dbh->prepare("SELECT text FROM log WHERE chan IS NULL AND nick = $nick type = 'msg' ORDER BY id DESC LIMIT 1");
+	}
+	$sth->execute();
+	my $text = $sth->fetchrow_hashref->{'text'};
+
+	if (defined $text) {
+		$text =~ /^\s*(\S+)/;
+		my $first = $1;
+		$text =~ /(\S+)\s*$/;
+		my $last = $1;
+		$arg =~ s/!\*/$text/g if (defined $first);
+		$arg =~ s/!\^/$first/g if (defined $first);
+		$arg =~ s/!\$/$last/g if (defined $first);
+	}
+	
+	print "msg $cmd$arg\n";
+}

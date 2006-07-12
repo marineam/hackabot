@@ -174,20 +174,21 @@ class Hackabot(SingleServerIRCBot):
 		
 		write,read = os.popen2(cmd)
 		write.write("type "+event.eventtype()+"\n")
-		write.write("nick "+nm_to_n(event.source())+"\n")
-		write.write("user "+nm_to_u(event.source())+"\n")
-		write.write("host "+nm_to_h(event.source())+"\n")
+		if isinstance(event.source(), str):
+			write.write("nick "+nm_to_n(event.source())+"\n")
+			write.write("user "+nm_to_u(event.source())+"\n")
+			write.write("host "+nm_to_h(event.source())+"\n")
 		if isinstance(to, str):
 			write.write("to "+to+"\n")
 		if isinstance(msg, str):
 			write.write("msg "+msg+"\n")
 		write.close()
 
-		ret = self.process(read, to)
+		ret = self.process(read, to, event)
 		read.close()
 		return ret
 	
-	def process(self, sockfile, to = None):
+	def process(self, sockfile, to = None, event = None):
 		ret = "ok"
 		sendnext = False
 		rw = (sockfile.mode != 'r')
@@ -233,10 +234,6 @@ class Hackabot(SingleServerIRCBot):
 				self.msg("Exiting!")
 				self.disconnect(c.group(1))
 				self.connection.execute_delayed(1,sys.exit)
-			elif re.match(r'chservop\s+(\S+)\s*(\S*)',line):
-				c = re.match(r'chservop\s+(\S+)\s*(\S*)',line)
-				self.connection.privmsg("ChanServ", 
-					"op "+c.group(1)+" "+c.group(2))
 			elif rw and re.match(r'names\s+(#\S*)',line):
 				c = re.match(r'names\s+(#\S*)',line)
 				chan = c.group(1)
@@ -247,6 +244,16 @@ class Hackabot(SingleServerIRCBot):
 					names = ""
 				sockfile.write("names "+chan+names+"\n")
 				sockfile.flush()
+			elif event and re.match(r'msg\s*(.*)',line) and ( \
+					event.eventtype() == "pubmsg" or \
+					event.eventtype() == "privmsg" or \
+					event.eventtype() == "pubsnd" or \
+					event.eventtype() == "privsnd" or \
+					event.eventtype() == "pubnotice" or \
+					event.eventtype() == "privnotice" or \
+					event.eventtype() == "action"):
+				c = re.match(r'msg\s*(.*)',line)
+				event._arguments[0] = c.group(1)
 			elif re.match(r'nocmd',line):
 				ret = "nocmd"
 			elif re.match(r'nohook',line):

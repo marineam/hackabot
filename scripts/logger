@@ -24,15 +24,12 @@ while (<>) {
 	elsif (/^to\s*(\S*)/) { # We assume there is only one name listed
 		$chan = $1;
 	}
-	elsif (/^msg\s*!s[\/\s]/) {
-		exit; # I don't care about seeing !s
-	}
 	elsif (/^msg\s*(.*)/) {
 		$msg = $1;
 	}
 }
 
-if (defined $nick and defined $type) {
+if (defined $type) {
 	my ($dbh, $sth);
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -55,10 +52,15 @@ if (defined $nick and defined $type) {
 		die "logger: Unknown type '$type', add it to the enum!\n";
 	}
 
-	$nick = $dbh->quote($nick);
 	$time = $dbh->quote($time);
 	$type = $dbh->quote($type);
 	
+	if (defined $nick) {
+		$nick = $dbh->quote($nick);
+	}
+	else {
+		$nick = "NULL";
+	}
 	if (defined $msg) {
 		$msg = $dbh->quote($msg);
 	}
