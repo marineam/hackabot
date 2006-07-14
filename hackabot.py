@@ -245,6 +245,11 @@ class Hackabot(SingleServerIRCBot):
 					names = ""
 				sockfile.write("names "+chan+names+"\n")
 				sockfile.flush()
+			elif rw and re.match(r'channels',line):
+				list = self.channels.keys()
+				names = " "+string.join(list," ")
+				sockfile.write("channels"+names+"\n")
+				sockfile.flush()
 			elif event and re.match(r'msg\s*(.*)',line) and ( \
 					event.eventtype() == "pubmsg" or \
 					event.eventtype() == "privmsg" or \
