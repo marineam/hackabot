@@ -16,6 +16,9 @@ my $CONFIG = XMLin($ENV{'HACKABOT_CFG'},
 my $CMDCFG = $CONFIG->{'cmdconfig'}->{'topic'};
 my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
 
+my $client = "/".$CONFIG->{'directory'}."/scripts/client";
+my $socket = "/".$CONFIG->{'directory'}."/".$CONFIG->{'socket'};
+
 my $dbhost = $DBCFG->{'host'};
 my $dbname = $DBCFG->{'name'};
 my $dbuser = $DBCFG->{'user'};
@@ -75,13 +78,36 @@ if ($privmsg) {
 	exit;
 }
 
+my $append = 0;
+if ($msg =~ /^--append\s*(.*)/) {
+	$msg = $1;
+	$append = 1;
+}
+
 if (not defined $msg) {
 	$msg = 	get_topic();
 }
 if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
 
+	my $old = "";
+	if ($append) {
+		$old = `echo 'currenttopic $chan' | $client $socket`;
+		chomp $old;
+		$old =~ /^\S+\s+\S+\s+(\S+.*)$/;
+		if (defined $1) {
+			$old = "$1 ";
+		}
+		else {
+			$old = "";
+		}
+	}
+
 	if (defined $CMDCFG->{'topicmask'}->{$chan}->{'msg'}) {
-		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$msg;
+		$old =~ s/^$CMDCFG->{'topicmask'}->{$chan}->{'msg'}\s+//;
+		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$old.$msg;
+	}
+	else {
+		$msg = $old.$msg;
 	}
 
 	print "to $chan\n";

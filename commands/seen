@@ -52,6 +52,7 @@ sub seen {
 	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( ( ( type = 'msg' OR type = 'action' OR type = 'notice' OR type = 'join' OR type = 'part' ) AND chan IS NOT NULL  $restrict ) OR ( type = 'quit' AND chan IS NULL ) ) ORDER BY id DESC LIMIT 1");
 	$sth->execute();
 	if ($row = $sth->fetchrow_hashref) {
+		$row->{'text'} =~ s/^"(.*)"$/$1/;
 		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
 			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
 		}

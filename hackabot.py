@@ -289,7 +289,6 @@ class Hackabot(SingleServerIRCBot):
 							+" "+self.channels[chan].topic_time
 					else:
 						topic = ""
-						self.msg("awwcrap")
 				else:
 					topic = ""
 				sockfile.write("topicinfo "+chan+topic+"\n")
