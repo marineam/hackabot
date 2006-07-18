@@ -89,6 +89,23 @@ class Hackabot(SingleServerIRCBot):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
 
+	def on_currenttopic(self, c, event):
+		to = event.arguments()[0]
+		if (self.channels.has_key(to)):
+			self.channels[to].topic = event.arguments()[1]
+		else:
+			self.msg("currenttopic: chan '"+to+"' not known")
+		thread.start_new_thread(self.do_hook,(event,to))
+
+	def on_topicinfo(self, c, event):
+		to = event.arguments()[0]
+		if (self.channels.has_key(to)):
+			self.channels[to].topic_nick = event.arguments()[1]
+			self.channels[to].topic_time = event.arguments()[2]
+		else:
+			self.msg("topicinfo: chan '"+to+"' not known")
+		thread.start_new_thread(self.do_hook,(event,to))
+
 	def on_quit(self, c, event):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
@@ -138,13 +155,24 @@ class Hackabot(SingleServerIRCBot):
 			"/"+str(self.config.hooks)+\
 			"/"+event.eventtype()
 
+		if not os.access(dir,os.R_OK):
+			return ret
+
 		hooks = os.listdir(dir)
 		hooks.sort()
 		for hook in hooks:
 			if re.match(r'\.', hook):
 				continue
 
-			if len(event.arguments()) > 0:
+			if event.eventtype() == "currenttopic":
+				to = event.arguments()[0]
+				arg = event.arguments()[1]
+				event._source = None
+			elif event.eventtype() == "topicinfo":
+				to = event.arguments()[0]
+				arg = event.arguments()[1]+" "+event.arguments()[2]
+				event._source = None
+			elif len(event.arguments()) > 0:
 				arg = event.arguments()[0]
 			else:
 				arg = None
@@ -235,8 +263,35 @@ class Hackabot(SingleServerIRCBot):
 				self.msg("Exiting!")
 				self.disconnect(c.group(1))
 				self.connection.execute_delayed(1,sys.exit)
-			elif rw and re.match(r'names\s+(#\S*)',line):
-				c = re.match(r'names\s+(#\S*)',line)
+			elif rw and re.match(r'currenttopic\s+(#\S+)',line):
+				c = re.match(r'currenttopic\s+(#\S+)',line)
+				chan = c.group(1)
+				if self.channels.has_key(chan):
+					if hasattr(self.channels[chan], 'topic'):
+						topic = " "+self.channels[chan].topic
+					else:
+						topic = ""
+				else:
+					topic = ""
+				sockfile.write("currenttopic "+chan+topic+"\n")
+				sockfile.flush()
+			elif rw and re.match(r'topicinfo\s+(#\S+)',line):
+				c = re.match(r'topicinfo\s+(#\S+)',line)
+				chan = c.group(1)
+				if self.channels.has_key(chan):
+					if hasattr(self.channels[chan], 'topic_nick') and \
+						hasattr(self.channels[chan], 'topic_time'):
+						topic = " "+self.channels[chan].topic_nick \
+							+" "+self.channels[chan].topic_time
+					else:
+						topic = ""
+						self.msg("awwcrap")
+				else:
+					topic = ""
+				sockfile.write("topicinfo "+chan+topic+"\n")
+				sockfile.flush()
+			elif rw and re.match(r'names\s+(#\S+)',line):
+				c = re.match(r'names\s+(#\S+)',line)
 				chan = c.group(1)
 				if self.channels.has_key(chan):
 					list = self.channels[chan].users()
