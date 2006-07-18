@@ -89,6 +89,10 @@ class Hackabot(SingleServerIRCBot):
 		to = event.target()
 		thread.start_new_thread(self.do_hook,(event,to))
 
+	def on_topic(self, c, event):
+		# quick hack so topic changes are handeled by currenttopic/topicinfo all the time
+		self.connection.topic(event.target())
+
 	def on_currenttopic(self, c, event):
 		to = event.arguments()[0]
 		if (self.channels.has_key(to)):
