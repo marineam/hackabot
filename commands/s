@@ -57,10 +57,12 @@ sub replace {
 				while ($text =~ m/$find/gc) {
 					my $pos = pos($text);
 					if ($pos == $lastpos) {
-						$sth->finish();
-						$dbh->disconnect;
-						return "Crap! I almost went into an infinate loop...\n";
+						$pos++;
+						if ($pos >= length($text)) {
+							last;
+						}
 					}
+					
 					my $str = substr($text,$lastpos,$pos-$lastpos);
 
 					if (defined $option and $option =~ /i/) {
