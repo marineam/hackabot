@@ -1,0 +1,16 @@
+#!/usr/bin/perl
+
+use strict;
+
+use XML::Simple;
+use Data::Dumper;
+
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	die "acl file not given";
+}
+
+my $ACCESS = XMLin($cfgfile);
+
+#print Dumper $ACCESS;
+print XMLout($ACCESS);

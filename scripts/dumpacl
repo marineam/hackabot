@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+use strict;
+
+use XML::Simple;
+use Data::Dumper;
+
+my $cfgfile = shift;
+if (not defined $cfgfile) {
+	die "acl file not given";
+}
+
+my $ACCESS = XMLin($cfgfile,
+	ForceArray => ['command', 'public', 'person'],
+	KeyAttr => { command => "name", public => 'chan', person => 'nick' });
+
+#print Dumper $ACCESS;
+print XMLout($ACCESS);
