@@ -30,7 +30,7 @@ while (<>) {
 	elsif (/^nick\s+(.+)/) {
 		$nick = $1;
 	}
-	elsif (/^msg\s+(.+)/) {
+	elsif (/^msg\s+(.*\S+)\s*$/) {
 		$msg = $1;
 	}
 }
