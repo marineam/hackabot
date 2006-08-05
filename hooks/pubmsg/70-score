@@ -77,7 +77,7 @@ while (<>) {
 }
 
 if (defined $name and defined $nick and defined $chan) {
-	if ($name =~ /^$nick$/i) {
+	if (lc($name) eq lc($nick)) {
 		if ($value > 0) {
 			print "send $nick: No self promotion!\n";
 			$value = -5;
