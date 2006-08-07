@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Set a rantom topic from a given list
-# !topic [something] | --add something | --list
+# !topic [something] | --add something
 ##HACKABOT_HELP##
 
 use strict;
@@ -58,20 +58,20 @@ if (defined $msg and $msg =~ /^--add\s+(.+)/) {
 	print "send $nick: $ret\n";
 	exit;
 }
-if (defined $msg and $msg =~ /^--list/) {
-	my $ret;
-	if ($privmsg) {
-		$ret = list_topic();
-	}
-	else {
-		$ret = "Please don't flood public channels with --list\n";
-	}
-	print "sendnext\n";
-	print "$nick: All the topics I know:\n";
-	print $ret;
-	print "$nick: And that is the end of the list.";
-	exit;
-}
+#if (defined $msg and $msg =~ /^--list/) {
+#	my $ret;
+#	if ($privmsg) {
+#		$ret = list_topic();
+#	}
+#	else {
+#		$ret = "Please don't flood public channels with --list\n";
+#	}
+#	print "sendnext\n";
+#	print "$nick: All the topics I know:\n";
+#	print $ret;
+#	print "$nick: And that is the end of the list.";
+#	exit;
+#}
 
 if ($privmsg) {
 	print "send Uh, this isn't a channel...\n";
