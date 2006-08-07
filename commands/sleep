@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Who is asleep? 
+# !sleep
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use Time::localtime;
+use XML::Simple;
+
+my $privmsg = 0;
+my ($chan);
+while (<>) {
+	if (/^type\s+privmsg/) {
+		$privmsg = 1;
+	}
+	elsif (/^to\s+(\S+)/) {
+		$chan = $1;
+	}
+}
+
+if ($privmsg) {
+	print "send zzzzzzz\n";
+	exit;
+}
+
+if (defined $chan) {
+	my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
+	chomp $names;
+	$names =~ s/^\S+\s+\S+\s+//;
+	my @list = split(/\s+/, $names);
+	my $name1 = $list[int(rand(@list))];
+	my $name2;
+	for (my $i = 0; 
+		($name2 = $list[int(rand(@list))]) eq $name1
+		and $i < 5;
+		$i++){}
+	print "send $name1 may be asleep but $name2 is not.\n";
+}
+
