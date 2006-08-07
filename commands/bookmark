@@ -101,8 +101,6 @@ class EvenFancierURLopener(urllib.FancyURLopener):
     def __init__(self):
         self.user = str(config.user)
         self.passwd = str(config.passwd)
-	#self.user = "ma.nat.ee"
-	#self.passwd = "beaverdamnit"
         urllib.FancyURLopener.__init__(self)
 
     def prompt_user_passwd(self, host, realm):
