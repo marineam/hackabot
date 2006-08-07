@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Who is asleep? 
-# !sleep
+# !sleep [#chan]
 ##HACKABOT_HELP##
 
 use strict;
@@ -11,7 +11,7 @@ use Time::localtime;
 use XML::Simple;
 
 my $privmsg = 0;
-my ($chan, $nick);
+my ($chan, $nick, $to);
 while (<>) {
 	if (/^type\s+privmsg/) {
 		$privmsg = 1;
@@ -22,24 +22,20 @@ while (<>) {
 	elsif (/^nick\s+(\S+)/) {
 		$nick = $1;
 	}
+	elsif (/^msg\s+(#\S+)/) {
+		$to = $1;
+	}
 }
 
-if ($privmsg) {
+if ($privmsg and not defined $to) {
 	print "send zzzzzzz\n";
 	exit;
 }
 
 if (defined $chan and defined $nick) {
-	#my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
-	#chomp $names;
-	#$names =~ s/^\S+\s+\S+\s+//;
-	#my @list = split(/\s+/, $names);
-	#my $name1 = $list[int(rand(@list))];
-	#my $name2;
-	#for (my $i = 0; 
-	#	($name2 = $list[int(rand(@list))]) eq $name1
-	#	and $i < 5;
-	#	$i++){}
+	if (defined $to) {
+		print "to $to\n";
+	}
 	print "send you may be asleep but $nick is not.\n";
 }
 
