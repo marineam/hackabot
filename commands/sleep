@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Who is asleep? 
-# !sleep [#chan]
+# !sleep [#chan] [someone]
 ##HACKABOT_HELP##
 
 use strict;
@@ -11,7 +11,7 @@ use Time::localtime;
 use XML::Simple;
 
 my $privmsg = 0;
-my ($chan, $nick, $to);
+my ($chan, $nick, $to, $msg);
 while (<>) {
 	if (/^type\s+privmsg/) {
 		$privmsg = 1;
@@ -22,8 +22,12 @@ while (<>) {
 	elsif (/^nick\s+(\S+)/) {
 		$nick = $1;
 	}
-	elsif (/^msg\s+(#\S+)/) {
+	elsif (/^msg\s+(#\S+)\s+(\S.*)/) {
 		$to = $1;
+		$msg = $2;
+	}
+	elsif (/^msg\s+(\S.*)/) {
+		$msg = $1;
 	}
 }
 
@@ -36,6 +40,9 @@ if (defined $chan and defined $nick) {
 	if (defined $to) {
 		print "to $to\n";
 	}
-	print "send you may be asleep but $nick is not.\n";
+	if (not defined $msg) {
+		$msg = $nick;
+	}
+	print "send you may be asleep but $msg is not.\n";
 }
 
