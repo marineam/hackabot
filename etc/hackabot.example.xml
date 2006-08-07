@@ -33,6 +33,10 @@
 		<google>
 			<apikey>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</apikey>
 		</google>
+		<bookmark>
+			<user>mydelicioususer</user>
+			<passwd>mydeliciouspass</passwd>
+		</bookmark>
 		<!--<imitate>
 			<maxwords>40</maxwords>
 			<wordlength>5</wordlength>
@@ -44,6 +48,7 @@
 			<name>dbname</name>
 			<user>dbuser</user>
 			<pass>dbpass</pass>
+			<passwd>dbpass</passwd>
 		</database>
 	</cmdconfig>
 </hackabot>

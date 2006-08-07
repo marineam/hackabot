@@ -1,0 +1,121 @@
+#!/usr/bin/python
+
+##HACKABOT_HELP##
+# Bookmark a URL to del.icio.us
+# !bookmark [url] [tag] ([tag] [tag] ...)
+##HACKABOT_HELP##
+
+import sys
+import os
+import re
+import urllib
+from urlparse import urlparse
+from amara import binderytools
+
+configfile = os.getenv("HACKABOT_CFG")
+if (configfile == None):
+	sys.stderr.write("bookmark: HACKABOT_CFG is undefined!\n")
+	sys.exit(1)
+
+fullcfg = binderytools.bind_file(configfile).hackabot
+config = fullcfg.cmdconfig.bookmark
+
+evtype = None
+chan = None
+nick = None
+msg = None
+for line in sys.stdin.readlines():
+	if re.match(r'type\s+(\S+)', line):
+		c = re.match(r'type\s+(\S+)', line)
+		evtype = c.group(1)
+	elif re.match(r'to\s+(\S+)', line):
+		c = re.match(r'to\s+(\S+)', line)
+		chan = c.group(1)
+	elif re.match(r'nick\s+(\S+)', line):
+		c = re.match(r'nick\s+(\S+)', line)
+		nick = c.group(1)
+	elif re.match(r'msg\s+(.+)', line):
+		c = re.match(r'msg\s+(.+)', line)
+		msg = c.group(1)
+
+if chan == None or evtype == None or nick == None:
+	sys.stderr.write("bookmark: chan, event type or nick undefined")
+	sys.exit(1)
+
+if msg == None:
+	if evtype == "pubmsg":
+		print "send "+nick+": Check out http://del.icio.us" + \
+			urllib.quote("/%s/%s" % \
+			(config.user, chan))
+	else:
+		print "send "+nick+": Check out http://del.icio.us" + \
+			urllib.quote("/%s/%s" % \
+			(config.user, nick))
+	sys.exit()
+    
+msgandtags = msg.split()
+url = msgandtags[0]
+tags = msgandtags[1:]
+
+def sendToDelicious(url, tags, channel, username):
+    if evtype == "pubmsg":
+        tags.append(channel)
+    tags.append("user."+username)
+    # no quotes (and spaces) allowed, but everything else
+    tags = [tag.strip('"') for tag in tags]
+    description = beautifyURL(url)
+    extended = ''
+    
+    params = { 'url' : url,
+               'description': description,
+               'extended': extended,
+               'tags': " ".join(tags) }
+    paramstring = urllib.urlencode(params)
+
+    opener = EvenFancierURLopener()
+    api = opener.open("https://api.del.icio.us/v1/posts/add?%s" % paramstring)
+    if not api:
+        return "send %s: Error: The del.icio.us API could not be accessed!" % username
+    retval = api.read()
+
+    if not retval:
+        return "send %s: Rudeness alert: The del.icio.us server did not answer anything" % username
+    
+    parsedresult = re.search(r'result code="([^"]+)"', retval)
+    if parsedresult:
+        code = parsedresult.group(1)
+        if code == 'done':
+            return 'send %s: Successfully bookmarked.' % username
+        else:
+            return 'send %s: Oops, del.icio.us said: "%s"' % (username, code)
+    
+    # last resort. If we reach this, something bad happened.
+    return 'send %s: Invalid server reply (%s...)' % (username, retval[:200])
+
+    
+
+class EvenFancierURLopener(urllib.FancyURLopener):
+    """override fancyurlopener to pass on the right user and pass"""
+    version = "OSUOSL/Manatee IRC Bot" # class var for user agent
+    
+    def __init__(self):
+        self.user = str(config.user)
+        self.passwd = str(config.passwd)
+	#self.user = "ma.nat.ee"
+	#self.passwd = "beaverdamnit"
+        urllib.FancyURLopener.__init__(self)
+
+    def prompt_user_passwd(self, host, realm):
+        return (self.user, self.passwd)
+    
+def beautifyURL(url):
+    """for description: remove http and stuff"""
+    tuple = urlparse(url)
+    if not tuple: return url
+    return urllib.unquote(tuple[1]+tuple[2])
+
+
+# now bookmark and we're all set.
+bookmarkresult = sendToDelicious(url, tags, chan, nick)
+print bookmarkresult
+
