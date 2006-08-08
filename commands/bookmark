@@ -3,6 +3,7 @@
 ##HACKABOT_HELP##
 # Bookmark a URL to del.icio.us
 # !bookmark [url] [tag] ([tag] [tag] ...)
+# !bookmark [url] [[-t] tag] [-d short description] [-e extended description]
 ##HACKABOT_HELP##
 
 import sys
@@ -49,27 +50,66 @@ if msg == None:
 			(config.user, chan))
 	else:
 		print "send "+nick+": Check out http://del.icio.us" + \
-			urllib.quote("/%s/%s" % \
+			urllib.quote("/%s/user.%s" % \
 			(config.user, nick))
 	sys.exit()
-    
-msgandtags = msg.split()
-url = msgandtags[0]
-tags = msgandtags[1:]
 
-def sendToDelicious(url, tags, channel, username):
+# let's do all sorts of fuzzy parsing for the alternative syntaxes
+allparams = msg.split()
+url = allparams[0]
+
+allparams = allparams[1:]
+# valid  states
+states = { '-t': 'tag',
+           '-d': 'desc',
+           '-e': 'ext' }
+curstate = 'tag' # if you don't specify flags, you're adding tags only
+quoted = False # start off unquoted. "Quoted" mode ignores possible flags
+tags = []
+desc = ''
+extended = ''
+for token in allparams:
+    if not quoted:
+        try:
+            c = states[token.lower()]
+        except:
+            c = None
+        if c:
+            curstate = c
+            continue
+        if token[0] == '"' and curstate != 'tag':
+            # start quoted mode
+            quoted = True
+            token = token[1:]
+    else:
+        if token[-1] == '"':
+            quoted = False
+        
+    if curstate == 'tag':
+        tags.append(token)
+    elif curstate == 'desc':
+        desc += " "+token
+    elif curstate == 'ext':
+        extended += " "+token
+        
+    
+
+def sendToDelicious(url, tags, description, extended, channel, username):
     if evtype == "pubmsg":
         tags.append(channel)
     tags.append("user."+username)
     # no quotes (and spaces) allowed, but everything else
     tags = [tag.strip('"') for tag in tags]
-    description = beautifyURL(url)
-    extended = ''
+    if not description:
+        description = beautifyURL(url)
+    if not extended:
+        extended = ''
     
     params = { 'url' : url,
                'description': description,
                'extended': extended,
-               'tags': " ".join(tags) }
+               'tags': " ".join(tags),
+               'replace': 'no' }
     paramstring = urllib.urlencode(params)
 
     opener = EvenFancierURLopener()
@@ -114,6 +154,6 @@ def beautifyURL(url):
 
 
 # now bookmark and we're all set.
-bookmarkresult = sendToDelicious(url, tags, chan, nick)
+bookmarkresult = sendToDelicious(url, tags, desc, extended, chan, nick)
 print bookmarkresult
 
