@@ -5,14 +5,19 @@ use strict;
 use IO::Handle;
 STDOUT->autoflush(1);
 
-my ($msg);
+my $msg;
+my $nick = "";
 while (<>) {
-	if (/^msg\s+(o\/|\\o)\s*$/) {
+	if (/^msg\s+manatee:?\s+(o\/|\\o)\s*$/) {
 		$msg = $1;
+	}
+	elsif (/^nick\s+(\S+)/) {
+		$nick = $1;
 	}
 }
 
 if (defined $msg) {
-	print "send \\o\n" if ($msg eq "o/");
-	print "send o/\n" if ($msg eq "\\o");
+	$nick = "$nick:";
+	print "send $nick \\o\n" if ($msg eq "o/");
+	print "send $nick o/\n" if ($msg eq "\\o");
 }
