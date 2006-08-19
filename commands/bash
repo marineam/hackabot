@@ -1,0 +1,18 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Get a random quote from bash.org (use with caution!)
+# !bash
+##HACKABOT_HELP##
+
+function getquote() {
+	lynx -dump http://bash.org/?random1 | sed -e '/QDB/,/X/d' -e '/\[X\]/,//d' -e 's/^\s*//' | grep -v ^$
+}
+
+QUOTE=`getquote`
+while [ `echo "$QUOTE" | wc -l` -gt 4 ]; do
+	QUOTE=`getquote`
+done
+
+echo sendnext
+echo "$QUOTE"
