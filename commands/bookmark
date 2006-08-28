@@ -2,8 +2,7 @@
 
 ##HACKABOT_HELP##
 # Bookmark a URL to del.icio.us
-# !bookmark [url] [tag] ([tag] [tag] ...)
-# !bookmark [url] [[-t] tag] [-d short description] [-e extended description]
+# !bookmark [url] [[-t] tag (tag..)] [-d short description] [-e extended description]
 ##HACKABOT_HELP##
 
 import sys
