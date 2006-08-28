@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##HACKABOT_HELP##
+# Print the date in Discordian date format. 
+# !ddate
+##HACKABOT_HELP##
+
 echo sendnext
 ddate
 
