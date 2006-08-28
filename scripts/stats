@@ -35,11 +35,12 @@ foreach my $chan (split(/\s+/, $channels)) {
 	$names =~ s/^\S+\s+\S+\s+//;
 	my @list = split(/\s+/, $names);
 	my $num = scalar(@list);
-	my $msg = "$num ".join(" ", @list);
+	my $msg = join(" ", @list);
 
 	$chan = $dbh->quote($chan);
 	$msg = $dbh->quote($msg);
-	$dbh->do("INSERT log SET date = $time, chan = $chan, text = $msg, type = 'stats'") or die "stats: DB stuff failed.\n";
+	$num = $dbh->quote($num);
+	$dbh->do("INSERT log SET date = $time, chan = $chan, text = $msg, num = $num, type = 'stats'") or die "stats: DB stuff failed.\n";
 }
 
 $dbh->disconnect;
