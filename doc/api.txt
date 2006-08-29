@@ -1,0 +1,105 @@
+HACKABOT API
+
+Format of this file:
+- Arguments like <this> are required, but [this] is optional.
+- Commands marked with READ/WRITE can only be given over the control socket.
+  Use scripts/client for an easy to use interface to the socket.
+  (see socket.txt for more information)
+
+STDIN
+When a hook or command is executed, the bot writes these lines to stdin:
+
+type <eventtype>
+ Gives the type of event, ie 'pubmsg' or 'quit'.
+ See the bottom of this file for a list of some of the event types.
+
+nick <nick>
+ The nick of the user.
+
+user <user>
+ The username portion of their hostmask.
+
+host <host>
+ The host portion of their hostmask.
+
+msg <something>
+ The actual line of text for this event. In the case of something like
+ pubmsg this is the line of text the person said. One small tweak though,
+ if the program is a command msg only contains the arguments. For example
+ if the user says '!echo foo bar', the echo command will see 'foo bar' but
+ hooks will see the full line '!echo foo bar'.
+
+to <nick or #chan>
+ The default destination for responces. This is the users nick in a privmsg
+ and the channel in a pubmsg.
+
+
+STDOUT
+These are commands that can be sent to the bot:
+
+sendnext
+ All of the follwing lines will be sent to IRC using the current 'to',
+ preserving whitespace and everything. Use this for flooding irc with ascii
+ art or simple scripts that won't need to do anything else after sending.
+
+send <some message>
+ Send a line of text using the current 'to'. All whitespace between send and
+ the first non-blank character of the message is ignored.
+
+notice <some message>
+ Send a notice to the current 'to'. Similar to 'send'.
+
+action <some message>
+ Send an action to the current 'to'. You get the idea.
+
+me <some message>
+ Alias to 'action'
+
+to <nick or #chan>
+ Set where future messages will be sent.
+
+nick <nick>
+ Change the bot's nick to something else.
+
+topic <some message>
+ If 'to' is a channel, change the topic to the given message.
+
+join <#chan>
+ Join a channel
+
+part <#chan>
+ Leave a channel
+
+quit [some message]
+ Quit, with an optional parting message.
+
+currenttopic <#chan> READ/WRITE
+ Get the current channel topic. The responce will be in the format:
+ currenttopic <#chan> <the topic>
+
+topicinfo <#chan> READ/WRITE
+ Get extra info on the topic like who set it and when. The responce:
+ topicinfo <#chan> <data and I forget the format>
+
+names <#chan> READ/WRITE
+ Get the names of everyone in the channel. The responce:
+ names <#chan> <nick nick nick ...> 
+
+channels READ/WRITE
+ Get the list of channels the bot is in. The responce:
+ channels <#chan #chan #chan ...>
+
+msg [some message]
+ Change the message given to future hooks and possibly the command.
+ This is useful for doing variable or history expansion, such as !$
+
+nocmd
+ Hooks Only. If msg is a command block that command from running.
+
+nohook
+ Hooks Only. Block more hooks from running for the current event.
+ I have no idea what this is good for.
+
+noall
+ Hooks Only. Block both more hooks for the event and the command.
+
