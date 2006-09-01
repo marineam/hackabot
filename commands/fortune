@@ -51,7 +51,7 @@ sub fortune {
 	my $text = "";
 	if ($type eq "list") {
 		my @files;
-		opendir(DIR, "$ENV{'HACKABOT_DIR'}/cookies");
+		opendir(DIR, "$ENV{'HACKABOT_DIR'}/misc/cookies");
 		while ($_ = readdir(DIR)) {
 			if (/^[^\.].*\.dat$/) {
 				s/\.dat$//;
@@ -62,7 +62,7 @@ sub fortune {
 		$text = "Fortunes: ".join(" ", sort @files);
 	}
 	else {
-		$text = `fortune -n 190 -s $ENV{'HACKABOT_DIR'}/cookies/$type`;
+		$text = `fortune -n 190 -s $ENV{'HACKABOT_DIR'}/misc/cookies/$type`;
 		chomp $text;
 	}
 

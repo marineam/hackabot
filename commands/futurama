@@ -6,9 +6,9 @@
 ##HACKABOT_HELP##
 
 echo sendnext
-fortune=`fortune -s $HACKABOT_DIR/cookies/futurama | tr '	' '    '`
+fortune=`fortune -s $HACKABOT_DIR/misc/cookies/futurama | tr '	' '    '`
 while [ `echo $fortune | wc -l` != "1" ]
 do
-	fortune=`fortune -s $HACKABOT_DIR/cookies/futurama | tr '   ' '    '`
+	fortune=`fortune -s $HACKABOT_DIR/misc/cookies/futurama | tr '   ' '    '`
 done
 echo $fortune
