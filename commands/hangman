@@ -83,7 +83,7 @@ elsif (defined $chan and $msg =~ /^new$/) {
 	$row = $sth->fetchrow_hashref;
 	if (not defined $row->{'phrase'}) {
 		$update = 0;
-		$phrase = getrandom("/usr/share/dict/words");
+		$phrase = getrandom("$ENV{'HACKABOT_DIR'}/misc/wordlist");
 	}
 	else {
 		$update = 1;
