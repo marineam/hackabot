@@ -1,0 +1,12 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Get a promgram's description from the man page
+# !whatis prog
+##HACKABOT_HELP##
+
+ARG="`grep ^msg | sed -e 's/^msg\s*//' | sed -e 's/\s.*//'`"
+
+echo sendnext
+whatis "$ARG" | head -n 1
+
