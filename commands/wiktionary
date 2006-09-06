@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Get the url of a wiktionary article
+# !wiktionary some article
+##HACKABOT_HELP##
+
+use strict;
+use URI::Escape;
+
+my ($search, $asker);
+while (<>) {
+	if (/^nick\s*(\S*)/) {
+		$asker = $1;
+	}
+	elsif (/^msg\s*(.*)/) {
+		$search = $1;
+	}
+}
+
+if (defined $search and defined $asker) {
+	$search = uri_escape($search);
+	my $google = `lynx --head --dump "http://en.wiktionary.org/wiki/Special:Search?search=$search\&go=Go"`;
+	my $url;
+	foreach(split(/\n/,$google)) {
+		if (/^Location:\s*(.+)/) {
+			$url = $1;
+		}
+	}
+	if (defined $url) {
+		print "send $asker: Wiktionary: $url\n";
+	}
+	else {
+		print "send $asker: Wiktionary didn't say much :-/\n";
+	}
+}
