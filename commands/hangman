@@ -211,13 +211,23 @@ else {
 	
 	$row = $sth->fetchrow_hashref;
 	$sth->finish;
-	if (defined $row->{'phrase'} and $row->{'phrase'} =~ /^$msg$/i) {
+	if (defined $row->{'phrase'} and not defined $row->{'final'} and
+			lc($row->{'phrase'}) eq lc($msg)) {
 		$row->{'guess'} = $row->{'phrase'};
 		$row->{'final'} = "'win'";
 		
 		my $qguess = $dbh->quote($row->{'guess'});
 		$dbh->do("UPDATE hangman SET guess = $qguess, "
 			."final = 'win' WHERE chan = $qchan AND state = 0")
+			or die("hangman: db update failed\n");
+	}	
+	elsif (defined $row->{'phrase'} and length($msg)) {
+		$row->{'guess'} = $row->{'phrase'};
+		$row->{'final'} = "'lose'";
+		
+		my $qguess = $dbh->quote($row->{'guess'});
+		$dbh->do("UPDATE hangman SET guess = $qguess, "
+			."final = 'lose' WHERE chan = $qchan AND state = 0")
 			or die("hangman: db update failed\n");
 	}	
 	if (defined $row->{'guess'} and defined $row->{'wrong'}) {
