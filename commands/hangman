@@ -33,6 +33,14 @@ while (<>) {
 	}
 }
 
+if ($type eq "privmsg") {
+	$chan = $nick;
+}
+
+if (not defined $chan) {
+	die "hangman: uh, chan is not defined?!?\n";
+}
+
 my ($dbh, $sth);
 
 if ($type eq "privmsg" and $msg =~ /^(#\S+)\s+(\S+.*)$/) {
@@ -65,7 +73,7 @@ if ($type eq "privmsg" and $msg =~ /^(#\S+)\s+(\S+.*)$/) {
 	print "to $destchan\n";
 	print "action is ready with the next hangman from $nick\n";
 }
-elsif (defined $chan and $msg =~ /^new$/) {
+elsif ($msg =~ /^new$/) {
 	# New game
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -113,7 +121,7 @@ elsif (defined $chan and $msg =~ /^new$/) {
 
 	$dbh->disconnect;
 }
-elsif (defined $chan and $msg =~ /^([a-z])$/i) {
+elsif ($msg =~ /^([a-z])$/i) {
 	# Guess
 	my $char = $1;
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -187,7 +195,7 @@ elsif (defined $chan and $msg =~ /^([a-z])$/i) {
 	
 	$dbh->disconnect;
 }
-elsif (defined $chan) {
+else {
 	# Show
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
 	if (!$dbh) {
