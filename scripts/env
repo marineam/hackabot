@@ -29,12 +29,12 @@ while (<>) {
 }
 
 if (defined $msg and defined $type and defined $chan and defined $nick
-	and $msg =~ /^(![^\s\/]+)(.*!([*\^\$]|\d+|\d+-|-\d+|\d+-\d+).*)$/) {
+		and $msg =~ /^(![^\s\/]+)(.*![*\^\$].*)$/) {
 	my $cmd = $1;
 	my $arg = $2;
 	
 	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 }) or die "env: Failed to connect to database\n";
-
+	
 	$chan = $dbh->quote($chan);
 	$nick = $dbh->quote($nick);
 
@@ -56,16 +56,6 @@ if (defined $msg and defined $type and defined $chan and defined $nick
 		$arg =~ s/!\*/$text/g if (defined $first);
 		$arg =~ s/!\^/$first/g if (defined $first);
 		$arg =~ s/!\$/$last/g if (defined $first);
-		while ($arg =~ /!(\d+|-\d+|\d+-|\d+-\d+))/gc) {
-			$bang = $1;
-			$bang =~ /(\d*)-?(\d*)/;
-			$one = defined $1 ? $1 : 0;
-			$two = defined $2 ? $2 : 999;
-			$text =~ /(\w+\s+){$one}((\s*\w+){$two})/;
-			$new = $2;
-			s/!$bang/
-			
-
 	}
 	
 	print "msg $cmd$arg\n";
