@@ -220,7 +220,13 @@ else {
 		$dbh->do("UPDATE hangman SET guess = $qguess, "
 			."final = 'win' WHERE chan = $qchan AND state = 0")
 			or die("hangman: db update failed\n");
-	}	
+	}
+	elsif (defined $row->{'phrase'} and
+			length($msg) != length($row->{'phrase'})) {
+		print "send Your guess had ".length($msg).
+			" chacters but the phrase has ".
+			length($row->{'phrase'})."! Count next time :-P\n";
+	}
 	elsif (defined $row->{'phrase'} and length($msg)) {
 		$row->{'guess'} = $row->{'phrase'};
 		$row->{'final'} = "'lose'";
