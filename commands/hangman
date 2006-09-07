@@ -225,7 +225,7 @@ else {
 			length($msg) != length($row->{'phrase'})) {
 		print "send Your guess had ".length($msg).
 			" chacters but the phrase has ".
-			length($row->{'phrase'})."! Count next time :-P\n";
+			length($row->{'phrase'})."! :-P\n";
 	}
 	elsif (defined $row->{'phrase'} and length($msg)) {
 		$row->{'guess'} = $row->{'phrase'};
