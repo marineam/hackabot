@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##HACKABOT_HELP##
-# Get a promgram's description from the man page
+# Get a program's description from the man page
 # !whatis prog
 ##HACKABOT_HELP##
 
