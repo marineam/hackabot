@@ -7,7 +7,7 @@
 
 ##HACKABOT_HELP##
 # Talk like a pirate!
-# !pirate
+# !pirate [nick] | a phrase | --pickupchick | --pickupguy | --saying
 ##HACKABOT_HELP##
 
 import random
