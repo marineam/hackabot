@@ -224,7 +224,7 @@ else {
 	elsif (defined $row->{'phrase'} and
 			length($msg) != length($row->{'phrase'})) {
 		print "send Your guess had ".length($msg).
-			" chacters but the phrase has ".
+			" characters but the phrase has ".
 			length($row->{'phrase'})."! :-P\n";
 	}
 	elsif (defined $row->{'phrase'} and length($msg)) {
