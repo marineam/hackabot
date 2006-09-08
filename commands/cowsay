@@ -68,5 +68,5 @@ sub cowsay {
 		$cow = $default;
 	}
 	print "sendnext\n";
-	system("cowsay", "-f", $cow, $msg);
+	system("cowsay", "-f", $cow, "--", $msg);
 }
