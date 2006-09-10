@@ -214,8 +214,12 @@ class Hackabot(SingleServerIRCBot):
 		write.write("type "+event.eventtype()+"\n")
 		if isinstance(event.source(), str):
 			write.write("nick "+nm_to_n(event.source())+"\n")
-			write.write("user "+nm_to_u(event.source())+"\n")
-			write.write("host "+nm_to_h(event.source())+"\n")
+			if event.source().find('!') > 0: 
+				write.write("user "+ \
+					nm_to_u(event.source())+"\n")
+			if event.source().find('@') > 0: 
+				write.write("host "+ \
+					nm_to_h(event.source())+"\n")
 		if isinstance(to, str):
 			write.write("to "+to+"\n")
 		if isinstance(msg, str):
