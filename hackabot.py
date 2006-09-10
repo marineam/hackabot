@@ -46,20 +46,25 @@ class Hackabot(SingleServerIRCBot):
 		time.sleep(1)
 		self.msg("Connected!")
 		thread.start_new_thread(self.server,tuple())
-		for automsg in self.config.automsg:
-			self.msg("sending msg to "+str(automsg.to))
-			self.privmsg(str(automsg.to), str(automsg.msg))
+		if hasattr(self.config, 'automsg') and \
+				isinstance(self.config.automsg, list):
+			for automsg in self.config.automsg:
+				self.msg("sending msg to "+str(automsg.to))
+				self.privmsg(str(automsg.to), str(automsg.msg))
 		time.sleep(1)
-		for autojoin in self.config.autojoin:
-			self.msg("joining "+str(autojoin.chan))
-			if hasattr(autojoin, 'password'):
-				self.connection.join(str(autojoin.chan), \
-					str(autojoin.password))
-			else:
-				self.connection.join(str(autojoin.chan))
-			if hasattr(autojoin, 'msg'):
-				self.privmsg(str(autojoin.chan), \
-					str(autojoin.msg))
+		if hasattr(self.config, 'autojoin') and \
+				isinstance(self.config.autojoin, list):
+			for autojoin in self.config.autojoin:
+				self.msg("joining "+str(autojoin.chan))
+				if hasattr(autojoin, 'password'):
+					self.connection.join( \
+						str(autojoin.chan), \
+						str(autojoin.password))
+				else:
+					self.connection.join(str(autojoin.chan))
+				if hasattr(autojoin, 'msg'):
+					self.privmsg(str(autojoin.chan), \
+						str(autojoin.msg))
 
 	def on_privmsg(self, c, event):
         	to = nm_to_n(event.source())
