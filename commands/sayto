@@ -39,6 +39,8 @@ sub nick_allowed {
 	chomp $names;
 	$names =~ s/^\S+\s+\S+\s+//;
 	my @list = split(/\s+/, $names);
-    my @results = grep(/^$nick$/,@list);
-    return ((scalar @results) > 0);
+    foreach $name (@list) {
+        if ($name eq $nick) return 1;
+    }
+    return 0;
 }
