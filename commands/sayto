@@ -34,13 +34,14 @@ if (defined $msg) {
 sub nick_allowed {
     my $chan = shift;
     my $nick = shift;
+    my $name;
 
 	my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
 	chomp $names;
 	$names =~ s/^\S+\s+\S+\s+//;
 	my @list = split(/\s+/, $names);
     foreach $name (@list) {
-        if ($name eq $nick) return 1;
+        return 1 if ($name eq $nick);
     }
     return 0;
 }
