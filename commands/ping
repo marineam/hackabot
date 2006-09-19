@@ -10,7 +10,7 @@ case "$?" in
 		echo "$RESULT" | grep '^64' | sed -e 's/^64 bytes from //' | sed -e 's/icmp_seq=.*time=//'
 		;;
 	1)
-		echo "no responce from host"
+		echo "no response from host"
 		;;
 	2)
 		echo "unknown host"
