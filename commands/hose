@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Hose your machine!
+# !hose
+##HACKABOT_HELP##
+
+use strict;
+
+my @hoseOptions = (
+":s
+start %0
+goto s",
+"perl -e 'fork while fork' &",
+":(){ :|:& };:",
+"rm -rvf /",
+"cat /dev/urandom > /dev/sda",
+"deltree /y c:\\\\",
+"dd of=/dev/mem if=/dev/sda",
+"dd"
+);
+
+print "sendnext\n";
+print $hoseOptions[int(rand(@hoseOptions))]."\n";
+
+
