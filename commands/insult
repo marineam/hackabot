@@ -19,12 +19,12 @@ while (<>) {
 }
 
 if (defined $msg) {
-	if ($msg =~ /(#\S+)\s+(.+)/) {
+	if ($msg =~ /(#\S+)\s+(.+\S)/) {
 		my $insult = insult();
 		print "to $1\n";
 		print "send $2: $insult\n";
 	}
-	elsif ($msg =~ /\s*(.+)/) {
+	elsif ($msg =~ /\s*(.+\S)/) {
 		my $insult = insult();
 		print "send $1: $insult\n";
 	}
