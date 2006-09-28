@@ -9,6 +9,8 @@
 	<port>6667</port>
 	<nick>hackabot</nick>
 	<name>A spiffy little bot</name>
+	<!-- seconds to wait after the connection is lost -->
+	<reconnect>60</reconnect>
 
 	<!-- Send these messages just after connecting but before joining -->
 	<!-- This is useful for talking with chanserv and nickserv -->

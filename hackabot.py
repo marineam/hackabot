@@ -27,6 +27,11 @@ class Hackabot(SingleServerIRCBot):
 	def __init__(self, file):
 		# TODO: Semivalidate 'file' before actually using it.
 		self.config = binderytools.bind_file(file).hackabot
+
+		# reconnect is not required, but needs to exist
+		if not hasattr(self.config, "reconnect"):
+			self.config.reconnect = None;
+		
 		self.msg("Setting up irc object for "+str(self.config.server)+"...")
 		os.putenv("HACKABOT_CFG", file)
 		os.putenv("HACKABOT_DIR", str(self.config.directory))
@@ -37,7 +42,7 @@ class Hackabot(SingleServerIRCBot):
 		os.putenv("HACKABOT_SOCK", \
 			str(self.config.directory)+"/"+str(self.config.socket))
 
-		SingleServerIRCBot.__init__(self, [(str(self.config.server), int(str(self.config.port)))], str(self.config.nick), str(self.config.name))
+		SingleServerIRCBot.__init__(self, [(str(self.config.server), int(str(self.config.port)))], str(self.config.nick), str(self.config.name), int(str(self.config.reconnect)))
 
 	def on_nicknameinuse(self, c, event):
 		self.connection.nick(self.connection.get_nickname() + "_")
@@ -46,14 +51,12 @@ class Hackabot(SingleServerIRCBot):
 		time.sleep(1)
 		self.msg("Connected!")
 		thread.start_new_thread(self.server,tuple())
-		if hasattr(self.config, 'automsg') and \
-				isinstance(self.config.automsg, list):
+		if hasattr(self.config, 'automsg'):
 			for automsg in self.config.automsg:
 				self.msg("sending msg to "+str(automsg.to))
 				self.privmsg(str(automsg.to), str(automsg.msg))
 		time.sleep(1)
-		if hasattr(self.config, 'autojoin') and \
-				isinstance(self.config.autojoin, list):
+		if hasattr(self.config, 'autojoin'):
 			for autojoin in self.config.autojoin:
 				self.msg("joining "+str(autojoin.chan))
 				if hasattr(autojoin, 'password'):
