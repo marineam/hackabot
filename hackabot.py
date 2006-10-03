@@ -19,18 +19,19 @@ import time
 import sys
 import os
 import re
+import amara
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, nm_to_u, nm_to_h, Event 
-from amara import binderytools
 
 class Hackabot(SingleServerIRCBot):
 	def __init__(self, file):
 		# TODO: Semivalidate 'file' before actually using it.
-		self.config = binderytools.bind_file(file).hackabot
+		self.config = amara.parse(file).hackabot
 
 		# reconnect is not required, but needs to exist
 		if not hasattr(self.config, "reconnect"):
-			self.config.reconnect = None;
+			self.config.xml_append_fragment(
+				"<reconnect>60</reconnect>")
 		
 		self.msg("Setting up irc object for "+str(self.config.server)+"...")
 		os.putenv("HACKABOT_CFG", file)
@@ -227,6 +228,7 @@ class Hackabot(SingleServerIRCBot):
 			write.write("to "+to+"\n")
 		if isinstance(msg, str):
 			write.write("msg "+msg+"\n")
+		write.write("currentnick %s\n" % self.connection.get_nickname())
 		write.close()
 
 		ret = self.process(read, to, event)
@@ -319,6 +321,10 @@ class Hackabot(SingleServerIRCBot):
 				list = self.channels.keys()
 				names = " "+string.join(list," ")
 				sockfile.write("channels"+names+"\n")
+				sockfile.flush()
+			elif rw and re.match(r'currentnick',line):
+				sockfile.write("currentnick %s\n" %
+					self.connection.get_nickname())
 				sockfile.flush()
 			elif event and re.match(r'msg\s*(.*)',line) and ( \
 					event.eventtype() == "pubmsg" or \
