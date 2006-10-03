@@ -19,14 +19,14 @@ import time
 import sys
 import os
 import re
-import amara
 from ircbot import SingleServerIRCBot
-from irclib import nm_to_n, nm_to_u, nm_to_h, Event 
+from irclib import nm_to_n, nm_to_u, nm_to_h, Event
+from amara import binderytools
 
 class Hackabot(SingleServerIRCBot):
 	def __init__(self, file):
 		# TODO: Semivalidate 'file' before actually using it.
-		self.config = amara.parse(file).hackabot
+		self.config = binderytools.bind_file(file).hackabot
 
 		# reconnect is not required, but needs to exist
 		if not hasattr(self.config, "reconnect"):
