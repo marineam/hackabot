@@ -79,7 +79,7 @@ if ($privmsg) {
 }
 
 my $append = 0;
-if ($msg =~ /^--append\s*(.*)/) {
+if (defined $msg and $msg =~ /^--append\s*(.*)/) {
 	$msg = $1;
 	$append = 1;
 }
