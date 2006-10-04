@@ -1,8 +1,0 @@
-#!/bin/bash
-
-##HACKABOT_HELP##
-# Reset and mute bigscreen
-# !ohshit
-##HACKABOT_HELP##
-
-ssh monitor@bigscreen -x "~/ohshit" > /dev/null
