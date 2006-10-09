@@ -7,5 +7,6 @@
 
 
 echo sendnext
-lynx -dump http://www.special-dictionary.com/proverbs/random/ | \
-	grep -m 1 '^ *\"' | sed -e 's/  //g'
+lynx -dump -width 1000 http://www.special-dictionary.com/proverbs/random/ | \
+	grep -m 1 -A 2 '^ *\"' | tr '\n' ' ' | \
+	perl -p -e 's/\s{2,}//g; s/\[\d+\]/ -- /'
