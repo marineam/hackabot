@@ -1,0 +1,11 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# Get a random proverb
+# !proverb
+##HACKABOT_HELP##
+
+
+echo sendnext
+lynx -dump http://www.special-dictionary.com/proverbs/random/ | \
+	grep -m 1 '^ *\"' | sed -e 's/  //g'
