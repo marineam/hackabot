@@ -10,6 +10,7 @@ use DBI;
 use Time::localtime;
 use URI::Escape;
 use XML::Simple;
+use LWP::Simple qw($ua get);
 
 my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
 my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
@@ -49,13 +50,20 @@ if ($privmsg) {
 }
 
 my $log = get_log($chan, $num);
-$log =~ s/'//g;
 $log = uri_escape($log);
-my $url = `lynx -dump 'http://chatfu.com/cartoonify?chat=$log' | grep 'Send this url to your friends:'`;
-chomp $url;
-$url =~ s/.*(http:\S*).*/$1/g;
+$ua->agent("");
+$ua->cookie_jar({});
+my $page = get("http://chatfu.com/cartoonify?chat=$log");
 
-print "send $nick: $url\n";
+if ($page =~ m#<B CLASS="share">(\S+)</B>#) {
+	print "send $nick: $1\n";
+}
+elsif ($page =~ m#<DIV ID="instructions" CLASS="round">#) {
+	print "send $nick: chatfu.com didn't like the request..."
+}
+else {
+	print "send $nick: chatfu.com didn't return what I wanted..."
+}
 
 sub get_log {
 	my $chan = shift;
