@@ -44,6 +44,8 @@ perl XML::Simple
 perl Net::Google
 perl DBI w/ MySQL
 python mysql
+perl URI::Find::Rule (TinyURL hook)
+perl WWW::Shorten::TinyURL (TinyURL hook)
 and other stuff I forget...
 
 
