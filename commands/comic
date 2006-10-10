@@ -51,7 +51,7 @@ if ($privmsg) {
 my $log = get_log($chan, $num);
 $log =~ s/'//g;
 $log = uri_escape($log);
-my $url = `lynx -dump http://chatfu.com/cartoonify?chat=$log | grep 'Send this url to your friends:'`;
+my $url = `lynx -dump 'http://chatfu.com/cartoonify?chat=$log' | grep 'Send this url to your friends:'`;
 chomp $url;
 $url =~ s/.*(http:\S*).*/$1/g;
 
