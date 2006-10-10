@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 ############################################################
 # A small little hook to parse the channel chat for URLs   #
