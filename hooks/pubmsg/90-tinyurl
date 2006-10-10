@@ -26,11 +26,13 @@ while(<>) {
 	}
 }
 
-my @urls = URI::Find::Rule->in($msg);
+my @urls = URI::Find::Rule->in($msg,1);
 if(@urls){
 	print "sendnext:\n";
-	foreach (@urls){
-		$short_url = makeashorterlink($_);	
-		print "$nick\'s tiny URL is $short_url\n";
+	foreach $url (@urls){
+		if(length($url->as_string) > 60){
+			$short_url = makeashorterlink($url->as_string);	
+			print "$nick\'s tiny URL is $short_url\n";
+		}
 	}
 }
