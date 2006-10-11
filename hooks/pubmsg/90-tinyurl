@@ -26,7 +26,7 @@ while(<>) {
 	}
 }
 
-if ($chan == "#cws") {
+if ($chan eq "#cws") {
 	exit; # the cws folks don't like it :-(
 }
 
