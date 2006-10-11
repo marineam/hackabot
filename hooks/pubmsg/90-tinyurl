@@ -26,6 +26,10 @@ while(<>) {
 	}
 }
 
+if ($chan == "#cws") {
+	exit; # the cws folks don't like it :-(
+}
+
 my @urls = URI::Find::Rule->in($msg,1);
 if(@urls){
 	print "sendnext:\n";
