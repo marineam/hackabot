@@ -1,24 +1,14 @@
 #!/bin/bash
 
 ##HACKABOT_HELP##
-# Get a random quote from bash.org (use with caution!)
+# Get a random quote link from bash.org
 # !bash [number]
 ##HACKABOT_HELP##
 
-function getquote() {
-	if [ "$1" == "" ]; then
-		lynx -dump "http://bash.org/?random1" | sed -e '/QDB/,/X/d' -e '/\[X\]/,//d' -e 's/^\s*//' | grep -v ^$
-	else
-		lynx -dump "http://bash.org/?quote=$NUM" | sed -e '/QDB/,/X/d' -e '/Home.*Latest.*Browse/,//d' -e 's/^\s*//' | grep -v ^$
-	fi
-}
-
 NUM=`perl -n -e 'print $1 if /^msg\s+(\d+)/'`
 
-QUOTE=`getquote $NUM`
-while [ `echo "$QUOTE" | wc -l` -gt 4 ] && [ "$NUM" == "" ]; do
-	QUOTE=`getquote`
-done
+if [ "$NUM" == "" ]; then
+	NUM="` lynx -dump "http://bash.org/?random1" | grep -m 1 "#[[:digit:]]" | perl -p -e 's/.*#(\d+).*/$1/'`"
+fi
 
-echo sendnext
-echo "$QUOTE"
+echo "send http://bash.org/?$NUM"
