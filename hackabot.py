@@ -240,49 +240,67 @@ class Hackabot(SingleServerIRCBot):
 		sendnext = False
 		rw = (sockfile.mode != 'r')
 
-		while True:
-			line = sockfile.readline().rstrip("\n")
-			if not line:
-				break
+		for line in sockfile:
+			line = line.rstrip("\n")
 
 			if to and sendnext:
 				self.privmsg(to, line)
-			elif to and re.match(r'sendnext', line):
+				continue
+
+			c = re.match(r'sendnext', line)
+			if to and c:
 				sendnext = True
-			elif to and re.match(r'send\s+(.+)',line):
-				c = re.match(r'send\s+(.+)',line)
+				continue
+
+			c = re.match(r'send\s+(.+)',line)
+			if to and c:
 				self.privmsg(to, c.group(1))
-			elif to and re.match(r'notice\s+(.+)',line):
-				c = re.match(r'notice\s+(.+)',line)
+				continue
+
+			c = re.match(r'notice\s+(.+)',line)
+			if to and c:
 				self.notice(to, c.group(1))
-			elif to and re.match(r'me\s+(.+)',line):
-				c = re.match(r'me\s+(.+)',line)
+				continue
+
+			c = re.match(r'(me|action)\s+(.+)',line)
+			if to and c:
 				self.action(to, c.group(1))
-			elif to and re.match(r'action\s+(.+)',line):
-				c = re.match(r'action\s+(.+)',line)
-				self.action(to, c.group(1))
-			elif re.match(r'to\s+(\S+)',line):
-				c = re.match(r'to\s+(\S+)',line)
+				continue
+
+			c = re.match(r'to\s+(\S+)',line)
+			if c:
 				to = c.group(1)
-			elif re.match(r'nick\s+(\S+)',line):
-				c = re.match(r'nick\s+(\S+)',line)
+				continue
+
+			c = re.match(r'nick\s+(\S+)',line)
+			if c:
 				self.connection.nick(c.group(1))
-			elif re.match(r'topic\s+(.+)',line):
-				c = re.match(r'topic\s+(.+)',line)
+				continue
+
+			c = re.match(r'topic\s+(.+)',line)
+			if c:
 				self.connection.topic(to, c.group(1))
-			elif re.match(r'join\s+(\S+)',line):
-				c = re.match(r'join\s+(\S+)',line)
+				continue
+
+			c = re.match(r'join\s+(\S+)',line)
+			if c:
 				self.connection.join(c.group(1))
-			elif re.match(r'part\s+(\S+)',line):
-				c = re.match(r'part\s+(\S+)',line)
+				continue
+
+			c = re.match(r'part\s+(\S+)',line)
+			if c:
 				self.connection.part(c.group(1))
-			elif re.match(r'quit\s*(.*)',line):
-				c = re.match(r'quit\s*(.*)',line)
+				continue
+
+			c = re.match(r'quit\s*(.*)',line)
+			if c:
 				self.msg("Exiting!")
 				self.disconnect(c.group(1))
 				self.connection.execute_delayed(1,sys.exit)
-			elif rw and re.match(r'currenttopic\s+(#\S+)',line):
-				c = re.match(r'currenttopic\s+(#\S+)',line)
+				continue
+
+			c = re.match(r'currenttopic\s+(#\S+)',line)
+			if rw and c:
 				chan = c.group(1)
 				if self.channels.has_key(chan):
 					if hasattr(self.channels[chan], 'topic'):
@@ -293,8 +311,10 @@ class Hackabot(SingleServerIRCBot):
 					topic = ""
 				sockfile.write("currenttopic "+chan+topic+"\n")
 				sockfile.flush()
-			elif rw and re.match(r'topicinfo\s+(#\S+)',line):
-				c = re.match(r'topicinfo\s+(#\S+)',line)
+				continue
+
+			c = re.match(r'topicinfo\s+(#\S+)',line)
+			if rw and c:
 				chan = c.group(1)
 				if self.channels.has_key(chan):
 					if hasattr(self.channels[chan], 'topic_nick') and \
@@ -307,8 +327,10 @@ class Hackabot(SingleServerIRCBot):
 					topic = ""
 				sockfile.write("topicinfo "+chan+topic+"\n")
 				sockfile.flush()
-			elif rw and re.match(r'names\s+(#\S+)',line):
-				c = re.match(r'names\s+(#\S+)',line)
+				continue
+
+			c = re.match(r'names\s+(#\S+)',line)
+			if rw and c:
 				chan = c.group(1)
 				if self.channels.has_key(chan):
 					list = self.channels[chan].users()
@@ -317,16 +339,22 @@ class Hackabot(SingleServerIRCBot):
 					names = ""
 				sockfile.write("names "+chan+names+"\n")
 				sockfile.flush()
-			elif rw and re.match(r'channels',line):
+				continue
+
+			if rw and re.match(r'channels',line):
 				list = self.channels.keys()
 				names = " "+string.join(list," ")
 				sockfile.write("channels"+names+"\n")
 				sockfile.flush()
-			elif rw and re.match(r'currentnick',line):
+				continue
+
+			if rw and re.match(r'currentnick',line):
 				sockfile.write("currentnick %s\n" %
 					self.connection.get_nickname())
 				sockfile.flush()
-			elif event and re.match(r'msg\s*(.*)',line) and ( \
+				continue
+
+			if event and re.match(r'msg\s*(.*)',line) and ( \
 					event.eventtype() == "pubmsg" or \
 					event.eventtype() == "privmsg" or \
 					event.eventtype() == "pubsnd" or \
@@ -336,14 +364,22 @@ class Hackabot(SingleServerIRCBot):
 					event.eventtype() == "action"):
 				c = re.match(r'msg\s*(.*)',line)
 				event._arguments[0] = c.group(1)
-			elif re.match(r'nocmd',line):
+				continue
+
+			if re.match(r'nocmd',line):
 				ret = "nocmd"
-			elif re.match(r'nohook',line):
+				continue
+
+			if re.match(r'nohook',line):
 				ret = "nohook"
-			elif re.match(r'noall',line):
+				continue
+
+			if re.match(r'noall',line):
 				ret = "noall"
-			else:
-				self.msg("Unknown request: "+line)
+				continue
+			
+			self.msg("Unknown request: "+line)
+
 		return ret
 	
 	def server(self):
