@@ -40,7 +40,6 @@ if (defined $chan) {
 	my ($dbh, $sth);
 	my $row;
 	my ($max, $max_date);
-	my ($min, $min_date);
 	
 
 	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
@@ -61,17 +60,7 @@ if (defined $chan) {
 	}
 	$sth->finish();
 
-	$sth = $dbh->prepare("SELECT num, date FROM log WHERE chan = $chanq AND type = 'stats' ORDER BY num ASC, id DESC LIMIT 1");
-	$sth->execute();
-	if ($row = $sth->fetchrow_hashref) {
-		$min = $row->{'num'};
-		$min_date = $row->{'date'}
-	}
-	else {
-		die "stats: missing stats db entry\n";
-	}
-	$sth->finish();
 	$dbh->disconnect;
 
-	print "send $chan max nicks: $max $max_date, min nicks: $min $min_date\n"
+	print "send $chan max nicks: $max $max_date\n"
 }

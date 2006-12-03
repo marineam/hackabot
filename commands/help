@@ -54,7 +54,8 @@ else {
 
 sub showhelp {
 	my $cmd = shift;
-	if ( not -r "$MODS/$cmd" or not getacl($cmd) ) {
+	if (not -r "$MODS/$cmd" or not -x "$MODS/$cmd"
+	    or not getacl($cmd) ) {
 		return;
 	}
 	open(CMD, "$MODS/$cmd");
@@ -80,8 +81,8 @@ sub showcmds {
 	my @commands;
 	opendir(MODDIR, $MODS);
 	while ($_ = readdir(MODDIR)) {
-		if (/^[^\.]/ and -x "/$MODS/$_" and -f "/$MODS/$_"
-        and getacl($_) eq 'allow') {
+		if (/^[^\.]/ and -x "/$MODS/$_" and not -l "/$MODS/$_"
+		    and getacl($_) eq 'allow') {
 			push(@commands, $_);
 		}
 	}
