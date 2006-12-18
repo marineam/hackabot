@@ -264,7 +264,7 @@ class Hackabot(SingleServerIRCBot):
 
 			c = re.match(r'(me|action)\s+(.+)',line)
 			if to and c:
-				self.action(to, c.group(1))
+				self.action(to, c.group(2))
 				continue
 
 			c = re.match(r'to\s+(\S+)',line)
