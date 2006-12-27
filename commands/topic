@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Set a rantom topic from a given list
-# !topic [something] | --add something
+# !topic [--append] [something] | --add something
 ##HACKABOT_HELP##
 
 use strict;
@@ -89,9 +89,8 @@ if (not defined $msg) {
 }
 if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
 
-	my $old = "";
 	if ($append) {
-		$old = `echo 'currenttopic $chan' | $client $socket`;
+		my $old = `echo 'currenttopic $chan' | $client $socket`;
 		chomp $old;
 		$old =~ /^\S+\s+\S+\s+(\S+.*)$/;
 		if (defined $1) {
@@ -100,14 +99,10 @@ if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
 		else {
 			$old = "";
 		}
-	}
-
-	if (defined $CMDCFG->{'topicmask'}->{$chan}->{'msg'}) {
-		$old =~ s/^$CMDCFG->{'topicmask'}->{$chan}->{'msg'}\s+//;
-		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$old.$msg;
-	}
-	else {
 		$msg = $old.$msg;
+	}
+	elsif (defined $CMDCFG->{'topicmask'}->{$chan}->{'msg'}) {
+		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$msg;
 	}
 
 	print "to $chan\n";
