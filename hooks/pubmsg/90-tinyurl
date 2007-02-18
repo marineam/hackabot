@@ -30,7 +30,7 @@ my @urls = URI::Find::Rule->in($msg,1);
 if(@urls){
 	print "sendnext:\n";
 	foreach $url (@urls){
-		if(length($url->as_string) > 60){
+		if(length($url->as_string) > 79){
 			$short_url = makeashorterlink($url->as_string);	
 			print "$nick\'s tiny URL is $short_url\n";
 		}
