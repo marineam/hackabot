@@ -29,9 +29,9 @@ class Hackabot(SingleServerIRCBot):
 		self.config = binderytools.bind_file(file).hackabot
 
 		# reconnect is not required, but needs to exist
-		#if not hasattr(self.config, "reconnect"):
-		#	self.config.xml_append_fragment(
-		#		"<reconnect>60</reconnect>")
+		if not hasattr(self.config, "reconnect"):
+			self.config.xml_append_fragment(
+				"<reconnect>60</reconnect>")
 		
 		self.msg("Setting up irc object for "+str(self.config.server)+"...")
 		os.putenv("HACKABOT_CFG", file)

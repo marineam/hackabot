@@ -1,0 +1,19 @@
+##HACKABOT_HELP##
+# Look up a word in the Urban Dictionary.
+# !urban word
+##HACKABOT_HELP##
+
+import SOAPpy
+import re
+import sys
+
+server = SOAPpy.SOAPProxy("http://api.urbandictionary.com/soap")
+
+for line in sys.stdin.readlines():
+    if re.match(r'msg\s+(\S+.*)', line):
+        c = re.match(r'msg\s+(\S+.*)', line)
+        msg = c.group(1)
+
+if msg and re.match(r'(\S+.*', msg):
+    urban = server.lookup("7df8eccad5391dbbb45e81fa77f4c1a8", msg)
+    print "send "+urban[0].definition+"\n"
