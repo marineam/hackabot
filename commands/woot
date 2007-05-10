@@ -1,0 +1,9 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# What is Eric going to buy today?
+# !woot
+##HACKABOT_HELP##
+
+echo sendnext
+lynx -source www.woot.com | egrep "ctl00_ContentPlaceHolder_TitleHeader|PriceSpan" | sed -e 's/<[^>]*>//g' | perl -pi -e 's/^\s*(\S*.*)/$1/'
