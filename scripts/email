@@ -29,18 +29,28 @@ while (<>) {
 		$data = "$data\n$_";
 	}
 }
+
+if (not defined $to) {
+	$data =~ s/^\s*(\S+)\s+//s;
+	$to = $1;
+}
+
+if (not defined $to) {
+	die "No destination!";
+}
+
 my $msg = "";
 foreach (split(/\n/, $data)) {
 	s/^\s*//g;
 	s/\s*$//g;
+	if (/^--$/) {
+		last;
+	}
 	if (/\S/) {
 		$msg .= "$_\n";
 	}
 }
 
-if (not defined $to) {
-	die "subject was empty!\n";
-}
 if ($msg eq "") {
 	die "body was empty!\n";
 }
