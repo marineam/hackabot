@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Print who's made the most un-popular ++/-- elements
+# !unfonz
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use Time::localtime;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+sub get_list {
+	my ($dbh, $sth);
+	
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+	if (!$dbh) {
+		die "score: Failed to connect to database\n";
+	}
+
+	$sth = $dbh->prepare("SELECT nick, COUNT(name) as `count` FROM score WHERE value='1' OR value='-1' GROUP BY nick ORDER BY `count` DESC LIMIT 5");
+	$sth->execute;
+	my @list;
+	for (my $i = 0; $i < 5; $i++) {
+		$list[$i] = $sth->fetchrow_hashref;
+	}
+	$sth->finish();
+
+	$dbh->disconnect;
+
+	return @list;
+}
+
+
+my @list = get_list();
+print "sendnext\n";
+print "UnFonz Vars:\n";
+for (my $i = 0; $i < 5; $i++) {
+	print "  $list[$i]->{'count'} $list[$i]->{'nick'}\n";
+}
