@@ -22,7 +22,7 @@ while (<>) {
 	chomp;
 	if (/^Subject:/ and $inhead == 1) {
 		s/^Subject:\s*//;
-		$data = "$_ - ";
+		$data = "$_ -";
 	}
 	elsif (/^$/ and $inhead == 1) {
 		$inhead = 0;
@@ -33,8 +33,9 @@ while (<>) {
 	elsif (/^$/ and $inlog == 1) {
 		$inlog = 0;
 	}
-	else ($inlog == 1) {
+	elsif ($inlog == 1) {
 		$data .= " $_";
+	}
 }
 chomp($data);
 
