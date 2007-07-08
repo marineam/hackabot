@@ -19,7 +19,7 @@ else {
 	$default =~ s/say$//;
 }
 
-$ENV{'COWPATH'} = "/usr/share/cowsay/cows:".$ENV{'HACKABOT_DIR'}."/misc/cows";
+$ENV{'COWPATH'} = $ENV{'HACKABOT_DIR'}."/misc/cows";
 
 my $msg;
 while (<>) {
