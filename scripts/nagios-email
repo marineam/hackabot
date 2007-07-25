@@ -27,10 +27,12 @@ while (<>) {
 		$inhead = 0;
 	}
 	elsif (/^Info/ and $inhead == 0) {
-		$data .= " | $_";
+		s/^Info:\s*//;
+		$data .= ", $_";
 	}
 	elsif (/^Date/ and $inhead == 0) {
-		$data .= " | $_";
+		s/^Date:\s*//;
+		$data .= " $_";
 	}
 }
 chomp($data);
