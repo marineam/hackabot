@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use XML::Simple;
+
+my $conffile = shift;
+my $chan = shift;
+
+my $CONFIG = XMLin($conffile);
+
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+my ($dbh, $sth);
+
+$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 }) or die "stats: Failed to connect to database\n";
+
+$chan = $dbh->quote($chan);
+my $sth = $dbh->prepare("SELECT * FROM log WHERE type = 'stats' AND chan = $chan ORDER BY id");
+$sth->execute;
+my $row;
+while ($row = $sth->fetchrow_hashref) {
+	my $time = `date -d '$row->{'date'}' '+%s'`;
+	chomp $time;
+	print "$time $row->{'num'}\n";
+}
+
+$dbh->disconnect;
