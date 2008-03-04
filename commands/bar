@@ -1,0 +1,151 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Recommends a place you should drink.
+# !bar [ add <place> | noun <item> | adj <description> ]
+##HACKABOT_HELP##
+
+# This is based on Scott's lunchalizer irssi script/bot
+# but hacked to hell so it is a bit different
+#
+# VERSION = "1.2"
+# author = 'mccammos'
+# contact = 'mccammos\@onid.orst.edu'
+# name => 'lunchalizer'
+# description = 'a bot script, typing !lunch will suggest a random place for lunch',
+# license => 'GNU GPL v2 or later',
+
+use strict;
+use DBI;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+sub make_drink {
+    my ($dbh, $sth, @row, $bar, $time);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    
+    $time = `date "+%y%m%d%H%M"`;
+    chomp $time;
+    $time = $dbh->quote($time);
+
+    $sth = $dbh->prepare("SELECT location_id,location_name,lastused
+        FROM bar_location ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $bar = "suggests " . $row[1];
+    $sth->finish();
+
+    my $id = $dbh->quote($row[0]);
+    $dbh->do("UPDATE bar_location SET lastused = $time WHERE location_id = $id");
+
+    $sth = $dbh->prepare("SELECT adj_name FROM bar_adj ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $bar = $bar . " for " . $row[0];
+    $sth->finish();
+
+    $sth = $dbh->prepare("SELECT n_name FROM bar_n ORDER BY RAND() LIMIT 1");
+    $sth->execute;
+    @row = $sth->fetchrow_array or return;
+    $bar = $bar . " " . $row[0];
+    $sth->finish();
+
+    $dbh->disconnect;
+    return $bar;
+}
+
+sub add_location {
+    my ($location) = @_;
+    my ($dbh, $sth, $ret);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("INSERT INTO bar_location(location_name) VALUES (?)");
+
+    if ($sth->execute($location)) {
+        $ret = "drinkalizer added location '$location'";
+    } elsif ($dbh->err == 1062) {
+        $ret = "drinkalizer already knows about '$location'";
+    } else {
+        $ret = "drinkalizer failed to add '$location'";
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_noun {
+    my ($noun) = @_;
+    my ($dbh, $sth, $ret);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("INSERT INTO bar_n(n_name) VALUES (?)");
+
+    if ($sth->execute($noun)) {
+        $ret = "drinkalizer added noun '$noun'";
+    } elsif ($dbh->err == 1062) {
+        $ret = "drinkalizer already has noun '$noun'";
+    } else {
+        $ret = "drinkalizer failed to add '$noun'";
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+sub add_adj {
+    my ($adj) = @_;
+    my ($dbh, $sth, $ret);
+
+    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+    if (!$dbh) {
+        print("Failed to connect to database\n");
+        return;
+    }
+    $sth = $dbh->prepare("INSERT INTO bar_adj(adj_name) VALUES (?)");
+
+    if ($sth->execute($adj)) {
+        $ret = "drinkalizer added adjective '$adj'";
+    } elsif ($dbh->err == 1062) {
+        $ret = "drinkalizer already has adjective '$adj'";
+    } else {
+        $ret = "drinkalizer failed to add '$adj'";
+    }
+
+    $dbh->disconnect;
+    return $ret;
+}
+
+while (<>) {
+	if (/^msg\s*$/) {
+		print "me ".make_drink();
+	}
+	elsif (/^msg\s+add\s+(\S+.*)$/) {
+		print "send ".add_location($1);
+	}
+	elsif (/^msg\s+noun\s+(\S+.*)$/) {
+		print "send ".add_noun($1);
+	}
+	elsif (/^msg\s+adj\s+(\S+.*)$/) {
+		print "send ".add_adj($1);
+	}
+}
