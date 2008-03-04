@@ -11,9 +11,10 @@ if (not defined $conf) {
 
 my $CONFIG = XMLin($conf);
 
-system("mysqldump --no-data"
+system("mysqldump --no-data --skip-lock-tables --skip-add-drop-table"
 	." --host=".$CONFIG->{'cmdconfig'}->{"database"}->{"host"}
 	." --user=".$CONFIG->{'cmdconfig'}->{"database"}->{"user"}
 	." --password=".$CONFIG->{'cmdconfig'}->{"database"}->{"pass"}
-	." ".$CONFIG->{'cmdconfig'}->{"database"}->{"name"});
+	." ".$CONFIG->{'cmdconfig'}->{"database"}->{"name"}
+	." | sed -e 's/^).*;\$/);/'");
 

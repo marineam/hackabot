@@ -1,8 +1,54 @@
--- MySQL dump 9.11
+-- MySQL dump 10.11
 --
--- Host: db0.osuosl.org    Database: manatee_data
+-- Host: db2.osuosl.org    Database: manatee_data
 -- ------------------------------------------------------
--- Server version	4.0.24_Debian-10sarge1-log
+-- Server version	5.0.46-log
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `bar_adj`
+--
+
+CREATE TABLE `bar_adj` (
+  `adj_id` int(10) unsigned NOT NULL auto_increment,
+  `adj_name` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`adj_id`),
+  UNIQUE KEY `adj_name` (`adj_name`)
+);
+
+--
+-- Table structure for table `bar_location`
+--
+
+CREATE TABLE `bar_location` (
+  `location_id` int(10) unsigned NOT NULL auto_increment,
+  `location_name` varchar(255) NOT NULL default '',
+  `lastused` int(11) NOT NULL default '1',
+  PRIMARY KEY  (`location_id`),
+  UNIQUE KEY `location_name` (`location_name`),
+  KEY `lastused` (`lastused`)
+);
+
+--
+-- Table structure for table `bar_n`
+--
+
+CREATE TABLE `bar_n` (
+  `n_id` int(10) unsigned NOT NULL auto_increment,
+  `n_name` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`n_id`),
+  UNIQUE KEY `n_name` (`n_name`)
+);
 
 --
 -- Table structure for table `blame`
@@ -17,7 +63,7 @@ CREATE TABLE `blame` (
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `lastused` (`lastused`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `fire`
@@ -30,7 +76,7 @@ CREATE TABLE `fire` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `group`
@@ -43,7 +89,7 @@ CREATE TABLE `group` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `hangman`
@@ -58,7 +104,7 @@ CREATE TABLE `hangman` (
   `wrong` varchar(255) NOT NULL default '',
   `nick` varchar(20) default NULL,
   PRIMARY KEY  (`chan`,`state`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `log`
@@ -73,7 +119,42 @@ CREATE TABLE `log` (
   `type` enum('msg','action','notice','join','part','quit','stats','topic') NOT NULL default 'msg',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) TYPE=MyISAM;
+);
+
+--
+-- Table structure for table `lunch_adj`
+--
+
+CREATE TABLE `lunch_adj` (
+  `adj_id` int(10) unsigned NOT NULL auto_increment,
+  `adj_name` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`adj_id`),
+  UNIQUE KEY `adj_name` (`adj_name`)
+);
+
+--
+-- Table structure for table `lunch_location`
+--
+
+CREATE TABLE `lunch_location` (
+  `location_id` int(10) unsigned NOT NULL auto_increment,
+  `location_name` varchar(255) NOT NULL default '',
+  `lastused` int(11) NOT NULL default '1',
+  PRIMARY KEY  (`location_id`),
+  UNIQUE KEY `location_name` (`location_name`),
+  KEY `lastused` (`lastused`)
+);
+
+--
+-- Table structure for table `lunch_n`
+--
+
+CREATE TABLE `lunch_n` (
+  `n_id` int(10) unsigned NOT NULL auto_increment,
+  `n_name` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`n_id`),
+  UNIQUE KEY `n_name` (`n_name`)
+);
 
 --
 -- Table structure for table `quotes`
@@ -85,7 +166,7 @@ CREATE TABLE `quotes` (
   `nick` varchar(20) NOT NULL default '',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `reminder`
@@ -100,7 +181,7 @@ CREATE TABLE `reminder` (
   `created` varchar(20) default NULL,
   PRIMARY KEY  (`id`),
   KEY `time` (`time`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `score`
@@ -113,7 +194,7 @@ CREATE TABLE `score` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `tard`
@@ -127,7 +208,7 @@ CREATE TABLE `tard` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) TYPE=MyISAM;
+);
 
 --
 -- Table structure for table `topic`
@@ -142,7 +223,22 @@ CREATE TABLE `topic` (
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `lastused` (`lastused`)
-) TYPE=MyISAM;
+);
+
+--
+-- Table structure for table `whip`
+--
+
+CREATE TABLE `whip` (
+  `id` int(10) NOT NULL auto_increment,
+  `text` varchar(255) NOT NULL default '',
+  `nick` varchar(20) default NULL,
+  `chan` varchar(20) default NULL,
+  `date` varchar(20) default NULL,
+  `lastused` int(10) NOT NULL default '1',
+  PRIMARY KEY  (`id`),
+  KEY `lastused` (`lastused`)
+);
 
 --
 -- Table structure for table `wtf`
@@ -160,5 +256,15 @@ CREATE TABLE `wtf` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `acronym_i` (`acronym_i`),
   KEY `lastused` (`lastused`)
-) TYPE=MyISAM;
+);
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2008-03-04  6:16:10
