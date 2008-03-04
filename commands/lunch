@@ -48,7 +48,7 @@ sub make_lunch {
     $sth->finish();
 
     my $id = $dbh->quote($row[0]);
-    $dbh->do("UPDATE blame SET lastused = $time WHERE id = $id");
+    $dbh->do("UPDATE lunch_location SET lastused = $time WHERE id = $id");
 
     $sth = $dbh->prepare("SELECT adj_name FROM lunch_adj ORDER BY RAND() LIMIT 1");
     $sth->execute;
