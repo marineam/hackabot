@@ -1,0 +1,10 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+while (<>) {
+	if (/^msg.*(ponies|pony)/i) {
+		print "send OMG!!! Ponies!!!\n";
+	}
+}
+

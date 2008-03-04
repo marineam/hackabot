@@ -1,0 +1,130 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Whip someone!
+# !whip [someone] | --add some new whip
+##HACKABOT_HELP##
+
+use strict;
+use DBI;
+use Time::localtime;
+use XML::Simple;
+
+my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
+my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+
+my $dbhost = $DBCFG->{'host'};
+my $dbname = $DBCFG->{'name'};
+my $dbuser = $DBCFG->{'user'};
+my $dbpass = $DBCFG->{'pass'};
+
+my $privmsg = 0;
+my ($chan, $msg, $nick);
+while (<>) {
+	if (/^type\s+privmsg/) {
+		$privmsg = 1;
+	}
+	elsif (/^to\s+(.+)/) {
+		$chan = $1;
+	}
+	elsif (/^nick\s+(.+)/) {
+		$nick = $1;
+	}
+	elsif (/^msg\s+(.*\S+)\s*$/) {
+		$msg = $1;
+	}
+}
+
+if (not defined $nick or not defined $chan) {
+	die "blame: not all info was given.\n";
+}
+
+if (defined $msg and $msg =~ /^--add\s+(.+)/) {
+	my $blame = $1;
+	chomp $blame;
+	my $ret;
+	if ($privmsg) {
+		$ret = add_whip($blame, $nick);
+	}
+	else {
+		$ret = add_whip($blame, $nick, $chan);
+	}
+	print "send $nick: $ret\n";
+	exit;
+}
+
+if ($privmsg) {
+	print "send I'll whip you!!!\n";
+	exit;
+}
+
+if (not defined $msg) {
+	my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
+	chomp $names;
+	$names =~ s/^\S+\s+\S+\s+//;
+	my @list = split(/\s+/, $names);
+	$msg = $list[int(rand(@list))];
+}
+
+print "me whips $msg with a ". get_whip() .".\n";
+
+
+sub get_whip {
+	my ($dbh, $sth);
+
+	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		die "blame: Failed to connect to database\n";
+	}
+	
+	my $time = `date "+%y%m%d%H%M"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+
+	$sth = $dbh->prepare("SELECT id,text,lastused FROM whip ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+	$sth->execute;
+	my $row = $sth->fetchrow_hashref;
+	my $value = $row->{'text'};
+	my $id = $row->{'id'};
+	$sth->finish();
+
+	$id = $dbh->quote($id);
+	$dbh->do("UPDATE whip SET lastused = $time WHERE id = $id") 
+		or $value .= " because the whip database cannot be updated";
+
+	$dbh->disconnect;
+
+	return $value;
+}
+
+sub add_whip {
+	my $txt = shift;
+	my $nick = shift;
+	my $chan = shift;
+
+	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
+	if (!$dbh) {
+		print STDERR "whip: Failed to connect to database\n";
+		return  "I'm a failure! I couldn't add it. :-(";
+	}
+	
+	my $time = `date "+%F %R"`;
+	chomp $time;
+	$time = $dbh->quote($time);
+	
+	$txt = $dbh->quote($txt);
+	$nick = $dbh->quote($nick);
+	if (defined $chan) {
+		$chan = $dbh->quote($chan);
+	}
+	else {
+		$chan = 'NULL';
+	}
+	
+	my $ret = "Successfully added.";
+	$dbh->do("INSERT whip SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+
+	$dbh->disconnect;
+
+	return $ret;
+}
