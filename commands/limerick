@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Get a limerick!
+# !limerick [number]
+##HACKABOT_HELP##
+
+use strict;
+
+my $url = "http://limerickdb.com/?random2";
+while (<>) {
+	if (/^msg\s+(\d+)/) {
+		$url = "http://limerickdb.com/?$1";
+	}
+}
+
+open(PAGE, "lynx -dump '$url' |");
+
+my $print = 0;
+while (<PAGE>) {
+	s/^\s+//;
+	s/\s+$//;
+
+	if (not $print and /^\[\d+\]#\d+/) {
+		$print = 1;
+	}
+	elsif ($print and (/^\[\d+\]#\d+/ or /^$/)) {
+		last;
+	}
+	elsif ($print) {
+		print "send $_\n";
+	}
+}
+
+close(PAGE);
