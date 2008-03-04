@@ -1,15 +1,19 @@
 #!/usr/bin/perl
-# pass in location as parm (zip or airport code)
+
+##HACKABOT_HELP##
+# Lets talk about the weather
+# !weather zip or airport code
+##HACKABOT_HELP##
 
 use XML::Simple;
 use URI::Escape;
 
 my ($location, $asker);
 while (<>) {
-  if (/^nick\s*(\S*)/) {
+  if (/^nick\s+(\S+)/) {
     $asker = $1; 
   }
-  elsif (/^msg\s*(.*)/) {
+  elsif (/^msg\s+(\S+)/) {
     $location = $1; 
   }
 }
