@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+# pass in location as parm (zip or airport code)
+
+use XML::Simple;
+use URI::Escape;
+
+my ($location, $asker);
+while (<>) {
+  if (/^nick\s*(\S*)/) {
+    $asker = $1; 
+  }
+  elsif (/^msg\s*(.*)/) {
+    $location = $1; 
+  }
+}
+
+if (($location ne "") and defined $asker ) {
+    $location = uri_escape($location);
+    my $output_current = `wget --quiet -O - http:\/\/api.wunderground.com\/auto\/wui\/geo\/WXCurrentObXML\/index.xml?query=$location`;
+    my $output_forecast = `wget --quiet -O - http:\/\/api.wunderground.com\/auto\/wui\/geo\/ForecastXML\/index.xml?query=$location`;
+
+    if (not defined $output_current or not defined $output_forecast) {
+        print "send $asker: Error grabbing weather information :-(\n";
+        exit;
+    }
+
+    my $xml = new XML::Simple;
+    my $data_current = $xml->XMLin($output_current);
+    my $data_forecast = $xml->XMLin($output_forecast);
+
+    if ($data_current->{display_location}->{full} eq ", ") {
+        print "send $asker: Invalid location code: $location\n";
+        exit
+    }
+
+    print "send $asker: Current weather for $data_current->{display_location}->{full}\n";
+    my $weather = "$data_current->{weather}, Temp: $data_current->{temp_f},";
+    if ($data_current->{heat_index_f} ne 'NA') {
+        $weather = "$weather Heat Index: $data_current->{heat_index_f} F,";
+    } else {
+        $weather = "$weather Wind Chill: $data_current->{windchill_f} F,";
+    };
+    $weather = "$weather Humidity: $data_current->{relative_humidity}, Pressure: $data_current->{pressure_in}\",";
+    $weather = "$weather Wind: $data_current->{wind_dir} $data_current->{wind_mph}mph";
+    print "send $weather\n";
+    $weather = "Forecast: $data_forecast->{simpleforecast}->{forecastday}[0]->{conditions},";
+    $weather = "$weather High: $data_forecast->{simpleforecast}->{forecastday}[0]->{high}->{fahrenheit} F,";
+    $weather = "$weather Low: $data_forecast->{simpleforecast}->{forecastday}[0]->{low}->{fahrenheit} F";
+    print "send $weather\n";
+} else {
+    print "send $asker: You must enter a location code, either zip or airport\n";
+}
