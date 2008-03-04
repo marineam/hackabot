@@ -48,7 +48,7 @@ sub make_lunch {
     $sth->finish();
 
     my $id = $dbh->quote($row[0]);
-    $dbh->do("UPDATE lunch_location SET lastused = $time WHERE id = $id");
+    $dbh->do("UPDATE lunch_location SET lastused = $time WHERE location_id = $id");
 
     $sth = $dbh->prepare("SELECT adj_name FROM lunch_adj ORDER BY RAND() LIMIT 1");
     $sth->execute;
@@ -91,7 +91,7 @@ sub add_location {
 
 sub add_noun {
     my ($noun) = @_;
-    my ($dbh, $sth, $noun, $ret);
+    my ($dbh, $sth, $ret);
 
     $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
     if (!$dbh) {
@@ -114,7 +114,7 @@ sub add_noun {
 
 sub add_adj {
     my ($adj) = @_;
-    my ($dbh, $sth, $adj, $ret);
+    my ($dbh, $sth, $ret);
 
     $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
     if (!$dbh) {
