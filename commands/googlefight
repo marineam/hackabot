@@ -6,12 +6,7 @@
 ##HACKABOT_HELP##
 
 use strict;
-use Net::Google;
 use URI::Escape;
-use XML::Simple;
-
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
-my $CMDCFG = $CONFIG->{'cmdconfig'}->{'google'};
 
 my ($nick, $word1, $word2, $msg);
 while (<>) {
@@ -33,7 +28,7 @@ if (defined $msg) {
 	elsif ($msg =~ /^(\S+)/) {
 		$word1 = $1;
 	}
-	
+
 	if ($msg =~ /("[^"]+")$/) {
 		$word2 = $1;
 	}
@@ -82,15 +77,8 @@ sub gethits {
 		return 0;
 	}
 
-	my $google = Net::Google->new(key=>$CMDCFG->{'apikey'});
-	my $search = $google->search();
-
-	$search->query($word);
-	my @responses = @{$search->response()};
-	if (defined $responses[0]) {
-		return int($responses[0]->estimatedTotalResultsCount());
-	}
-	else {
-		return 0;
-	}
+	$word = uri_escape($word);
+	my $google = `lynx --dump "http://www.google.com/search?q=$word" | grep -m1 Results | sed -e 's/.*of about *//' -e 's/  *.*//' -e 's/,//g'`;
+	chomp $google;
+	return int($google);
 }

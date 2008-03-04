@@ -32,9 +32,6 @@
 			<!-- don't print messages in here elsewhere -->
 			<privatechan chan="#private" />
 		</seen>
-		<google>
-			<apikey>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</apikey>
-		</google>
 		<bookmark>
 			<user>mydelicioususer</user>
 			<passwd>mydeliciouspass</passwd>
