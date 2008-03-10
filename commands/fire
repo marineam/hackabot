@@ -147,22 +147,22 @@ if (defined $name and not $name =~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/)
 	$name =~ /^(\S+)/;
 	my $val = add_score($1, $nick, $chan);
 	if ($val eq "1") {
-		print "send $name is fired!\n";
+		print "me fires $name!\n";
 	}
 	elsif ($val =~ /^1.$/) {
-		print "send $name is fired for the ${val}th time!\n";
+		print "me fires $name for the ${val}th time!\n";
 	}
 	elsif ($val =~ /1$/) {
-		print "send $name is fired for the ${val}st time!\n";
+		print "me fires $name for the ${val}st time!\n";
 	}
 	elsif ($val =~ /2$/) {
-		print "send $name is fired for the ${val}nd time!\n";
+		print "me fires $name for the ${val}nd time!\n";
 	}
 	elsif ($val =~ /3$/) {
-		print "send $name is fired for the ${val}rd time!\n";
+		print "me fires $name for the ${val}rd time!\n";
 	}
 	else {
-		print "send $name is fired for the ${val}th time!\n";
+		print "me fires $name for the ${val}th time!\n";
 	}
 }
 elsif (defined $name and $name =~ /(-h|--high|-l|--low|-n|--nicks)/) {
