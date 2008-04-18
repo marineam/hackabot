@@ -23,8 +23,8 @@ while (<>) {
 if (defined $nick and defined $msg) {
 	$msg =~ s/\s*$//;
 	$msg = uri_escape($msg);
-	my $page = get("http://www.sloganizer.net/en/?slogan=$msg");
-	$page =~ /<p class="slogan">.<b>(.*)<\/b>.<\/p>/;
+	my $page = get("http://www.sloganizer.net/en/outbound.php?slogan=$msg");
+	$page =~ /<a[^>]+>(.*)<\/a>/;
 	my $slogan = $1;
 
 	$slogan = decode_entities($slogan);
