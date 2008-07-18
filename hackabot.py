@@ -43,7 +43,16 @@ class Hackabot(SingleServerIRCBot):
 		os.putenv("HACKABOT_SOCK", \
 			str(self.config.directory)+"/"+str(self.config.socket))
 
-		SingleServerIRCBot.__init__(self, [(str(self.config.server), int(str(self.config.port)))], str(self.config.nick), str(self.config.name), int(str(self.config.reconnect)))
+		server_info = [ str(self.config.server),
+				int(str(self.config.port)) ]
+
+		if hasattr(self.config, "password"):
+			server_info.append(str(self.config.password))
+
+		SingleServerIRCBot.__init__(self, [server_info],
+			str(self.config.nick),
+			str(self.config.name),
+			int(str(self.config.reconnect)) )
 
 	def on_nicknameinuse(self, c, event):
 		self.connection.nick(self.connection.get_nickname() + "_")
