@@ -16,8 +16,8 @@ if (not defined $sock) {
 
 my $addr = sockaddr_un($sock);
 
-socket(CONN,PF_UNIX,SOCK_STREAM,0);
-connect(CONN, $addr);
+socket(CONN,PF_UNIX,SOCK_STREAM,0) or die "Unable to Create Sock";
+connect(CONN, $addr) or die "Unable to Connect to $addr";
 my $line;
 CONN->autoflush(1);
 while(<>) {
