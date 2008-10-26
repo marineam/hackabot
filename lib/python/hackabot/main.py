@@ -114,17 +114,18 @@ def main(argv=sys.argv):
         try:
             logfile = open(options.file)
         except IOError, (exno, exstr):
-            sys.stderr.write("Failed to open %s: %s" % (options.file, exstr))
+            sys.stderr.write("Failed to open %s: %s\n" % (options.file, exstr))
+            sys.exit(1)
     else:
         logfile = sys.stdout
-
-    log.init(logfile, options.level)
 
     try:
         conffp = open(conffile)
     except IOError, (exno, exstr):
-        log.error("Failed to open %s: %s" % (conf, exstr))
+        sys.stderr.write("Failed to open %s: %s\n" % (conf, exstr))
         sys.exit(1)
+
+    log.init(logfile, options.level)
 
     config = SafeConfigParser()
     config.readfp(conffp)
