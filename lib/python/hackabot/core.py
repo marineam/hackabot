@@ -29,6 +29,9 @@ class HBotConnection(irc.IRCClient):
         self.username = self.factory.username
         self.realname = self.factory.realname
 
+        # Used to track channel information
+        self.channels = {}
+
         irc.IRCClient.connectionMade(self)
 
     def signedOn(self):
@@ -38,14 +41,74 @@ class HBotConnection(irc.IRCClient):
         for chan in self.factory.channels:
             self.join(chan['channel'], chan['password'])
 
+    def nickChanged(self, nick):
+        log.info("Nick changed to: %s" % nick)
+        self.nickname = nick
+
     def privmsg(self, sent_by, sent_to, msg):
         log.debug("<%s> %s" % (nick(sent_by), msg))
 
     def action(self, sent_by, sent_to, msg):
         log.debug("<%s> %s" % (nick(sent_by), msg))
 
+    def noticed(self, sent_by, sent_to, msg):
+        log.debug("<%s> %s" % (nick(sent_by), msg))
+
     def joined(self, channel):
         log.info("Joined %s" % channel)
+        self.channels[channel] = {'users': set(), 'topic': ""}
+
+    def left(self, channel):
+        log.info("Left %s" % channel)
+        del self.channels[channel]
+
+    def kickedFrom(self, channel, kicker, msg):
+        log.info("Kicked from %s by %s: %s" % (channel, nick(kicker), msg))
+        del self.channels[channel]
+
+    def topicUpdated(self, user, channel, topic):
+        log.debug("%s topic: %s" % (channel, topic))
+        self.channels[channel]['topic'] = topic
+
+    def userJoined(self, user, channel):
+        log.debug("%s joined channel %s" % (user, channel))
+        self.channels[channel]['users'].add(user)
+
+    def userLeft(self, user, channel):
+        log.debug("%s left channel %s" % (user, channel))
+        self.channels[channel]['users'].discard(user)
+
+    def userKicked(self, user, channel, kicker, msg):
+        log.debug("%s kicked from %s by %s: %s" % (user, channel, kicker, msg))
+        self.channels[channel]['users'].discard(user)
+
+    def userQuit(self, user, msg):
+        log.debug("%s quit: %s" % (user, msg))
+        for chan in self.channels:
+            chan['users'].discard(user)
+
+    def userRenamed(self, oldname, newname):
+        log.debug("%s changed to %s" % oldname, newname)
+        for chan in self.channels:
+            if oldname in chan['users']:
+                chan['users'].discard(oldname)
+                chan['users'].add(newname)
+
+    def irc_RPL_NAMREPLY(self, prefix, params):
+        # Odd that twisted doesn't handle this one
+        channel = params[2]
+        users = params[3]
+
+        log.debug("%s users: %s" % (channel, users))
+
+        for user in users.split():
+            if user[0] in ('+', '@'):
+                user = user[1:]
+            self.channels[channel]['users'].add(user)
+
+    def irc_unknown(self, prefix, command, params):
+        log.trace("unknown: %s %s %s" % (prefix, command, params))
+
 
 class HBotNetwork(protocol.ClientFactory):
     """Maintain a connection to an IRC network"""

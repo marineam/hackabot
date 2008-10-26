@@ -5,7 +5,7 @@ import sys
 
 from twisted.python import log, util, failure
 
-LEVELS = [ '????', 'ERROR', 'WARN', 'INFO', 'DEBUG' ]
+LEVELS = [ 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE' ]
 
 _log_fallback = sys.stdout
 
@@ -15,10 +15,8 @@ def _logger(event):
 
     try:
         level = event.get('log_level', 'INFO')
-        if level not in LEVELS:
-            level = '????'
 
-        if _log_level < LEVELS.index(level):
+        if level in LEVELS and _log_level < LEVELS.index(level):
             return
 
         prefix = event.get('prefix', event.get('system', '-'))
@@ -54,3 +52,6 @@ def info(text, **kw):
 
 def debug(text, **kw):
     log.msg(text, log_level='DEBUG', **kw)
+
+def trace(text, **kw):
+    log.msg(text, log_level='TRACE', **kw)
