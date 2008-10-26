@@ -6,8 +6,7 @@ from ConfigParser import SafeConfigParser
 
 from twisted.internet import reactor
 
-from hackabot import core
-from hackabot import log
+from hackabot import core, log, db
 
 class ConfigError(Exception):
     pass
@@ -29,8 +28,8 @@ def parse_options(argv):
 
     return options, args[0]
 
-def start_networks(config):
-    """Connect to each network defined in config"""
+def init(config):
+    """Connect to each network defined in config, also start the db"""
 
     def addbynet(netdict, section, islist):
         secdict = dict(config.items(section))
@@ -42,6 +41,7 @@ def start_networks(config):
         else:
             netdict[net] = [secdict]
 
+    dbsection = None
     networks = {}
     servers = {}
     autojoin = {}
@@ -90,11 +90,24 @@ def start_networks(config):
             else:
                 autojoin[join['network']] = [join]
 
+        elif section.lower() == "database":
+            dbsection = section
         else:
             log.warn("Unknown section: %s" % section)
 
     if not networks:
         raise ConfigError("No networks defined")
+
+    if not dbsection:
+        log.info("No database section, running without a db...")
+    else:
+        dbcfg = dict(config.items(dbsection))
+
+        for var in ('hostname', 'database', 'username', 'password'):
+            if var not in dbcfg:
+                raise ConfigError("Database section missing %s option"%var)
+
+        db.init(dbcfg)
 
     for net in networks:
         if net not in servers:
@@ -104,7 +117,6 @@ def start_networks(config):
                 autojoin.get(net, []))
         hb.connect()
 
-
 def main(argv=sys.argv):
     """Start up Hackabot"""
 
@@ -112,7 +124,7 @@ def main(argv=sys.argv):
 
     if options.file:
         try:
-            logfile = open(options.file)
+            logfile = open(options.file, 'a')
         except IOError, (exno, exstr):
             sys.stderr.write("Failed to open %s: %s\n" % (options.file, exstr))
             sys.exit(1)
@@ -131,9 +143,15 @@ def main(argv=sys.argv):
     config.readfp(conffp)
 
     try:
-        start_networks(config)
+        init(config)
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
+    except db.DBError, ex:
+        log.error(str(ex))
+        sys.exit(1)
+
+    # Delay taking over stdio so any startup errors can go to stderr
+    log.init_stdio()
 
     reactor.run()

@@ -3,16 +3,12 @@
 import os
 import sys
 
-# Assuming the install follows the upstream structure set some globals:
-HB_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#HB_PERL = "%s/lib/perl" % HB_ROOT
-HB_PYTHON = "%s/lib/python" % HB_ROOT
-HB_COMMANDS = "%s/commands" % HB_ROOT
-# etc...
-
-sys.path.append(HB_PYTHON)
-
-from hackabot.main import main
-
 if __name__ == "__main__":
-    main()
+    # Assume this file is HB_ROOT/bin/hackabot
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append("%s/lib/python" % root)
+
+    from hackabot import main, env
+
+    env.init(root)
+    main.main()

@@ -7,11 +7,12 @@ from twisted.python import log, util, failure
 
 LEVELS = [ 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE' ]
 
-_log_fallback = sys.stdout
+_log_fallback = sys.stderr
+_loud_init = False
 
 def _logger(event):
     # This is a twisted log observer
-    # Attempt to report all exceptions to stdout since they will be lost
+    # Attempt to report all exceptions to stderr since they will be lost
 
     try:
         level = event.get('log_level', 'INFO')
@@ -27,19 +28,39 @@ def _logger(event):
         line = "%s %s %s: %s\n" % (date, level, prefix, text)
         util.untilConcludes(_log_file.write, line)
         util.untilConcludes(_log_file.flush)
+
+        if _loud_init and level in ('ERROR', 'WARN'):
+            util.untilConcludes(sys.stderr.write, line)
+            util.untilConcludes(sys.stderr.flush)
+
     except:
         _log_fallback.write("%s" % failure.Failure())
 
 
 def init(log_file, log_level):
-    global _log_file, _log_level
+    """Start up logging system"""
+    global _log_file, _log_level, _loud_init
 
     assert log_level in LEVELS
 
     _log_file = log_file
     _log_level = LEVELS.index(log_level)
 
+    if _log_file != sys.stdout:
+        _loud_init = True
+
     log.startLoggingWithObserver(_logger, setStdout=0)
+
+def init_stdio():
+    """Take over sys.stderr and sys.stdout
+
+    Do this here instead of init so we can be loud about startup errors.
+    """
+    global _loud_init
+
+    sys.stdout = log.logfile
+    sys.stderr = log.logerr
+    _loud_init = False
 
 def error(text, **kw):
     log.msg(text, log_level='ERROR', **kw)
