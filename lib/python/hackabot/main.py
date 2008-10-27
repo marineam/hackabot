@@ -73,9 +73,9 @@ def init(config):
                 server['ssl'] = False
 
             if server['network'] in servers:
-                servers[join['network']].append(server)
+                servers[server['network']].append(server)
             else:
-                servers[join['network']] = [server]
+                servers[server['network']] = [server]
 
         elif section.lower().startswith("autojoin"):
             if not config.has_option(section, "channel"):
