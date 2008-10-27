@@ -4,7 +4,7 @@ from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor
 from twisted.python import context
 
-from hackabot import log
+from hackabot import log, db
 
 def nick(sent_by):
     return sent_by.split('!',1)[0]
@@ -48,44 +48,81 @@ class HBotConnection(irc.IRCClient):
     def privmsg(self, sent_by, sent_to, msg):
         log.debug("<%s> %s" % (nick(sent_by), msg))
 
+        if sent_to == self.nickname:
+            chan = None
+        else:
+            chan = sent_to
+
+        db.dblog('msg', sent_by, chan, msg)
+
     def action(self, sent_by, sent_to, msg):
         log.debug("<%s> %s" % (nick(sent_by), msg))
 
+        if sent_to == self.nickname:
+            chan = None
+        else:
+            chan = sent_to
+
+        db.dblog('action', sent_by, chan, msg)
+
     def noticed(self, sent_by, sent_to, msg):
         log.debug("<%s> %s" % (nick(sent_by), msg))
+
+        if sent_to == self.nickname:
+            chan = None
+        else:
+            chan = sent_to
+
+        db.dblog('notice', sent_by, chan, msg)
 
     def joined(self, channel):
         log.info("Joined %s" % channel)
         self.channels[channel] = {'users': set(), 'topic': ""}
 
+        db.dblog('join', self.nickname, channel)
+
     def left(self, channel):
         log.info("Left %s" % channel)
         del self.channels[channel]
+
+        db.dblog('part', self.nickname, channel)
 
     def kickedFrom(self, channel, kicker, msg):
         log.info("Kicked from %s by %s: %s" % (channel, nick(kicker), msg))
         del self.channels[channel]
 
+        #TODO: dblog
+
     def topicUpdated(self, user, channel, topic):
         log.debug("%s topic: %s" % (channel, topic))
         self.channels[channel]['topic'] = topic
+
+        db.dblog('topic', user, channel, topic)
 
     def userJoined(self, user, channel):
         log.debug("%s joined channel %s" % (user, channel))
         self.channels[channel]['users'].add(user)
 
+        db.dblog('join', user, channel)
+
     def userLeft(self, user, channel):
         log.debug("%s left channel %s" % (user, channel))
         self.channels[channel]['users'].discard(user)
+
+        db.dblog('part', user, channel)
 
     def userKicked(self, user, channel, kicker, msg):
         log.debug("%s kicked from %s by %s: %s" % (user, channel, kicker, msg))
         self.channels[channel]['users'].discard(user)
 
+        #TODO: dblog
+
     def userQuit(self, user, msg):
         log.debug("%s quit: %s" % (user, msg))
         for chan in self.channels:
             chan['users'].discard(user)
+
+        db.dblog('quit', user, msg=msg)
 
     def userRenamed(self, oldname, newname):
         log.debug("%s changed to %s" % oldname, newname)
@@ -93,6 +130,8 @@ class HBotConnection(irc.IRCClient):
             if oldname in chan['users']:
                 chan['users'].discard(oldname)
                 chan['users'].add(newname)
+
+        #TODO: dblog
 
     def irc_RPL_NAMREPLY(self, prefix, params):
         # Odd that twisted doesn't handle this one
@@ -105,6 +144,8 @@ class HBotConnection(irc.IRCClient):
             if user[0] in ('+', '@'):
                 user = user[1:]
             self.channels[channel]['users'].add(user)
+
+        #TODO dblog
 
     def irc_unknown(self, prefix, command, params):
         log.trace("unknown: %s %s %s" % (prefix, command, params))

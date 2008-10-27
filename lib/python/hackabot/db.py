@@ -70,4 +70,17 @@ def init(dbcfg):
 
     _dbpool = adbapi.ConnectionPool("MySQLdb", host=dbcfg['hostname'],
             db=dbcfg['database'], user=dbcfg['username'],
-            passwd=dbcfg['password'])
+            passwd=dbcfg['password'], cp_noisy=False)
+
+def dblog(event, nick=None, channel=None, text=None):
+    """Record an event to the log table"""
+
+    # These correspond to the type column's enum values
+    assert event in ('msg','action','notice','join','part','quit','topic')
+
+    nick = nick.split('!')[0]
+
+    _dbpool.runOperation("INSERT INTO `log` "
+            "(`nick`, `chan`, `text`, `type`, `date`) "
+            "VALUES (%s, %s, %s, %s, NOW())",
+            (nick, channel, text, event))
