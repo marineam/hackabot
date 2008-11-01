@@ -135,14 +135,15 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `log` (
   `id` int(10) NOT NULL auto_increment,
-  `nick` varchar(20) default NULL,
-  `chan` varchar(20) default NULL,
+  `sent_by` varchar(50) default NULL,
+  `sent_to` varchar(50) default NULL,
+  `channel` varchar(50) default NULL,
   `text` text,
-  `num` int(11) default NULL,
-  `type` enum('msg','action','notice','join','part','quit','stats','topic') NOT NULL default 'msg',
-  `date` varchar(20) NOT NULL default '',
+  `count` int(11) default NULL,
+  `type` enum('msg','action','notice','join','part','quit','stats','topic','kick','rename') NOT NULL default 'msg',
+  `date` datetime NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -334,4 +335,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2008-10-28  2:53:35
+-- Dump completed on 2008-11-01 17:15:00

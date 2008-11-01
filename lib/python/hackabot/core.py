@@ -43,86 +43,91 @@ class HBotConnection(irc.IRCClient):
 
     def nickChanged(self, nick):
         log.info("Nick changed to: %s" % nick)
+
+        db.dblog('rename', sent_by=self.nickname, sent_to=nick)
         self.nickname = nick
 
     def privmsg(self, sent_by, sent_to, msg):
-        log.debug("<%s> %s" % (nick(sent_by), msg))
+        sent_by = nick(sent_by)
+        sent_to = nick(sent_to)
+        log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            chan = None
+            db.dblog('msg', sent_by=sent_by, sent_to=sent_to, text=msg)
         else:
-            chan = sent_to
+            db.dblog('msg', sent_by=sent_by, channel=sent_to, text=msg)
 
-        db.dblog('msg', sent_by, chan, msg)
 
     def action(self, sent_by, sent_to, msg):
-        log.debug("<%s> %s" % (nick(sent_by), msg))
+        sent_by = nick(sent_by)
+        sent_to = nick(sent_to)
+        log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            chan = None
+            db.dblog('action', sent_by=sent_by, sent_to=sent_to, text=msg)
         else:
-            chan = sent_to
-
-        db.dblog('action', sent_by, chan, msg)
+            db.dblog('action', sent_by=sent_by, channel=sent_to, text=msg)
 
     def noticed(self, sent_by, sent_to, msg):
-        log.debug("<%s> %s" % (nick(sent_by), msg))
+        sent_by = nick(sent_by)
+        sent_to = nick(sent_to)
+        log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            chan = None
+            db.dblog('notice', sent_by=sent_by, sent_to=sent_to, text=msg)
         else:
-            chan = sent_to
-
-        db.dblog('notice', sent_by, chan, msg)
+            db.dblog('notice', sent_by=sent_by, channel=sent_to, text=msg)
 
     def joined(self, channel):
         log.info("Joined %s" % channel)
         self.channels[channel] = {'users': set(), 'topic': ""}
 
-        db.dblog('join', self.nickname, channel)
+        db.dblog('join', sent_by=self.nickname, channel=channel)
 
     def left(self, channel):
         log.info("Left %s" % channel)
         del self.channels[channel]
 
-        db.dblog('part', self.nickname, channel)
+        db.dblog('part', sent_by=self.nickname, channel=channel)
 
     def kickedFrom(self, channel, kicker, msg):
         log.info("Kicked from %s by %s: %s" % (channel, nick(kicker), msg))
         del self.channels[channel]
 
-        #TODO: dblog
+        db.dblog('kick', sent_by=kicker, sent_to=self.nickname,
+                    channel=channel, text=msg)
 
     def topicUpdated(self, user, channel, topic):
         log.debug("%s topic: %s" % (channel, topic))
         self.channels[channel]['topic'] = topic
 
-        db.dblog('topic', user, channel, topic)
+        db.dblog('topic', sent_by=user, channel=channel, text=topic)
 
     def userJoined(self, user, channel):
         log.debug("%s joined channel %s" % (user, channel))
         self.channels[channel]['users'].add(user)
 
-        db.dblog('join', user, channel)
+        db.dblog('join', sent_by=user, channel=channel)
 
     def userLeft(self, user, channel):
         log.debug("%s left channel %s" % (user, channel))
         self.channels[channel]['users'].discard(user)
 
-        db.dblog('part', user, channel)
+        db.dblog('part', sent_by=user, channel=channel)
 
     def userKicked(self, user, channel, kicker, msg):
         log.debug("%s kicked from %s by %s: %s" % (user, channel, kicker, msg))
         self.channels[channel]['users'].discard(user)
 
-        #TODO: dblog
+        db.dblog('kick', sent_by=kicker, sent_to=user,
+                    channel=channel, text=msg)
 
     def userQuit(self, user, msg):
         log.debug("%s quit: %s" % (user, msg))
         for chan in self.channels:
             chan['users'].discard(user)
 
-        db.dblog('quit', user, msg=msg)
+        db.dblog('quit', sent_by=user, text=msg)
 
     def userRenamed(self, oldname, newname):
         log.debug("%s changed to %s" % oldname, newname)
@@ -131,7 +136,7 @@ class HBotConnection(irc.IRCClient):
                 chan['users'].discard(oldname)
                 chan['users'].add(newname)
 
-        #TODO: dblog
+        db.dblog('rename', sent_by=oldname, sent_to=newname)
 
     def irc_RPL_NAMREPLY(self, prefix, params):
         # Odd that twisted doesn't handle this one
@@ -140,12 +145,13 @@ class HBotConnection(irc.IRCClient):
 
         log.debug("%s users: %s" % (channel, users))
 
-        for user in users.split():
-            if user[0] in ('+', '@'):
-                user = user[1:]
-            self.channels[channel]['users'].add(user)
+        users = [u.lstrip("+@") for u in users.split()]
+        users.sort()
 
-        #TODO dblog
+        # Is it safe to assume that a single NAMREPLY covers all users?
+        self.channels[channel]['users'] = set(users)
+
+        db.dblog('stats', channel=channel, text=users)
 
     def irc_unknown(self, prefix, command, params):
         log.trace("unknown: %s %s %s" % (prefix, command, params))

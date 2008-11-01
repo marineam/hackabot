@@ -110,7 +110,7 @@ def _load_sql(db, dump):
 
     cursor.close()
 
-def _load_schema(db):
+def _load_schema(db, required):
     """Load the latest available schema version"""
 
     dumps = glob.glob("%s/schema-???.sql" % env.HB_MYSQL)
@@ -126,19 +126,44 @@ def _load_schema(db):
     # Goofy way of grabbing the ??? out of the above glob
     version = int(dump[-7:-4])
 
+    assert version <= required
+
     _load_sql(db, dump)
+    _set_version(db, version)
 
     return version
 
 def _load_update(db, version):
     """Load a single update file"""
+
     update = "%s/schema/%03d.sql" % (env.HB_MYSQL, version)
+
     _load_sql(db, update)
+    _set_version(db, version)
+
+def _set_version(db, version):
+    """Update the schema version metadata"""
+
+    if version <= 0:
+        return
+
+    cursor = db.cursor()
+
+    log.debug("Setting schema version to %s" % version)
+
+    try:
+        cursor.execute("INSERT `metadata` (`name` , `value`) "
+                "VALUES ('schema', '%s') "
+                "ON DUPLICATE KEY UPDATE `value` = %s",
+                (version, version))
+    except MySQLdb.Error, (errno, errstr):
+        raise DBError("DB error: [%s] %s"%(errno, errstr))
+
+    cursor.close()
 
 def init(dbcfg):
     """Create db pool and check/upgrade schema revision"""
-    # Yeah, this is a bit ugly :-( I should break it up into pieces
-    global _dbpool
+    global _dbpool, MySQLdb
 
 
     # Use MySQLdb directly for check/upgrade since we don't need
@@ -159,7 +184,7 @@ def init(dbcfg):
 
     if (current < 0):
         # Empty DB!
-        current = _load_schema(db)
+        current = _load_schema(db, required)
     else:
         log.info("Current DB version: %s" % current)
 
@@ -169,15 +194,6 @@ def init(dbcfg):
 
         _load_update(db, current)
 
-    cursor = db.cursor()
-
-    try:
-        cursor.execute("INSERT `metadata` (`name` , `value`) VALUES "
-                "('schema', '1') ON DUPLICATE KEY UPDATE `name` = 'schema'")
-    except MySQLdb.Error, (errno, errstr):
-        raise DBError("DB error: [%s] %s"%(errno, errstr))
-
-    cursor.close()
     db.close()
 
     # Everything is in order, setup the pool for all to use.
@@ -185,15 +201,27 @@ def init(dbcfg):
             db=dbcfg['database'], user=dbcfg['username'],
             passwd=dbcfg['password'], cp_noisy=False)
 
-def dblog(event, nick=None, channel=None, text=None):
+def dblog(event, sent_by=None, sent_to=None, channel=None, text=None):
     """Record an event to the log table"""
 
-    # These correspond to the type column's enum values
-    assert event in ('msg','action','notice','join','part','quit','topic')
+    if not _dbpool:
+        return
 
-    nick = nick.split('!')[0]
+    # These correspond to the type column's enum values
+    assert event in ('msg', 'action', 'notice', 'join', 'part',
+            'quit', 'stats', 'topic', 'kick', 'rename')
+
+    if channel and not sent_to:
+        sent_to = channel
+
+    if event == 'stats':
+        # for stats text is actually a list of users
+        count = len(text)
+        text = ' '.join(text)
+    else:
+        count = None
 
     _dbpool.runOperation("INSERT INTO `log` "
-            "(`nick`, `chan`, `text`, `type`, `date`) "
-            "VALUES (%s, %s, %s, %s, NOW())",
-            (nick, channel, text, event))
+            "(`sent_by`, `sent_to`, `channel`, `text`, `count`, `type`, `date`) "
+            "VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+            (sent_by, sent_to, channel, text, count, event))
