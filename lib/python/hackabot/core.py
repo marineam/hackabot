@@ -4,7 +4,7 @@ from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor
 from twisted.python import context
 
-from hackabot import log, db
+from hackabot import log, db, plugin
 
 def nick(sent_by):
     return sent_by.split('!',1)[0]
@@ -56,6 +56,10 @@ class HBotConnection(irc.IRCClient):
             db.dblog('msg', sent_by=sent_by, sent_to=sent_to, text=msg)
         else:
             db.dblog('msg', sent_by=sent_by, channel=sent_to, text=msg)
+
+        if len(msg) > 1 and msg[0] == '!':
+            command, space, text = msg[1:].partition(" ")
+            plugin.manager.command(command, self, sent_by, sent_to, text)
 
 
     def action(self, sent_by, sent_to, msg):

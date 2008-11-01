@@ -6,7 +6,7 @@ from ConfigParser import SafeConfigParser
 
 from twisted.internet import reactor
 
-from hackabot import core, log, db
+from hackabot import core, log, db, plugin
 
 class ConfigError(Exception):
     pass
@@ -144,6 +144,7 @@ def main(argv=sys.argv):
 
     try:
         init(config)
+        plugin.init()
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
