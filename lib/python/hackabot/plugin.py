@@ -2,7 +2,7 @@
 
 from zope.interface import Interface
 from twisted.plugin import getPlugins
-from twisted.python.modules import getModule
+from twisted.python import modules, failure
 
 from hackabot import log, plugins
 
@@ -15,8 +15,8 @@ def init():
 class PluginManager(object):
     """Keep an index of available plugins and call them"""
 
-    hooks = ('msg', 'me', 'notice', 'topic', 'join', 'part',
-             'kick', 'quit', 'rename', 'names')
+    hook_types = ('msg', 'me', 'notice', 'topic', 'join', 'part',
+                  'kick', 'quit', 'rename', 'names')
 
     def __init__(self):
         self.load()
@@ -27,7 +27,7 @@ class PluginManager(object):
         log.debug("Reloading all plugins...")
 
         # Is this the best way to do this?
-        for module in getModule(plugins.__name__).iterModules():
+        for module in modules.getModule(plugins.__name__).iterModules():
             reload(module.load())
 
         self.load()
@@ -36,11 +36,11 @@ class PluginManager(object):
         """Load all available plugins"""
 
         self.plugins = getPlugins(IHackabotPlugin, plugins)
-        self._commands = {}
-        self._hooks = {}
+        self.commands = {}
+        self.hooks = {}
 
-        for hook in self.hooks:
-            self._hooks[hook] = []
+        for hook in self.hook_types:
+            self.hooks[hook] = []
 
         for plugin in self.plugins:
             log.trace("Found plugin: %s" % plugin)
@@ -59,26 +59,32 @@ class PluginManager(object):
 
     def _add_command(self, cmd, func):
         assert callable(func)
-        if cmd in self._commands:
+        if cmd in self.commands:
             log.error("Redefining command: %s" % cmd)
         else:
             log.debug("Registering command: %s" % cmd)
-            self._commands[cmd] = func
+            self.commands[cmd] = func
 
     def _add_hook(self, type, func):
-        assert type in self.hooks
+        assert type in self.hook_types
         assert callable(func)
-        self._hooks[type].append(func)
+        self.hooks[type].append(func)
 
     def command(self, name, conn, sent_by, sent_to, reply_to, text):
         log.trace("command: %s: %s" % (name, text))
 
-        if name in self._commands:
-            self._commands[name](conn, sent_by, sent_to, reply_to, text)
+        if name in self.commands:
+            try:
+                self.commands[name](conn, sent_by, sent_to, reply_to, text)
+            except:
+                log.error(failure.Failure())
 
     def hook(self, type, *args, **kwargs):
-        for func in self._hooks[type]:
-            func(*args, **kwargs)
+        for func in self.hooks[type]:
+            try:
+                func(*args, **kwargs)
+            except:
+                log.error(failure.Failure())
 
 
 class IHackabotPlugin(Interface):
