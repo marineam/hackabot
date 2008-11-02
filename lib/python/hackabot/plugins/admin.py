@@ -2,6 +2,7 @@
 
 from zope.interface import implements
 from twisted.plugin import IPlugin
+from twisted.internet import reactor
 
 from hackabot import plugin
 
@@ -15,6 +16,9 @@ class Admin(object):
         if request == "reload":
             conn.msg(reply_to, "This is reload #%s since startup." % count)
             plugin.manager.reload()
+        elif request == "quit":
+            # TODO: send quit commands cleanly
+            reactor.stop()
         else:
             conn.msg(reply_to, "Unknown admin request: '%s'" % request)
 

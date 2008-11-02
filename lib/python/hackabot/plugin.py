@@ -15,7 +15,8 @@ def init():
 class PluginManager(object):
     """Keep an index of available plugins and call them"""
 
-    hooks = ('msg','me','notice','topic','join','part','kick','quit')
+    hooks = ('msg', 'me', 'notice', 'topic', 'join', 'part',
+             'kick', 'quit', 'rename', 'names')
 
     def __init__(self):
         self.load()
@@ -69,23 +70,13 @@ class PluginManager(object):
         assert callable(func)
         self._hooks[type].append(func)
 
-    def command(self, name, conn, sent_by, sent_to, text):
-        if conn.nickname == sent_to:
-            reply_to = sent_by
-        else:
-            reply_to = sent_to
-
+    def command(self, name, conn, sent_by, sent_to, reply_to, text):
         log.trace("command: %s: %s" % (name, text))
 
         if name in self._commands:
             self._commands[name](conn, sent_by, sent_to, reply_to, text)
 
     def hook(self, type, *args, **kwargs):
-        if conn.nickname == sent_to:
-            reply_to = sent_by
-        else:
-            reply_to = sent_to
-
         for func in self._hooks[type]:
             func(*args, **kwargs)
 
@@ -133,3 +124,9 @@ class IHackabotPlugin(Interface):
 
     def quit(conn, sent_by, text):
         """Respond to a user quitting"""
+
+    def rename(conn, old, new):
+        """Respond to a user's nick changing"""
+
+    def names(conn, channel, userlist):
+        """Respond to a /names #channel command"""

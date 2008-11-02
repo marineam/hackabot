@@ -42,10 +42,9 @@ class HBotConnection(irc.IRCClient):
             self.join(chan['channel'], chan['password'])
 
     def nickChanged(self, nick):
-        log.info("Nick changed to: %s" % nick)
-
-        db.dblog('rename', sent_by=self.nickname, sent_to=nick)
         self.nickname = nick
+        log.info("Nick changed to: %s" % nick)
+        plugin.manager.hook('rename', self, self.nickname, nick)
 
     def privmsg(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -53,14 +52,15 @@ class HBotConnection(irc.IRCClient):
         log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            db.dblog('msg', sent_by=sent_by, sent_to=sent_to, text=msg)
+            reply_to = sent_by
         else:
-            db.dblog('msg', sent_by=sent_by, channel=sent_to, text=msg)
+            reply_to = sent_to
+
+        plugin.manager.hook('msg', self, sent_by, sent_to, reply_to, msg)
 
         if len(msg) > 1 and msg[0] == '!':
             command, space, text = msg[1:].partition(" ")
-            plugin.manager.command(command, self, sent_by, sent_to, text)
-
+            plugin.manager.command(command,self,sent_by,sent_to,reply_to,text)
 
     def action(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -68,9 +68,11 @@ class HBotConnection(irc.IRCClient):
         log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            db.dblog('action', sent_by=sent_by, sent_to=sent_to, text=msg)
+            reply_to = sent_by
         else:
-            db.dblog('action', sent_by=sent_by, channel=sent_to, text=msg)
+            reply_to = sent_to
+
+        plugin.manager.hook('action', self, sent_by, sent_to, reply_to, msg)
 
     def noticed(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -78,60 +80,61 @@ class HBotConnection(irc.IRCClient):
         log.debug("<%s> %s" % (sent_by, msg))
 
         if sent_to == self.nickname:
-            db.dblog('notice', sent_by=sent_by, sent_to=sent_to, text=msg)
+            reply_to = sent_by
         else:
-            db.dblog('notice', sent_by=sent_by, channel=sent_to, text=msg)
+            reply_to = sent_to
+
+        plugin.manager.hook('notice', self, sent_by, sent_to, reply_to, msg)
 
     def joined(self, channel):
         log.info("Joined %s" % channel)
         self.channels[channel] = {'users': set(), 'topic': ""}
 
-        db.dblog('join', sent_by=self.nickname, channel=channel)
+        plugin.manager.hook('join', self, self.nickname, channel)
 
     def left(self, channel):
         log.info("Left %s" % channel)
         del self.channels[channel]
 
-        db.dblog('part', sent_by=self.nickname, channel=channel)
+        plugin.manager.hook('part', self, self.nickname, channel)
 
     def kickedFrom(self, channel, kicker, msg):
         log.info("Kicked from %s by %s: %s" % (channel, nick(kicker), msg))
         del self.channels[channel]
 
-        db.dblog('kick', sent_by=kicker, sent_to=self.nickname,
-                    channel=channel, text=msg)
+        plugin.manager.hook('kick', self, kicker, self.nickname, channel, msg)
 
     def topicUpdated(self, user, channel, topic):
         log.debug("%s topic: %s" % (channel, topic))
         self.channels[channel]['topic'] = topic
 
-        db.dblog('topic', sent_by=user, channel=channel, text=topic)
+        plugin.manager.hook('topic', self, user, channel, topic)
 
     def userJoined(self, user, channel):
         log.debug("%s joined channel %s" % (user, channel))
         self.channels[channel]['users'].add(user)
 
-        db.dblog('join', sent_by=user, channel=channel)
+        plugin.manager.hook('join', self, user, channel)
 
     def userLeft(self, user, channel):
         log.debug("%s left channel %s" % (user, channel))
         self.channels[channel]['users'].discard(user)
 
-        db.dblog('part', sent_by=user, channel=channel)
+        # TODO: re-implement this so we can get the text
+        plugin.manager.hook('part', self, user, channel, "")
 
     def userKicked(self, user, channel, kicker, msg):
         log.debug("%s kicked from %s by %s: %s" % (user, channel, kicker, msg))
         self.channels[channel]['users'].discard(user)
 
-        db.dblog('kick', sent_by=kicker, sent_to=user,
-                    channel=channel, text=msg)
+        plugin.manager.hook('kick', self, kicker, user, channel, msg)
 
     def userQuit(self, user, msg):
         log.debug("%s quit: %s" % (user, msg))
         for chan in self.channels:
             chan['users'].discard(user)
 
-        db.dblog('quit', sent_by=user, text=msg)
+        plugin.manager.hook('quit', self, user, msg)
 
     def userRenamed(self, oldname, newname):
         log.debug("%s changed to %s" % oldname, newname)
@@ -140,7 +143,7 @@ class HBotConnection(irc.IRCClient):
                 chan['users'].discard(oldname)
                 chan['users'].add(newname)
 
-        db.dblog('rename', sent_by=oldname, sent_to=newname)
+        plugin.manager.hook('rename', self, oldname, newname)
 
     def irc_RPL_NAMREPLY(self, prefix, params):
         # Odd that twisted doesn't handle this one
@@ -155,10 +158,40 @@ class HBotConnection(irc.IRCClient):
         # Is it safe to assume that a single NAMREPLY covers all users?
         self.channels[channel]['users'] = set(users)
 
-        db.dblog('stats', channel=channel, text=users)
+        plugin.manager.hook('names', self, channel, users)
 
     def irc_unknown(self, prefix, command, params):
         log.trace("unknown: %s %s %s" % (prefix, command, params))
+
+    # Hook into commands for logging, etc.
+    def msg(self, to, msg, length=None):
+        irc.IRCClient.msg(self, to, msg, length)
+
+        if msg and msg[0] == irc.X_DELIM:
+            # Ignore any CTCP stuff
+            ctcp = irc.ctcpExtract(msg)
+            if not ctcp['normal']:
+                return
+            msg = " ".join(ctcp['normal'])
+
+        plugin.manager.hook('msg', self, self.nickname, to, None, msg)
+
+    def notice(self, to, msg):
+        irc.IRCClient.notice(self, to, msg)
+
+        if msg and msg[0] == irc.X_DELIM:
+            # Ignore any CTCP stuff
+            ctcp = irc.ctcpExtract(msg)
+            if not ctcp['normal']:
+                return
+            msg = " ".join(ctcp['normal'])
+
+        plugin.manager.hook('notice', self, self.nickname, to, None, msg)
+
+    def me(self, to, msg):
+        # Override the twisted behavior of only allowing channels for this
+        self.ctcpMakeQuery(to, [('ACTION', msg)])
+        plugin.manager.hook('me', self, self.nickname, to, None, msg)
 
 
 class HBotNetwork(protocol.ClientFactory):

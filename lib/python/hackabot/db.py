@@ -8,13 +8,12 @@ from hackabot import log, env
 
 # These are all the tables included in the schema prior to the introduction of
 # schema versions. If all these exist it is probably safe to assume that the
-# version is 0 as the last change before that was only to add some tables and
-# the change before that was two year ago.
+# version is 0 as the last change was only to add some tables.
 OLDTABLES = ("bar_adj","bar_location","bar_n","blame","fire","group",
         "hangman","log","lunch_adj","lunch_location","lunch_n","quotes",
         "reminder","score","tard","topic","whip","wtf")
 
-_dbpool = None
+pool = None
 
 class DBError(Exception):
     pass
@@ -163,7 +162,7 @@ def _set_version(db, version):
 
 def init(dbcfg):
     """Create db pool and check/upgrade schema revision"""
-    global _dbpool, MySQLdb
+    global pool, MySQLdb
 
 
     # Use MySQLdb directly for check/upgrade since we don't need
@@ -197,31 +196,6 @@ def init(dbcfg):
     db.close()
 
     # Everything is in order, setup the pool for all to use.
-    _dbpool = adbapi.ConnectionPool("MySQLdb", host=dbcfg['hostname'],
+    pool = adbapi.ConnectionPool("MySQLdb", host=dbcfg['hostname'],
             db=dbcfg['database'], user=dbcfg['username'],
             passwd=dbcfg['password'], cp_noisy=False)
-
-def dblog(event, sent_by=None, sent_to=None, channel=None, text=None):
-    """Record an event to the log table"""
-
-    if not _dbpool:
-        return
-
-    # These correspond to the type column's enum values
-    assert event in ('msg', 'action', 'notice', 'join', 'part',
-            'quit', 'stats', 'topic', 'kick', 'rename')
-
-    if channel and not sent_to:
-        sent_to = channel
-
-    if event == 'stats':
-        # for stats text is actually a list of users
-        count = len(text)
-        text = ' '.join(text)
-    else:
-        count = None
-
-    _dbpool.runOperation("INSERT INTO `log` "
-            "(`sent_by`, `sent_to`, `channel`, `text`, `count`, `type`, `date`) "
-            "VALUES (%s, %s, %s, %s, %s, %s, NOW())",
-            (sent_by, sent_to, channel, text, count, event))
