@@ -11,6 +11,9 @@ class Admin(object):
 
     @staticmethod
     def command_admin(conn, sent_by, sent_to, reply_to, text):
+        """Various administrative commands.
+        !admin reload | quit
+        """
         request, space, args = text.partition(" ")
 
         if request == "reload":
