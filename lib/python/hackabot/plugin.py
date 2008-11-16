@@ -16,7 +16,7 @@ class PluginManager(object):
     """Keep an index of available plugins and call them"""
 
     hook_types = ('msg', 'me', 'notice', 'topic', 'join', 'part',
-                  'kick', 'quit', 'rename', 'names')
+                  'kick', 'quit', 'rename', 'names', 'command')
 
     def __init__(self):
         self.load()
@@ -78,6 +78,8 @@ class PluginManager(object):
                 self.commands[name](conn, sent_by, sent_to, reply_to, text)
             except:
                 log.error(failure.Failure())
+        else:
+            self.hook('command', name, conn, sent_by, sent_to, reply_to, text)
 
     def hook(self, type, *args, **kwargs):
         for func in self.hooks[type]:
