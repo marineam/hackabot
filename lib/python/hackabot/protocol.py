@@ -1,8 +1,9 @@
 """The basic line protocol"""
 
 from zope.interface import implements
-from twisted.internet import reactor
+from twisted.internet import reactor, error
 from twisted.internet.interfaces import IHalfCloseableProtocol
+from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import LineOnlyReceiver
 
 from hackabot import core, log
@@ -19,10 +20,12 @@ class HBLineProtocol(LineOnlyReceiver):
 
     delimiter = '\n'
 
+    def __init__(self):
+        self._to = None
+        self._net = core.manager.default()
+
     def connectionMade(self):
         log.debug("New connection.")
-        self._net = core.manager.default()
-        self._to = None
 
     def connectionLost(self, reason):
         log.debug("Lost connection.")
@@ -189,3 +192,55 @@ class HBLineProtocol(LineOnlyReceiver):
 
         # FIXME: handle this gracefully
         reactor.stop()
+
+class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
+    """ProcessProtocol adapter for HBLineProtocol"""
+
+    def __init__(self, conn, event):
+        self._net = conn.factory
+        self._pid = ""
+
+        if 'reply_to' in event:
+            self._to = event['reply_to']
+        else:
+            self._to = None
+
+        if 'text' in event and event['text']:
+            self._text = event['text']
+            if self._text[-1] != '\n':
+                self._text += '\n'
+        else:
+            self._text = ""
+
+    def connectionMade(self):
+        log.debug("Process started", prefix=self._pid)
+        self._pid = str(self.transport.pid)
+
+        # workaround to make the LineProtocol happy
+        self.transport.disconnecting = 0
+
+        self.transport.write(self._text)
+        self.transport.closeStdin()
+
+    def outReceived(self, data):
+        log.trace(data.strip(), prefix=self._pid)
+        self.dataReceived(data)
+
+    def errReceived(self, data):
+        log.warn(data.strip(), prefix=self._pid)
+
+    def sendLine(self, line):
+        if line.startswith("error"):
+            log.warn(line, prefix=self._pid)
+        else:
+            log.trace(line, prefix=self._pid)
+
+    def outConnectionLost(self):
+        if self._buffer:
+            self.lineReceived("%s\n" % self._buffer)
+
+    def processEnded(self, reason):
+        if not isinstance(reason.value, error.ProcessDone):
+            log.warn(reason, prefix=self._pid)
+        else:
+            log.debug("Process ended", prefix=self._pid)

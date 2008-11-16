@@ -75,16 +75,18 @@ class PluginManager(object):
 
         if event['command'] in self.commands:
             try:
-                self.commands[event['command']](conn, event)
+                self.commands[event['command']](conn, event.copy())
             except:
                 log.error(failure.Failure())
         else:
             self.hook(conn, event)
 
     def hook(self, conn, event):
+        log.trace("event: %s" % str(event))
+
         for func in self.hooks[event['type']]:
             try:
-                func(conn, event)
+                func(conn, event.copy())
             except:
                 log.error(failure.Failure())
 

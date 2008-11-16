@@ -9,30 +9,15 @@ use URI::Find::Rule;
 use WWW::Shorten::TinyURL;
 use WWW::Shorten 'TinyURL';
 
-my $privmsg = 0;
-my ($chan, $msg, $nick);
-while(<>) {
-	if(/^type\s+privmsg/) {
-		$privmsg = 1;
-	}
-	elsif (/^to\s+(.+)/) {
-		$chan = $1;
-	}
-	elsif (/^nick\s+(.+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(\S.+)/) {
-		$msg = $1;
-	}
-}
+my $nick = $ENV{'HBEV_SENT_BY'};
+my $msg = <>;
 
 my @urls = URI::Find::Rule->in($msg,1);
 if(@urls){
-	print "sendnext:\n";
 	foreach $url (@urls){
 		if(length($url->as_string) > 79){
-			$short_url = makeashorterlink($url->as_string);	
-			print "$nick\'s tiny URL is $short_url\n";
+			$short_url = makeashorterlink($url->as_string);
+			print "msg $nick\'s tiny URL is $short_url\n";
 		}
 	}
 }

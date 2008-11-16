@@ -3,8 +3,7 @@
 use strict;
 
 while (<>) {
-	if (/^msg.*(ponies|pony)/i) {
+	if (/(ponies|pony)/i) {
 		print "send OMG!!! Ponies!!!\n";
 	}
 }
-

@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $nick = $ENV{'HBEV_SENT_BY'};
+
+while (<>) {
+	if (/^\s*hackabot:?\s+(o\/|\\o)\s*$/) {
+		my $msg = $1;
+
+		print "send $nick: \\o\n" if ($msg eq "o/");
+		print "send $nick: o/\n" if ($msg eq "\\o");
+	}
+}

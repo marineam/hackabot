@@ -206,6 +206,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'join',
                 'user': self.nickname,
+                'reply_to': channel,
                 'channel': channel,
                 'time': time.time()
                 }
@@ -219,6 +220,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'part',
                 'user': self.nickname,
+                'reply_to': channel,
                 'channel': channel,
                 'text': "",
                 'time': time.time()
@@ -234,6 +236,7 @@ class HBotConnection(irc.IRCClient):
                 'type': 'kick',
                 'kicker': kicker,
                 'kickee': self.nickname,
+                'reply_to': channel,
                 'channel': channel,
                 'text': msg,
                 'time': time.time()
@@ -248,6 +251,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'topic',
                 'user': user,
+                'reply_to': channel,
                 'channel': channel,
                 'text': topic,
                 'time': time.time()
@@ -262,6 +266,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'join',
                 'user': user,
+                'reply_to': channel,
                 'channel': channel,
                 'time': time.time()
                 }
@@ -276,6 +281,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'part',
                 'user': user,
+                'reply_to': channel,
                 'channel': channel,
                 'text': "",
                 'time': time.time()
@@ -291,6 +297,7 @@ class HBotConnection(irc.IRCClient):
                 'type': 'kick',
                 'kicker': kicker,
                 'kickee': user,
+                'reply_to': channel,
                 'channel': channel,
                 'text': msg,
                 'time': time.time()
@@ -364,6 +371,7 @@ class HBotConnection(irc.IRCClient):
             msg = " ".join(ctcp['normal'])
 
         event = {
+                'internal': True,
                 'type': 'msg',
                 'sent_by': self.nickname,
                 'sent_to': to,
@@ -385,6 +393,7 @@ class HBotConnection(irc.IRCClient):
             msg = " ".join(ctcp['normal'])
 
         event = {
+                'internal': True,
                 'type': 'notice',
                 'sent_by': self.nickname,
                 'sent_to': to,
@@ -400,6 +409,7 @@ class HBotConnection(irc.IRCClient):
         self.ctcpMakeQuery(to, [('ACTION', msg)])
 
         event = {
+                'internal': True,
                 'type': 'me',
                 'sent_by': self.nickname,
                 'sent_to': to,
