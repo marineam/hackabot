@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 
 from twisted.internet import reactor
 
-from hackabot import core, log, db, plugin
+from hackabot import core, db, plugin, remote, log
 
 def parse_options(argv):
     """Parse Hackabot command line parameters"""
@@ -49,6 +49,7 @@ def main(argv=sys.argv):
 
     try:
         core.init(config)
+        remote.init(config)
         db.init(config)
         plugin.init()
     except core.ConfigError, ex:
@@ -61,4 +62,6 @@ def main(argv=sys.argv):
     # Delay taking over stdio so any startup errors can go to stderr
     log.init_stdio()
 
+    reactor.callWhenRunning(core.manager.connect)
+    reactor.callWhenRunning(remote.listen)
     reactor.run()

@@ -39,6 +39,9 @@
               username="user"
               password="secret" />
 
+    <!-- Listen on a unix socket for commands -->
+    <listen/>
+
     <!-- Command specific config options -->
     <commands>
         <topic>

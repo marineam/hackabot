@@ -22,36 +22,47 @@ def nick(sent_by):
 def init(config):
     global manager
     manager = HBotManager(config)
-    reactor.callWhenRunning(_connect, manager)
-
-def _connect(netmanager):
-    for net in netmanager.networks.itervalues():
-        net.connect()
 
 class HBotManager(object):
     """Manage various network connections"""
 
     def __init__(self, config):
-        self.networks = {}
+        self._networks = {}
+        self._default = None
 
         for network in config.findall("network"):
             id = network.get("id", None)
 
-            if id not in self.networks:
-                self.networks[id] = HBotNetwork(network)
+            if id not in self._networks:
+                net = HBotNetwork(network)
             else:
                 raise ConfigError("Duplicate network id '%s'" % name)
 
-        if len(self.networks) == 0:
+            if not self._default:
+                self._default = net
+
+            self._networks[id] = net
+
+        if len(self._networks) == 0:
             ConfigError("No networks defined!")
-        elif len(self.networks) != 1 and None in self.networks:
+        elif len(self._networks) != 1 and None in self._networks:
             ConfigError("Missing network id!")
 
+    def connect(self):
+        for net in self._networks.itervalues():
+            net.connect()
+
+    def default(self):
+        return self._default
+
     def __getitem__(self, key):
-        return self.networks[key]
+        return self._networks[key]
 
     def __len__(self):
-        return len(self.networks)
+        return len(self._networks)
+
+    def __contains__(self, key):
+        return key in self._networks
 
 
 class HBotConnection(irc.IRCClient):
@@ -410,30 +421,32 @@ class HBotNetwork(protocol.ClientFactory):
 
     def __init__(self, config):
         self.config = config
+        self.id = config.get('id', None)
         self.nickname = config.get('nick', None)
         self.realname = config.get('name', self.nickname)
         self.username = self.nickname
-        id = config.get('id', None)
 
         servers = config.findall('server')
         if not servers:
-            raise ConfigError("No servers defined for network '%s'" % id)
+            raise ConfigError("No servers defined for network '%s'" % self.id)
         else:
             for server in servers:
                 if not server.get('hostname', None):
-                    raise ConfigError("Server with no hostname in '%s'" % id)
+                    raise ConfigError("Server with no hostname in '%s'"
+                            % self.id)
                 if not server.get('port', "1").isdigit():
-                    raise ConfigError("Server with invalid port in '%s'" % id)
+                    raise ConfigError("Server with invalid port '%s' in '%s'"
+                            % (server.get('port', None), self.id))
 
         self._connection = None
         self._server_curr = None
         self._server_iter = None
         self._delay = 1
 
-        if id is None:
+        if self.id is None:
             self.logstr = "client"
         else:
-            self.logstr = "client:%s" % id
+            self.logstr = "client:%s" % self.id
 
     def connection(self):
         if self._connection:
