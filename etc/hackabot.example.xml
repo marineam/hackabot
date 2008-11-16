@@ -1,54 +1,57 @@
 <hackabot>
-	<directory>/home/hackabot/hackabot</directory>
-	<commands>commands</commands>
-	<hooks>hooks</hooks>
-	<etc>etc</etc>
-	<socket>sock</socket>
+    <!-- Networks:
+        Defines what networks to connect to and network specific behavior.
+        There may be multiple network sections.
+        id: name of the network, required if there is more than one network
+        nick: nickname to use, required
+        name: full name to use, optional
+    -->
+    <network
+        id="foonet"
+        nick="hackabot"
+        name="I'm sooo twisted!" >
 
-	<server>irc.something.net</server>
-	<port>6667</port>
-	<!-- <password>serverpassword</password> -->
-	<nick>hackabot</nick>
-	<name>A spiffy little bot</name>
-	<!-- seconds to wait after the connection is lost -->
-	<reconnect>60</reconnect>
+        <!-- Servers:
+            Defines what servers to connect to for this network.
+            Extra servers are used when attempting to reconnect.
+            hostname: host to connect to, required
+            password: server password, optional
+            port: defaults to 6667
+            ssl: defaults to false
+        -->
+        <server hostname="irc.something.net"
+                password=""
+                port="6667"
+                ssl="false" />
 
-	<!-- Send these messages just after connecting but before joining -->
-	<!-- This is useful for talking with chanserv and nickserv -->
-	<automsg to="nickserv" msg="identify something" />
-	<automsg to="chanserv" msg="invite #somechan" />
+        <!-- Auto messages, useful for talking to nickserv -->
+        <automsg to="nickserv" msg="identify somepassword" />
+        <automsg to="chanserv" msg="invite #private-channel" />
 
-	<!-- Chanels to auto join. msg and password are optional -->
-	<autojoin chan="#somechan" />
-	<autojoin chan="#amazing" msg="I'm here!" />
-	<autojoin chan="#private" password="pass" />
+        <!-- Auto joins, run after auto messages -->
+        <autojoin chan="#public-channel" />
+        <autojoin chan="#private-channel" />
+        <autojoin chan="#protected" password="secret" />
+    </network>
 
-	<!-- Command specific config options -->
-	<cmdconfig>
-		<topic>
-			<!-- topic mask prepends msg before every topic -->
-			<topicmask chan="#somechan" msg="CoolPeople :: " />
-		</topic>
-		<seen>
-			<!-- don't print messages in here elsewhere -->
-			<privatechan chan="#private" />
-		</seen>
-		<bookmark>
-			<user>mydelicioususer</user>
-			<passwd>mydeliciouspass</passwd>
-		</bookmark>
-		<!--<imitate>
-			<maxwords>40</maxwords>
-			<wordlength>5</wordlength>
-			<maxlines>50</maxlines>
-			<limitlines>200</limitlines>
-		</imitate>-->
-		<database>
-			<host>dbhost.some.org</host>
-			<name>dbname</name>
-			<user>dbuser</user>
-			<pass>dbpass</pass>
-			<passwd>dbpass</passwd>
-		</database>
-	</cmdconfig>
+    <database namehost="dbhost.some.org"
+              database="dbname"
+              username="user"
+              password="secret" />
+
+    <!-- Command specific config options -->
+    <commands>
+        <topic>
+            <!-- prepends text before every topic -->
+            <prefix chan="#somechan">Cool People ::</prefix>
+        </topic>
+        <seen>
+            <!-- don't print messages in here elsewhere -->
+            <private chan="#private" />
+        </seen>
+        <bookmark>
+            <username>mydelicioususer</username>
+            <password>mydeliciouspass</password>
+        </bookmark>
+    </commands>
 </hackabot>

@@ -85,7 +85,6 @@ class DBLogger(object):
         """Record an event to the log table"""
 
         if not db.pool:
-            log.warn("The db logger plugin is active but there is no db!")
             return
 
         # These correspond to the type column's enum values
@@ -105,6 +104,4 @@ class DBLogger(object):
             "VALUES (%(sent_by)s, %(sent_to)s, %(channel)s, %(text)s, "
             "%(count)s, %(type)s, %(date)s )", event)
 
-# Only activate plugin if there is a db
-if db.pool:
-    logger = DBLogger()
+logger = DBLogger()

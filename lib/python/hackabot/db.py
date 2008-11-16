@@ -160,10 +160,20 @@ def _set_version(db, version):
 
     cursor.close()
 
-def init(dbcfg):
+def init(config):
     """Create db pool and check/upgrade schema revision"""
     global pool, MySQLdb
 
+    tag = config.find('database')
+    if tag is None:
+        log.info("No database configured.")
+        return
+    else:
+        dbcfg = tag.attrib
+
+    req = set(('hostname', 'database', 'username', 'password'))
+    if not req.issubset(set(dbcfg.keys())):
+        raise DBError("Database must have these attributes: %s" % ' '.join(req))
 
     # Use MySQLdb directly for check/upgrade since we don't need
     # to be asynchronous during the init phase

@@ -2,15 +2,57 @@
 
 import re
 import time
+from xml.etree.ElementTree import tostring
 
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor
 from twisted.python import context
 
-from hackabot import log, db, plugin
+from hackabot import db, log, plugin
+
+class ConfigError(Exception):
+    pass
+
+class NotConnected(Exception):
+    pass
 
 def nick(sent_by):
     return sent_by.split('!',1)[0]
+
+def init(config):
+    global manager
+    manager = HBotManager(config)
+    reactor.callWhenRunning(_connect, manager)
+
+def _connect(netmanager):
+    for net in netmanager.networks.itervalues():
+        net.connect()
+
+class HBotManager(object):
+    """Manage various network connections"""
+
+    def __init__(self, config):
+        self.networks = {}
+
+        for network in config.findall("network"):
+            id = network.get("id", None)
+
+            if id not in self.networks:
+                self.networks[id] = HBotNetwork(network)
+            else:
+                raise ConfigError("Duplicate network id '%s'" % name)
+
+        if len(self.networks) == 0:
+            ConfigError("No networks defined!")
+        elif len(self.networks) != 1 and None in self.networks:
+            ConfigError("Missing network id!")
+
+    def __getitem__(self, key):
+        return self.networks[key]
+
+    def __len__(self):
+        return len(self.networks)
+
 
 class HBotConnection(irc.IRCClient):
     """Protocol handler for a single IRC Connection
@@ -41,8 +83,23 @@ class HBotConnection(irc.IRCClient):
         log.info("Signed On!")
         self.factory.clientConnected(self)
 
-        for chan in self.factory.channels:
-            self.join(chan['channel'], chan['password'])
+        for automsg in self.factory.config.findall('automsg'):
+            to = automsg.get('to', None)
+            msg = automsg.get('msg', None)
+
+            if to and msg:
+                self.msg(to, msg)
+            else:
+                log.error("Invalid automsg: %s" % tostring(automsg))
+
+        for autojoin in self.factory.config.findall('autojoin'):
+            chan = autojoin.get('chan', None)
+            password = autojoin.get('password', None)
+
+            if chan:
+                self.join(chan, password)
+            else:
+                log.error("Invalid autojoin: %s" % tostring(autojoin))
 
     def nickChanged(self, nick):
         log.info("Nick changed to: %s" % nick)
@@ -351,38 +408,66 @@ class HBotNetwork(protocol.ClientFactory):
     protocol = HBotConnection
     noisy = False
 
-    def __init__(self, network, servers, channels):
-        assert servers
-        assert 'nick' in network
-        self.network = network['network']
-        self.nickname = network['nick']
-        self.username = network['user']
-        self.realname = network['name']
-        self.servers = servers
-        self.current = None
-        self.channels = channels
-        self._sviter = iter(self.servers)
+    def __init__(self, config):
+        self.config = config
+        self.nickname = config.get('nick', None)
+        self.realname = config.get('name', self.nickname)
+        self.username = self.nickname
+        id = config.get('id', None)
+
+        servers = config.findall('server')
+        if not servers:
+            raise ConfigError("No servers defined for network '%s'" % id)
+        else:
+            for server in servers:
+                if not server.get('hostname', None):
+                    raise ConfigError("Server with no hostname in '%s'" % id)
+                if not server.get('port', "1").isdigit():
+                    raise ConfigError("Server with invalid port in '%s'" % id)
+
+        self._connection = None
+        self._server_curr = None
+        self._server_iter = None
         self._delay = 1
 
-        if network['network'] is None:
+        if id is None:
             self.logstr = "client"
         else:
-            self.logstr = "client:%s" % network['network']
+            self.logstr = "client:%s" % id
+
+    def connection(self):
+        if self._connection:
+            return self._connection
+        else:
+            raise NotConnected()
+
+    def _server(self, next=False):
+        # Rotate though the list of servers endlessly
+
+        if not next and self._server_curr:
+            return self._server_curr
+
+        if not self._server_iter:
+            self._server_iter = iter(self.config.findall('server'))
+
+        try:
+            self._server_curr = self._server_iter.next()
+        except StopIteration:
+            self._server_iter = iter(self.config.findall('server'))
+            self._server_curr = self._server_iter.next()
+
+        return self._server_curr
 
     def connect(self):
         """Connect to a server in this IRC network"""
 
-        try:
-            self.current = self._sviter.next()
-        except StopIteration:
-            self._sviter = iter(self.servers)
-            self.current = self._sviter.next()
+        server = self._server(next=True)
 
-        if self.current['ssl']:
+        if server.get('ssl', False):
             raise Exception("SSL Connections are unimplemented!")
         else:
-            reactor.connectTCP(self.current['host'],
-                    self.current['port'], self)
+            reactor.connectTCP(server.get('hostname'),
+                    int(server.get('port', 6667)), self)
 
     def _reconnect(self):
         # Failure! Try again...
@@ -392,22 +477,25 @@ class HBotNetwork(protocol.ClientFactory):
             self._delay *= 2
 
     def startedConnecting(self, connector):
-        log.info("Connecting to %s:%s..." % (self.current['host'],
-            self.current['port']), prefix=self.logstr)
+        addr = connector.getDestination()
+        log.info("Connecting to %s:%s..." % (addr.host, addr.port),
+                prefix=self.logstr)
 
     def clientConnected(self, connection):
         # Called from HBotConnection once connection is OK
         self._delay = 1
-        connections[self.network] = connection
+        self._connection = connection
 
     def clientConnectionLost(self, connector, reason):
-        log.warn("Lost connection to %s:%s: %s" % (self.current['host'],
-            self.current['port'], reason.value), prefix=self.logstr)
-        del connections[self.network]
+        addr = connector.getDestination()
+        log.warn("Lost connection to %s:%s: %s" % (addr.host, addr.port,
+            reason.value), prefix=self.logstr)
+        self._connection = None
         self._reconnect()
 
     def clientConnectionFailed(self, connector, reason):
-        log.warn("Failed to connect to %s:%s: %s" % (self.current['host'],
-            self.current['port'], reason.value), prefix=self.logstr)
-        del connections[self.network]
+        addr = connector.getDestination()
+        log.warn("Failed to connect to %s:%s: %s" % (addr.host, addr.port,
+            reason.value), prefix=self.logstr)
+        self._connection = None
         self._reconnect()
