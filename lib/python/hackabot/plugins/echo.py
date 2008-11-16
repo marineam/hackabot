@@ -8,10 +8,10 @@ class Echo(object):
     implements(IPlugin, IHackabotPlugin)
 
     @staticmethod
-    def command_echo(conn, sent_by, sent_to, reply_to, text):
+    def command_echo(conn, event):
         """Echo something.
         !echo some text
         """
-        conn.msg(reply_to, text)
+        conn.msg(event['reply_to'], event['text'])
 
 echo = Echo()

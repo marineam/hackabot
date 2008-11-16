@@ -10,20 +10,22 @@ class Admin(object):
     implements(IPlugin, plugin.IHackabotPlugin)
 
     @staticmethod
-    def command_admin(conn, sent_by, sent_to, reply_to, text):
+    def command_admin(conn, event):
         """Various administrative commands.
         !admin reload | quit
         """
-        request, space, args = text.partition(" ")
+        request, space, args = event['text'].partition(" ")
 
         if request == "reload":
-            conn.msg(reply_to, "This is reload #%s since startup." % count)
+            conn.msg(event['reply_to'],
+                    "This is reload #%s since startup." % count)
             plugin.manager.reload()
         elif request == "quit":
             # TODO: send quit commands cleanly
             reactor.stop()
         else:
-            conn.msg(reply_to, "Unknown admin request: '%s'" % request)
+            conn.msg(event['reply_to'],
+                    "Unknown admin request: '%s'" % request)
 
 # Count the number of loads
 try:

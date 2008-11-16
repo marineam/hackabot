@@ -70,21 +70,21 @@ class PluginManager(object):
         assert callable(func)
         self.hooks[type].append(func)
 
-    def command(self, name, conn, sent_by, sent_to, reply_to, text):
-        log.trace("command: %s: %s" % (name, text))
+    def command(self, conn, event):
+        log.trace("command: %s: %s" % (event['command'], event['text']))
 
-        if name in self.commands:
+        if event['command'] in self.commands:
             try:
-                self.commands[name](conn, sent_by, sent_to, reply_to, text)
+                self.commands[event['command']](conn, event)
             except:
                 log.error(failure.Failure())
         else:
-            self.hook('command', name, conn, sent_by, sent_to, reply_to, text)
+            self.hook(conn, event)
 
-    def hook(self, type, *args, **kwargs):
-        for func in self.hooks[type]:
+    def hook(self, conn, event):
+        for func in self.hooks[event['type']]:
             try:
-                func(*args, **kwargs)
+                func(conn, event)
             except:
                 log.error(failure.Failure())
 
@@ -100,41 +100,164 @@ class IHackabotPlugin(Interface):
     code in a different thread. Otherwise you will hurt performance!
     """
 
-    def command_z(conn, sent_by, sent_to, reply_to, text):
-        """Implement a command named z
+    def command_z(conn, event):
+        """Implement a command named z.
 
         Replace z with the name of the command!
+
+        conn = connection object
+        event = {
+            type: "command"
+            command: "command_name"
+            sent_by: "nick"
+            sent_to: "nick or channel"
+            reply_to: "nick or channel"
+            text: "command arguments"
+            time: seconds
+        }
         """
 
-    def command(name, conn, sent_by, sent_to, reply_to, text):
-        """Handle a command that is not implemented explicitly"""
+    def command(conn, event):
+        """Handle a command that is not implemented explicitly.
 
-    def msg(conn, sent_by, sent_to, reply_to, text):
-        """Respond to a message"""
+        conn = connection object
+        event = {
+            type: "command"
+            command: "command_name"
+            sent_by: "nick"
+            sent_to: "nick or channel"
+            reply_to: "nick or channel"
+            text: "command arguments"
+            time: seconds
+        }
+        """
 
-    def me(conn, sent_by, sent_to, reply_to, text):
-        """Respond to a /me message"""
+    def msg(conn, event):
+        """Respond to a message.
 
-    def notice(conn, sent_by, sent_to, reply_to, text):
-        """Respond to a /notice message"""
+        conn = connection object
+        event = {
+            type: "msg"
+            sent_by: "nick"
+            sent_to: "nick or channel"
+            reply_to: "nick or channel"
+            text: "message"
+            time: seconds
+        }
+        """
 
-    def topic(conn, sent_by, channel, text):
-        """Respond to a channel topic change"""
+    def me(conn, event):
+        """Respond to a /me message.
 
-    def join(conn, sent_by, channel):
-        """Respond to a user joining a channel"""
+        conn = connection object
+        event = {
+            type: "me"
+            sent_by: "nick"
+            sent_to: "nick or channel"
+            reply_to: "nick or channel"
+            text: "message"
+            time: seconds
+        }
+        """
 
-    def part(conn, sent_by, channel, text):
-        """Respond to a user leaving a channel"""
+    def notice(conn, event):
+        """Respond to a /notice message.
 
-    def kick(conn, kicker, kickee, channel, text):
-        """Respond to a user being kicked from a channel"""
+        conn = connection object
+        event = {
+            type: "notice"
+            sent_by: "nick"
+            sent_to: "nick or channel"
+            reply_to: "nick or channel"
+            text: "message"
+            time: seconds
+        }
+        """
 
-    def quit(conn, sent_by, text):
-        """Respond to a user quitting"""
+    def topic(conn, event):
+        """Respond to a channel topic change.
 
-    def rename(conn, old, new):
-        """Respond to a user's nick changing"""
+        conn = connection object
+        event = {
+            type: "topic"
+            user: "nick"
+            channel: "channel"
+            text: "topic"
+            time: seconds
+        }
+        """
 
-    def names(conn, channel, userlist):
-        """Respond to a /names #channel command"""
+    def join(conn, event):
+        """Respond to a user joining a channel.
+
+        conn = connection object
+        event = {
+            type: "join"
+            user: "nick"
+            channel: "channel"
+            time: seconds
+        }
+        """
+
+    def part(conn, event):
+        """Respond to a user leaving a channel.
+
+        conn = connection object
+        event = {
+            type: "part"
+            user: "nick"
+            channel: "channel"
+            text: "message"
+            time: seconds
+        }
+        """
+
+    def kick(conn, event):
+        """Respond to a user being kicked from a channel.
+
+        conn = connection object
+        event = {
+            type: "kick"
+            kicker: "nick"
+            kickee: "nick"
+            channel: "channel"
+            text: "message"
+            time: seconds
+        }
+        """
+
+    def quit(conn, event):
+        """Respond to a user quitting.
+
+        conn = connection object
+        event = {
+            type: "quit"
+            user: "nick"
+            text: "message"
+            time: seconds
+        }
+        """
+
+    def rename(conn, event):
+        """Respond to a user's nick changing.
+
+        conn = connection object
+        event = {
+            type: "rename"
+            old: "old nick"
+            new: "new nick"
+            time: seconds
+        }
+        """
+
+    def names(conn, event):
+        """Respond to a /names #channel command
+
+        conn = connection object
+        event = {
+            type: "names"
+            channel: "channel"
+            users: [ "user1", "user2", ... ]
+            time: seconds
+        }
+        """

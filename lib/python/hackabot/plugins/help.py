@@ -7,12 +7,12 @@ from hackabot import plugin
 class Help(object):
     implements(IPlugin, plugin.IHackabotPlugin)
 
-    def command_help(self, conn, sent_by, sent_to, reply_to, text):
+    def command_help(self, event):
         """List commands or get help on one command
         !help [command]
         """
 
-        text = text.strip()
+        text = event['text'].strip()
         if text:
             if text in plugin.manager.commands:
                 send = plugin.manager.commands[text].__doc__
@@ -27,6 +27,6 @@ class Help(object):
 
         for line in send.splitlines():
             line = line.strip()
-            conn.msg(reply_to, line)
+            conn.msg(event['reply_to'], line)
 
 help = Help()
