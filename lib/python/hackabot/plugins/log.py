@@ -1,6 +1,4 @@
 
-import time
-
 from zope.interface import implements
 from twisted.plugin import IPlugin
 
@@ -96,12 +94,9 @@ class DBLogger(object):
                 'count', 'type', 'time'):
             assert key in event
 
-        event['date'] = time.strftime("%Y-%m-%d %H:%M:%S",
-                time.localtime(event['time']))
-
         db.pool.runOperation("INSERT INTO `log` "
             "(`sent_by`,`sent_to`,`channel`,`text`,`count`,`type`,`date`) "
             "VALUES (%(sent_by)s, %(sent_to)s, %(channel)s, %(text)s, "
-            "%(count)s, %(type)s, %(date)s )", event)
+            "%(count)s, %(type)s, FROM_UNIXTIME(%(time)s) )", event)
 
 logger = DBLogger()

@@ -31,6 +31,7 @@ class ExternalPlugins(object):
 
         vars = os.environ
         vars['HB_ROOT'] = env.HB_ROOT
+        vars['HB_NICK'] = conn.nickname
         text = ""
         for key, val in event.iteritems():
             if key == 'text':

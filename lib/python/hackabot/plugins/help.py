@@ -7,7 +7,7 @@ from hackabot import plugin
 class Help(object):
     implements(IPlugin, plugin.IHackabotPlugin)
 
-    def command_help(self, event):
+    def command_help(self, conn, event):
         """List commands or get help on one command
         !help [command]
         """
