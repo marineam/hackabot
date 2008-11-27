@@ -22,13 +22,20 @@ sub new {
 sub dbi {
     my $self = shift;
 
-    my $dbhost = $self->{'conf'}->{'database'}->{'hostname'};
-    my $dbname = $self->{'conf'}->{'database'}->{'database'};
-    my $dbuser = $self->{'conf'}->{'database'}->{'username'};
-    my $dbpass = $self->{'conf'}->{'database'}->{'password'};
+    if (defined $self->{'dbh'}) {
+        return $self->{'dbh'};
+    }
+    else {
+        my $dbhost = $self->{'conf'}->{'database'}->{'hostname'};
+        my $dbname = $self->{'conf'}->{'database'}->{'database'};
+        my $dbuser = $self->{'conf'}->{'database'}->{'username'};
+        my $dbpass = $self->{'conf'}->{'database'}->{'password'};
 
-    return DBI->connect("DBI:mysql:$dbname:$dbhost",
-        $dbuser, $dbpass, { PrintError => 1 });
+        $self->{'dbh'} = DBI->connect("DBI:mysql:$dbname:$dbhost",
+            $dbuser, $dbpass, { PrintError => 1 });
+
+        return $self->{'dbh'};
+    }
 }
 
 sub connect {
@@ -48,7 +55,15 @@ sub connect {
 sub close {
     my $self = shift;
 
-    close $self->{'conn'};
+    if (defined $self->{'conn'}) {
+        close $self->{'conn'};
+        $self->{'conn'} = undef;
+    }
+
+    if (defined $self->{'dbh'}) {
+        $self->{'dbh'}->disconnect;
+        $self->{'dbh'} = undef;
+    }
 }
 
 sub cmd {
@@ -98,7 +113,7 @@ sub private {
 }
 
 sub sent_by {
-    if defined $ENV{'HBEV_SENT_BY'} {
+    if (defined $ENV{'HBEV_SENT_BY'}) {
         return $ENV{'HBEV_SENT_BY'};
     }
     else {
@@ -107,7 +122,7 @@ sub sent_by {
 }
 
 sub sent_to {
-    if defined $ENV{'HBEV_SENT_TO'} {
+    if (defined $ENV{'HBEV_SENT_TO'}) {
         return $ENV{'HBEV_SENT_TO'};
     }
     else {
@@ -122,6 +137,82 @@ sub channel {
     else {
         return sent_to();
     }
+}
+
+sub names {
+    my ($self, $chan) = @_;
+
+    my $names = $self->cmd("names $chan");
+    if ($names =~ /^ok\s+(\S.*)/) {
+        my @list = split(/\s+/, $1);
+        return @list;
+    }
+    else {
+        print STDERR $names;
+    }
+}
+
+sub counter_add {
+    my ($self, $type, $name, $val) = @_;
+    my $nick = $self->sent_by;
+    my $chan = $self->channel;
+    my ($dbh, $sth);
+
+    $val =~ /^(-?\d+)$/ or die;
+    die if ($type =~ /^\w$/ or not defined $name or not defined $val);
+
+    $dbh = $self->dbi;
+    $sth = $dbh->prepare("INSERT INTO `$type`
+        (`name`, `value`, `nick`, `chan`, `date`)
+        VALUES (?, ?, ?, ?, FROM_UNIXTIME(?))
+        ON DUPLICATE KEY UPDATE
+        `value` = `value` + VALUES(`value`), 
+        `nick` = VALUES(`nick`),
+        `chan` = VALUES(`chan`),
+        `date` = VALUES(`date`)");
+    $sth->execute($name, $val, $nick, $chan, $ENV{'HBEV_TIME'})
+        or die "DB insert failed!";
+}
+
+sub counter_get {
+    my ($self, $type, $name) = @_;
+    my ($dbh, $sth, $val);
+
+    die if ($type =~ /^\w$/ or not defined $name);
+
+    $dbh = $self->dbi;
+    $sth = $dbh->prepare("SELECT `value` FROM `$type` WHERE `name` = ?");
+    $sth->execute($name) or die "DB select failed!";
+    $val = $sth->fetchrow_array;
+
+    return $val;
+}
+
+sub counter_list {
+    my ($self, $type, $order, $chan) = @_;
+    my ($dbh, $sth);
+
+    die if ($type =~ /^\w$/);
+
+    if (not defined $order) {
+        $order = "";
+    }
+
+    $dbh = $self->dbi;
+
+    my $where = "";
+    if (defined $chan) {
+        $where = "WHERE 0";
+        foreach $_ ($self->names($chan)) {
+            $_ = $dbh->quote($_);
+            $where .= " OR name = $_";
+        }
+    }
+
+    $sth = $dbh->prepare("SELECT `name`, `value` FROM `$type` $where
+        ORDER BY value $order LIMIT 3");
+    $sth->execute or die "DB select failded!";
+    return @{$sth->fetchall_arrayref({})};
 }
 
 1;

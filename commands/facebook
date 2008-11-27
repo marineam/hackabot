@@ -1,9 +1,0 @@
-#!/bin/bash
-
-##HACKABOT_HELP##
-# Even Bots do the Facebook!
-# !facebook
-##HACKABOT_HELP##
-
-echo "sendnext"
-echo "http://oregonstate.facebook.com/group_profile.php?gid=9594"

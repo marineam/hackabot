@@ -19,18 +19,9 @@ else {
 	$default =~ s/say$//;
 }
 
-$ENV{'COWPATH'} = $ENV{'HACKABOT_DIR'}."/misc/cows";
+$ENV{'COWPATH'} = $ENV{'HB_ROOT'}."/misc/cows";
 
-my $msg;
-while (<>) {
-	if (/^help/) {
-		usage();
-		exit;
-	}
-	elsif (/^msg\s+(\S+.*)$/) {
-		$msg = $1;
-	}
-}
+my $msg = <>;
 
 if (not defined $msg or $msg =~ /^-h|--help/) {
 	usage();

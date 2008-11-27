@@ -27,10 +27,9 @@ else {
 		$msg = get_blame();
 	}
 
-	my $names = $hbc->cmd("names $chan");
-	if ($names =~ /^ok\s+(.*)/) {
-		my @list = split(/\s+/, $1);
-		my $name = $list[int(rand(@list))];
+	my @names = $hbc->names($chan);
+	if (@names) {
+		my $name = $names[int(rand(@names))];
 		print "me blames $name for $msg.\n";
 	}
 }
@@ -39,7 +38,7 @@ sub get_blame {
 	my ($dbh, $sth);
 
 	$dbh = $hbc->dbi or die;
-	
+
 	my $time = `date "+%y%m%d%H%M"`;
 	chomp $time;
 	$time = $dbh->quote($time);
@@ -52,7 +51,7 @@ sub get_blame {
 	$sth->finish();
 
 	$id = $dbh->quote($id);
-	$dbh->do("UPDATE blame SET lastused = $time WHERE id = $id") 
+	$dbh->do("UPDATE blame SET lastused = $time WHERE id = $id")
 		or $value .= " and the inability to update the blame database";
 
 	$dbh->disconnect;
