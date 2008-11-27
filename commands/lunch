@@ -1,151 +1,92 @@
 #!/usr/bin/perl
 
 ##HACKABOT_HELP##
-# Recommends a place you should eat.
-# !lunch [ add <place> | noun <item> | adj <description> ]
+# Recommends a place you should go.
+# __NAME__ [ add <place> | noun <item> | adj <description> ]
 ##HACKABOT_HELP##
 
-# This is based on Scott's lunchalizer irssi script/bot
-# but hacked to hell so it is a bit different
-#
-# VERSION = "1.2"
-# author = 'mccammos'
-# contact = 'mccammos\@onid.orst.edu'
-# name => 'lunchalizer'
-# description = 'a bot script, typing !lunch will suggest a random place for lunch',
-# license => 'GNU GPL v2 or later',
+# This was based on Scott's lunchalizer irssi script/bot
+# but hacked to hell and has little relation now.
 
 use strict;
-use DBI;
-use XML::Simple;
+use File::Basename;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
-
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
+$0 = basename($0); 
 
 sub make_lunch {
-    my ($dbh, $sth, @row, $lunch, $time);
+    my ($hbc, $dbh, $sth, @row, $lunch, $time);
 
-    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-    if (!$dbh) {
-        print("Failed to connect to database\n");
-        return;
-    }
-    
+    $hbc = Hackabot::Client->new;
+    $dbh = $hbc->dbi() or die "Failed to connect to database\n";
+
     $time = `date "+%y%m%d%H%M"`;
     chomp $time;
     $time = $dbh->quote($time);
 
-    $sth = $dbh->prepare("SELECT location_id,location_name,lastused
-        FROM lunch_location ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+    $sth = $dbh->prepare("SELECT id, name FROM $0_location
+                          ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
     $sth->execute;
-    @row = $sth->fetchrow_array or return;
-    $lunch = "suggests " . $row[1];
-    $sth->finish();
+    if (@row = $sth->fetchrow_array) {
+        $lunch = "suggests " . $row[1] . " for";
+        my $id = $dbh->quote($row[0]);
+        $dbh->do("UPDATE $0_location SET lastused = $time WHERE id = $id");
+    }
+    else {
+        return "suggests nothing"
+    }
 
-    my $id = $dbh->quote($row[0]);
-    $dbh->do("UPDATE lunch_location SET lastused = $time WHERE location_id = $id");
-
-    $sth = $dbh->prepare("SELECT adj_name FROM lunch_adj ORDER BY RAND() LIMIT 1");
+    $sth = $dbh->prepare("SELECT name FROM $0_adj ORDER BY RAND() LIMIT 1");
     $sth->execute;
-    @row = $sth->fetchrow_array or return;
-    $lunch = $lunch . " for " . $row[0];
-    $sth->finish();
+    if (@row = $sth->fetchrow_array) {
+        $lunch .= " " . $row[0];
+    }
 
-    $sth = $dbh->prepare("SELECT n_name FROM lunch_n ORDER BY RAND() LIMIT 1");
+    $sth = $dbh->prepare("SELECT name FROM $0_noun ORDER BY RAND() LIMIT 1");
     $sth->execute;
-    @row = $sth->fetchrow_array or return;
-    $lunch = $lunch . " " . $row[0];
-    $sth->finish();
+    if (@row = $sth->fetchrow_array) {
+        $lunch .= " " . $row[0];
+    }
+    else {
+        $lunch .= " something";
+    }
 
     $dbh->disconnect;
     return $lunch;
 }
 
-sub add_location {
-    my ($location) = @_;
-    my ($dbh, $sth, $ret);
+sub add {
+    my ($thing, $item) = @_;
+    my ($hbc, $dbh, $sth, $ret);
 
-    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-    if (!$dbh) {
-        print("Failed to connect to database\n");
-        return;
-    }
-    $sth = $dbh->prepare("INSERT INTO lunch_location(location_name) VALUES (?)");
+    $hbc = Hackabot::Client->new;
+    $dbh = $hbc->dbi() or die "Failed to connect to database\n";
 
-    if ($sth->execute($location)) {
-        $ret = "lunchalizer added location '$location'";
+    $sth = $dbh->prepare("INSERT INTO $0_$thing(name) VALUES (?)");
+
+    if ($sth->execute($item)) {
+        $ret = "Successfully added $item";
     } elsif ($dbh->err == 1062) {
-        $ret = "lunchalizer already knows about '$location'";
+        $ret = "I already have $item";
     } else {
-        $ret = "lunchalizer failed to add '$location'";
+        $ret = "I failed to add $item";
     }
 
     $dbh->disconnect;
     return $ret;
 }
 
-sub add_noun {
-    my ($noun) = @_;
-    my ($dbh, $sth, $ret);
+$_ = <>;
 
-    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-    if (!$dbh) {
-        print("Failed to connect to database\n");
-        return;
-    }
-    $sth = $dbh->prepare("INSERT INTO lunch_n(n_name) VALUES (?)");
-
-    if ($sth->execute($noun)) {
-        $ret = "lunchalizer added noun '$noun'";
-    } elsif ($dbh->err == 1062) {
-        $ret = "lunchalizer already has noun '$noun'";
-    } else {
-        $ret = "lunchalizer failed to add '$noun'";
-    }
-
-    $dbh->disconnect;
-    return $ret;
+if (/^$/) {
+	print "me ".make_lunch();
 }
-
-sub add_adj {
-    my ($adj) = @_;
-    my ($dbh, $sth, $ret);
-
-    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-    if (!$dbh) {
-        print("Failed to connect to database\n");
-        return;
-    }
-    $sth = $dbh->prepare("INSERT INTO lunch_adj(adj_name) VALUES (?)");
-
-    if ($sth->execute($adj)) {
-        $ret = "lunchalizer added adjective '$adj'";
-    } elsif ($dbh->err == 1062) {
-        $ret = "lunchalizer already has adjective '$adj'";
-    } else {
-        $ret = "lunchalizer failed to add '$adj'";
-    }
-
-    $dbh->disconnect;
-    return $ret;
+elsif (/^add\s+(\S+.*)$/) {
+	print "send ".add("location", $1);
 }
-
-while (<>) {
-	if (/^msg\s*$/) {
-		print "me ".make_lunch();
-	}
-	elsif (/^msg\s+add\s+(\S+.*)$/) {
-		print "send ".add_location($1);
-	}
-	elsif (/^msg\s+noun\s+(\S+.*)$/) {
-		print "send ".add_noun($1);
-	}
-	elsif (/^msg\s+adj\s+(\S+.*)$/) {
-		print "send ".add_adj($1);
-	}
+elsif (/^noun\s+(\S+.*)$/) {
+	print "send ".add("noun", $1);
+}
+elsif (/^adj\s+(\S+.*)$/) {
+	print "send ".add("adj", $1);
 }
