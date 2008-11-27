@@ -6,92 +6,39 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use Time::localtime;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
 
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-my $privmsg = 0;
-my ($chan, $msg, $nick);
-while (<>) {
-	if (/^type\s+privmsg/) {
-		$privmsg = 1;
-	}
-	elsif (/^to\s+(.+)/) {
-		$chan = $1;
-	}
-	elsif (/^nick\s+(.+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(.*\S+)\s*$/) {
-		$msg = $1;
-	}
-}
-
-if (not defined $nick or not defined $chan) {
-	die "blame: not all info was given.\n";
-}
-
-if (defined $msg and $msg =~ /^--add\s+(.+)/) {
+if ($msg =~ /^--add\s+(.+)/) {
 	my $blame = $1;
 	chomp $blame;
-	my $ret;
-	if ($privmsg) {
-		$ret = add_blame($blame, $nick);
-	}
-	else {
-		$ret = add_blame($blame, $nick, $chan);
-	}
+	my $ret = add_blame($blame, $nick, $chan);
 	print "send $nick: $ret\n";
-	exit;
 }
-#if (defined $msg and $msg =~ /^--list/) {
-#	my $ret;
-#	if ($privmsg) {
-#		$ret = list_blame();
-#	}
-#	else {
-#		$ret = "Please don't flood public channels with --list\n";
-#	}
-#	print "sendnext\n";
-#	print "$nick: All the horrible things I know:\n";
-#	print $ret;
-#	print "$nick: And that is the end of the list.";
-#	exit;
-#}
-
-if ($privmsg) {
+elsif ($hbc->private) {
 	print "send I blame you!!!\n";
-	exit;
 }
+else {
+	 if ($msg eq "") {
+		$msg = get_blame();
+	}
 
-if (not defined $msg) {
-	$msg = 	get_blame();
+	my $names = $hbc->cmd("names $chan");
+	if ($names =~ /^ok\s+(.*)/) {
+		my @list = split(/\s+/, $1);
+		my $name = $list[int(rand(@list))];
+		print "me blames $name for $msg.\n";
+	}
 }
-if (defined $msg and defined $chan) {
-	my $names = `echo 'names $chan' | $ENV{'HACKABOT_DIR'}/scripts/client`;
-	chomp $names;
-	$names =~ s/^\S+\s+\S+\s+//;
-	my @list = split(/\s+/, $names);
-	my $name = $list[int(rand(@list))];
-	print "me blames $name for $msg.\n";
-}
-
 
 sub get_blame {
 	my ($dbh, $sth);
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		die "blame: Failed to connect to database\n";
-	}
+	$dbh = $hbc->dbi or die;
 	
 	my $time = `date "+%y%m%d%H%M"`;
 	chomp $time;
@@ -113,58 +60,24 @@ sub get_blame {
 	return $value;
 }
 
-sub list_blame {
-	my ($dbh, $sth);
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		die "blame: Failed to connect to database\n";
-	}
-	
-	$sth = $dbh->prepare("SELECT text FROM blame WHERE 1");
-	$sth->execute;
-	my $row;
-	my $value;
-	while ($row = $sth->fetchrow_hashref) {
-		$value .= $row->{'text'}."\n";
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	if (not defined $value) {
-		$value = "Nothing found in the db :-/";
-	}
-
-	return $value;
-}
-
 sub add_blame {
 	my $txt = shift;
 	my $nick = shift;
 	my $chan = shift;
 
-	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		print STDERR "blame: Failed to connect to database\n";
-		return  "I'm a failure! I couldn't add it. :-(";
-	}
-	
-	my $time = `date "+%F %R"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-	
+	my $dbh = $hbc->dbi;
+
 	$txt = $dbh->quote($txt);
 	$nick = $dbh->quote($nick);
-	if (defined $chan) {
+	if ($hbc->private) {
 		$chan = $dbh->quote($chan);
 	}
 	else {
 		$chan = 'NULL';
 	}
-	
+
 	my $ret = "Successfully added.";
-	$dbh->do("INSERT blame SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
+	$dbh->do("INSERT blame SET text = $txt, nick = $nick, chan = $chan, date = NOW()") or $ret = "I'm a failure! I couldn't add it. :-(";
 
 	$dbh->disconnect;
 

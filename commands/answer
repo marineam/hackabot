@@ -7,12 +7,7 @@
 
 use strict;
 
-my ($nick);
-while (<>) {
-	if (/^nick\s+(\S+)/) {
-		$nick = $1;
-	}
-}
+my $nick = $ENV{'HBEV_SENT_BY'};
 
 my @answers = (
 "It is certain.",
@@ -26,8 +21,6 @@ my @answers = (
 "Yes",
 "I don't care.",
 "Heck Yea!");
-
-defined $nick or die;
 
 print "send $nick: ".$answers[int(rand(@answers))];
 

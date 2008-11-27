@@ -7,16 +7,7 @@
 
 use strict;
 
-use XML::Simple;
-use IO::Handle;
-STDOUT->autoflush(1);
-
-my $msg;
-while (<>) {
-	if (/^msg\s*(.*)/) {
-		$msg = $1;
-	}
-}
+my $msg = <>;
 
 if (defined $msg) {
 	if ($msg =~ /(#\S+)\s+(.+)/) {

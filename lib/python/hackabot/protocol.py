@@ -221,6 +221,24 @@ class HBLineProtocol(LineOnlyReceiver):
         # FIXME: handle this gracefully
         reactor.stop()
 
+    def handle_names(self, args):
+        """Get the list of names in a channel.
+        If #channel is ommitted then the current to is used.
+
+        names [#channel]
+        """
+
+        if args:
+            if args in self.conn().channels:
+                chan = args
+            else:
+                raise CommandError("not in channel '%s'" % args)
+        else:
+            chan = self.to()
+
+        users = self.conn().channels[chan]['users']
+        self.sendLine("ok %s" % (" ".join(users)))
+
 class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
     """ProcessProtocol adapter for HBLineProtocol"""
 

@@ -52,9 +52,9 @@
             <!-- don't print messages in here elsewhere -->
             <private chan="#private" />
         </seen>
-        <bookmark>
-            <username>mydelicioususer</username>
-            <password>mydeliciouspass</password>
-        </bookmark>
+        <bookmark
+            username='mydelicioususer'
+            password='mydeliciouspass'
+        />
     </commands>
 </hackabot>

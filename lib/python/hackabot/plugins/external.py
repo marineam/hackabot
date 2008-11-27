@@ -46,6 +46,12 @@ class ExternalPlugins(object):
         else:
             vars['PERL5LIB'] = conf.get('perl')
 
+        if 'PYTHONPATH' in vars:
+            vars['PYTHONPATH'] = ("%s:%s" %
+                    (conf.get('python'), vars['PYTHONPATH']))
+        else:
+            vars['PYTHONPATH'] = conf.get('python')
+
         for cmd in commands:
             if os.access(cmd, os.X_OK):
                 log.debug("Running %s" % cmd)

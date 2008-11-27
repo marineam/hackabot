@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 ##HACKABOT_HELP##
 # Bookmark a URL to del.icio.us
@@ -10,106 +10,18 @@ import os
 import re
 import urllib
 from urlparse import urlparse
-from amara import binderytools
 
-configfile = os.getenv("HACKABOT_CFG")
-if (configfile == None):
-	sys.stderr.write("bookmark: HACKABOT_CFG is undefined!\n")
-	sys.exit(1)
+import hackabot
+from hackabot.client import Client
 
-fullcfg = binderytools.bind_file(configfile).hackabot
-config = fullcfg.cmdconfig.bookmark
-
-evtype = None
-chan = None
-nick = None
-msg = None
-for line in sys.stdin.readlines():
-	if re.match(r'type\s+(\S+)', line):
-		c = re.match(r'type\s+(\S+)', line)
-		evtype = c.group(1)
-	elif re.match(r'to\s+(\S+)', line):
-		c = re.match(r'to\s+(\S+)', line)
-		chan = c.group(1)
-	elif re.match(r'nick\s+(\S+)', line):
-		c = re.match(r'nick\s+(\S+)', line)
-		nick = c.group(1)
-	elif re.match(r'msg\s+(.+)', line):
-		c = re.match(r'msg\s+(.+)', line)
-		msg = c.group(1)
-
-if chan == None or evtype == None or nick == None:
-	sys.stderr.write("bookmark: chan, event type or nick undefined")
-	sys.exit(1)
-
-if msg == None:
-	if evtype == "pubmsg":
-		print "send "+nick+": Check out http://del.icio.us" + \
-			urllib.quote("/%s/%s" % \
-			(config.user, chan))
-	else:
-		print "send "+nick+": Check out http://del.icio.us" + \
-			urllib.quote("/%s/user.%s" % \
-			(config.user, nick))
-	sys.exit()
-
-# let's do all sorts of fuzzy parsing for the alternative syntaxes
-allparams = msg.split()
-url = allparams[0]
-
-allparams = allparams[1:]
-# valid  states
-states = { '-t': 'tag',
-           '-d': 'desc',
-           '-e': 'ext' }
-curstate = 'tag' # if you don't specify flags, you're adding tags only
-quoted = False # start off unquoted. "Quoted" mode ignores possible flags
-tags = []
-desc = []
-extended = []
-for token in allparams:
-    if not quoted:
-        try:
-            c = states[token.lower()[:2]]
-        except:
-            c = None
-        if c:
-            curstate = c
-            token = token[2:]
-            if not token: continue
-        if token[0] == '"' and curstate != 'tag':
-            # start quoted mode
-            quoted = True
-            token = token[1:]
-        print token[-1]
-        if token[-1] == '"' and curstate != 'tag':
-            quoted = False
-            token = token[:-1]
-    else:
-        if token[-1] == '"':
-            quoted = False
-            token = token[:-1]
-        
-    if curstate == 'tag':
-        tags.append(token)
-    elif curstate == 'desc':
-        desc.append(token)
-    elif curstate == 'ext':
-        extended.append(token)
-        
-
-
-def sendToDelicious(url, tags, description, extended, channel, username):
-    if evtype == "pubmsg":
-        tags.append(channel)
-    tags.append("user."+username)
+def sendToDelicious(url, tags, description, extended, username, password):
     # no quotes (and spaces) allowed, but everything else
     tags = [tag.strip('"') for tag in tags]
     if not description:
         description = beautifyURL(url)
     if not extended:
         extended = ''
-    
+
     params = { 'url' : url,
                'description': description,
                'extended': extended,
@@ -117,40 +29,38 @@ def sendToDelicious(url, tags, description, extended, channel, username):
                'replace': 'no' }
     paramstring = urllib.urlencode(params)
 
-    opener = EvenFancierURLopener()
+    opener = EvenFancierURLopener(username, password)
     api = opener.open("https://api.del.icio.us/v1/posts/add?%s" % paramstring)
     if not api:
-        return "send %s: Error: The del.icio.us API could not be accessed!" % username
+        return "Error: The del.icio.us API could not be accessed!"
     retval = api.read()
 
     if not retval:
-        return "send %s: Rudeness alert: The del.icio.us server did not answer anything" % username
-    
+        return "Error: The del.icio.us server did not answer anything"
+
     parsedresult = re.search(r'result code="([^"]+)"', retval)
     if parsedresult:
         code = parsedresult.group(1)
         if code == 'done':
-            return 'send %s: Successfully bookmarked.' % username
+            return 'Successfully bookmarked.'
         else:
-            return 'send %s: Oops, del.icio.us said: "%s"' % (username, code)
-    
-    # last resort. If we reach this, something bad happened.
-    return 'send %s: Invalid server reply (%s...)' % (username, retval[:200])
+            return 'Oops, del.icio.us said: "%s"' % code
 
-    
+    # last resort. If we reach this, something bad happened.
+    return 'Invalid server reply (%s...)' % retval[:200]
 
 class EvenFancierURLopener(urllib.FancyURLopener):
     """override fancyurlopener to pass on the right user and pass"""
-    version = "OSUOSL/Manatee IRC Bot" # class var for user agent
-    
-    def __init__(self):
-        self.user = str(config.user)
-        self.passwd = str(config.passwd)
+    version = "Hackabot %s" % hackabot.__version__ # user agent
+
+    def __init__(self, username, password):
+        self.user = username
+        self.passwd = password
         urllib.FancyURLopener.__init__(self)
 
     def prompt_user_passwd(self, host, realm):
         return (self.user, self.passwd)
-    
+
 def beautifyURL(url):
     """for description: remove http and stuff"""
     tuple = urlparse(url)
@@ -158,7 +68,86 @@ def beautifyURL(url):
     return urllib.unquote(tuple[1]+tuple[2])
 
 
-# now bookmark and we're all set.
-bookmarkresult = sendToDelicious(url, tags, " ".join(desc), " ".join(extended), chan, nick)
-print bookmarkresult
+def parse(msg):
+    # let's do all sorts of fuzzy parsing for the alternative syntaxes
+    allparams = msg.split()
+    url = allparams[0]
 
+    allparams = allparams[1:]
+    # valid  states
+    states = { '-t': 'tag',
+               '-d': 'desc',
+               '-e': 'ext' }
+    curstate = 'tag' # if you don't specify flags, you're adding tags only
+    quoted = False # start off unquoted. "Quoted" mode ignores possible flags
+    tags = []
+    desc = []
+    extended = []
+    for token in allparams:
+        if not quoted:
+            try:
+                c = states[token.lower()[:2]]
+            except:
+                c = None
+            if c:
+                curstate = c
+                token = token[2:]
+                if not token: continue
+            if token[0] == '"' and curstate != 'tag':
+                # start quoted mode
+                quoted = True
+                token = token[1:]
+            if token[-1] == '"' and curstate != 'tag':
+                quoted = False
+                token = token[:-1]
+        else:
+            if token[-1] == '"':
+                quoted = False
+                token = token[:-1]
+
+        if curstate == 'tag':
+            tags.append(token)
+        elif curstate == 'desc':
+            desc.append(token)
+        elif curstate == 'ext':
+            extended.append(token)
+
+    return (url, tags, " ".join(desc), " ".join(extended))
+
+def main():
+    hbc = Client()
+    config = hbc.conf.find(".//commands/bookmark")
+
+    if config is None:
+        print "send bookmark has not been configured!"
+        sys.exit();
+
+    username = config.get("username")
+    password = config.get("password")
+
+    msg = hbc.readline()
+    nick = hbc.sent_by()
+    chan = hbc.channel()
+
+    if not msg:
+        if chan:
+            path = chan
+        else:
+            path = "user.%s" % nick
+
+        print "send %s: Check out http://del.icio.us/%s/%s" % (username, path)
+
+    else:
+        (url, tags, desc, extended) = parse(msg)
+
+        if chan:
+            tags.append(chan)
+
+        tags.append("user."+nick)
+
+        # now bookmark and we're all set.
+        result = sendToDelicious(url, tags, desc, extended, username, password)
+        print "send %s: %s" % (nick, result)
+
+if __name__ == "__main__":
+    main()

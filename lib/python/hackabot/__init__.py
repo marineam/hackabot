@@ -109,5 +109,5 @@ class _Wrapper(object):
 
 conf = _Wrapper()
 __version__ = "2.0"
-__all__ = [ "conf", "core", "db", "load_conf", "log",
+__all__ = [ "client", "conf", "core", "db", "load_conf", "log",
             "plugin", "protocol", "remote", "run" ]

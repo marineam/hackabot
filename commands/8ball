@@ -7,16 +7,6 @@
 
 use strict;
 
-#my ($nick, $msg);
-#while (<>) {
-#	if (/^nick\s*(\S*)/) {
-#		$nick = $1;
-#	}
-#	elsif (/^msg\s*(.*)/) {
-#		$msg = $1;
-#	}
-#}
-
 my @answers = (
 "     ___
     /   \\
