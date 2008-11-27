@@ -41,6 +41,11 @@ class ExternalPlugins(object):
             else:
                 vars['HBEV_%s' % key.upper()] = str(val)
 
+        if 'PERL5LIB' in vars:
+            vars['PERL5LIB'] = "%s:%s" % (conf.get('perl'), vars['PERL5LIB'])
+        else:
+            vars['PERL5LIB'] = conf.get('perl')
+
         for cmd in commands:
             if os.access(cmd, os.X_OK):
                 log.debug("Running %s" % cmd)

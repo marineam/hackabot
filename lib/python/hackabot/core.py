@@ -141,8 +141,10 @@ class HBotConnection(irc.IRCClient):
 
         if sent_to == self.nickname:
             event['reply_to'] = sent_by
+            event['private'] = True
         else:
             event['reply_to'] = sent_to
+            event['private'] = False
 
         plugin.manager.hook(self, event)
 
@@ -174,8 +176,10 @@ class HBotConnection(irc.IRCClient):
 
         if sent_to == self.nickname:
             event['reply_to'] = sent_by
+            event['private'] = True
         else:
             event['reply_to'] = sent_to
+            event['private'] = False
 
         plugin.manager.hook(self, event)
 
@@ -194,8 +198,10 @@ class HBotConnection(irc.IRCClient):
 
         if sent_to == self.nickname:
             event['reply_to'] = sent_by
+            event['private'] = True
         else:
             event['reply_to'] = sent_to
+            event['private'] = False
 
         plugin.manager.hook(self, event)
 
