@@ -9,7 +9,7 @@ from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
 from hackabot.protocol import HBProcessProtocol
-from hackabot import log, env
+from hackabot import conf, log
 
 class ExternalPlugins(object):
     """Pass off events to external plugins,
@@ -22,15 +22,17 @@ class ExternalPlugins(object):
             return
 
         if event['type'] == "command":
-            commands = glob("%s/%s" % (env.HB_COMMANDS, event['command']))
+            commands = glob("%s/%s" % (conf.get('commands'), event['command']))
         else:
-            commands = glob("%s/%s/*" % (env.HB_HOOKS, event['type']))
+            commands = glob("%s/%s/*" % (conf.get('hooks'), event['type']))
 
         if not commands:
             return
 
         vars = os.environ
-        vars['HB_ROOT'] = env.HB_ROOT
+        for key, val in conf.items():
+            vars["HB_%s" % key.upper()] = str(val)
+
         vars['HB_NICK'] = conn.nickname
         text = ""
         for key, val in event.iteritems():

@@ -8,7 +8,7 @@ from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor
 from twisted.python import context
 
-from hackabot import db, log, plugin
+from hackabot import conf, db, log, plugin
 
 class ConfigError(Exception):
     pass
@@ -19,18 +19,18 @@ class NotConnected(Exception):
 def nick(sent_by):
     return sent_by.split('!',1)[0]
 
-def init(config):
+def init():
     global manager
-    manager = HBotManager(config)
+    manager = HBotManager()
 
 class HBotManager(object):
     """Manage various network connections"""
 
-    def __init__(self, config):
+    def __init__(self):
         self._networks = {}
         self._default = None
 
-        for network in config.findall("network"):
+        for network in conf.findall("network"):
             id = network.get("id", None)
 
             if id not in self._networks:

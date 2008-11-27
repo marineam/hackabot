@@ -4,7 +4,7 @@ import glob
 
 from twisted.enterprise import adbapi
 
-from hackabot import log, env
+from hackabot import conf, log
 
 # These are all the tables included in the schema prior to the introduction of
 # schema versions. If all these exist it is probably safe to assume that the
@@ -21,7 +21,7 @@ class DBError(Exception):
 def required_schema():
     """Get the required version from the schema-version file"""
 
-    schema_file = "%s/schema-version" % env.HB_MYSQL
+    schema_file = "%s/schema-version" % conf.get('mysql')
 
     try:
         schema_fd = open(schema_file)
@@ -112,10 +112,10 @@ def _load_sql(db, dump):
 def _load_schema(db, required):
     """Load the latest available schema version"""
 
-    dumps = glob.glob("%s/schema-???.sql" % env.HB_MYSQL)
+    dumps = glob.glob("%s/schema-???.sql" % conf.get('mysql'))
 
     if not dumps:
-        raise DBError("No schema files found in %s" % env.HB_MYSQL)
+        raise DBError("No schema files found in %s" % conf.get('mysql'))
 
     dumps.sort()
     dump = dumps[-1]
@@ -135,7 +135,7 @@ def _load_schema(db, required):
 def _load_update(db, version):
     """Load a single update file"""
 
-    update = "%s/schema/%03d.sql" % (env.HB_MYSQL, version)
+    update = "%s/schema/%03d.sql" % (conf.get('mysql'), version)
 
     _load_sql(db, update)
     _set_version(db, version)
@@ -160,11 +160,11 @@ def _set_version(db, version):
 
     cursor.close()
 
-def init(config):
+def init():
     """Create db pool and check/upgrade schema revision"""
     global pool, MySQLdb
 
-    tag = config.find('database')
+    tag = conf.find('database')
     if tag is None:
         log.info("No database configured.")
         return

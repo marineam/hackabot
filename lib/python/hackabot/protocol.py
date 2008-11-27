@@ -19,6 +19,7 @@ class HBLineProtocol(LineOnlyReceiver):
     implements(IHalfCloseableProtocol)
 
     delimiter = '\n'
+    _dump = False
 
     def __init__(self):
         self._to = None
@@ -35,6 +36,10 @@ class HBLineProtocol(LineOnlyReceiver):
         reactor.callLater(0,self.transport.loseConnection)
 
     def lineReceived(self, line):
+        if self._dump:
+            self._dump_line(line)
+            return
+
         line = line.strip()
         command, space, args = line.partition(" ")
 
@@ -99,6 +104,29 @@ class HBLineProtocol(LineOnlyReceiver):
         else:
             self._net = core.manager[args]
             self.sendLine("ok")
+
+    def handle_dump(self, args):
+        """Send all following lines to the current 'to' and 'net'.
+        White space will be preserved, so this is what you want for
+        spanning a channel with ASCII art and such crap.
+
+        dump
+        <some text>
+        <more text>
+        """
+
+        self.to() # Just to check for errors
+        self._dump = True
+        self.sendLine("ok")
+
+    def handle_sendnext(self, args):
+        """Alias for 'dump'"""
+        
+        self.handle_dump(args)
+
+    def _dump_line(self, line):
+        # Got a line in dump mode
+        self.conn().msg(self.to(), line)
 
     def handle_msg(self, args):
         """Send a message using the current 'to' and 'net'.

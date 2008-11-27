@@ -4,19 +4,19 @@ from twisted.internet import reactor
 from twisted.internet.protocol import ServerFactory
 
 from hackabot.protocol import HBLineProtocol
-from hackabot import env, log
+from hackabot import conf, log
 
 _listen = False
 
-def init(config):
+def init():
     global _listen
 
-    if config.find('listen') is not None:
+    if conf.find('listen') is not None:
         _listen = True
 
 def listen():
     if _listen:
-        sock = "%s/sock" % env.HB_ROOT
+        sock = "%s/sock" % conf.get('root')
         reactor.listenUNIX(sock, HBRemoteControl())
 
 class HBRemoteControl(ServerFactory):
