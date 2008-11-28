@@ -7,40 +7,34 @@
 
 use strict;
 use URI::Escape;
+use Hackabot::Client;
 
-my ($nick, $word1, $word2, $msg);
-while (<>) {
-	if (/^nick\s+(\S+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(\S.*\S)/) {
-		$msg = $1;
-	}
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my ($word1, $word2);
+
+if ($msg =~ /^("[^"]+")/) {
+    $word1 = $1;
+}
+elsif ($msg =~ /^('[^']+')/) {
+    $word1 = $1;
+}
+elsif ($msg =~ /^(\S+)/) {
+    $word1 = $1;
 }
 
-if (defined $msg) {
-	if ($msg =~ /^("[^"]+")/) {
-		$word1 = $1;
-	}
-	elsif ($msg =~ /^('[^']+')/) {
-		$word1 = $1;
-	}
-	elsif ($msg =~ /^(\S+)/) {
-		$word1 = $1;
-	}
-
-	if ($msg =~ /("[^"]+")$/) {
-		$word2 = $1;
-	}
-	elsif ($msg =~ /('[^']+')$/) {
-		$word2 = $1;
-	}
-	elsif ($msg =~ /(\S+)$/) {
-		$word2 = $1;
-	}
+if ($msg =~ /("[^"]+")$/) {
+    $word2 = $1;
+}
+elsif ($msg =~ /('[^']+')$/) {
+    $word2 = $1;
+}
+elsif ($msg =~ /(\S+)$/) {
+    $word2 = $1;
 }
 
-if (defined $nick and defined $word1 and defined $word2) {
+if (defined $word1 and defined $word2) {
 	my $hits1 = gethits($word1);
 	my $hits2 = gethits($word2);
 
@@ -61,7 +55,7 @@ if (defined $nick and defined $word1 and defined $word2) {
 	print "send $nick: $result";
 }
 else {
-	die "googlefight: nick or message not defined :-/ ($nick $word1 $word2)\n";
+    print "send Usage: word1 word2";
 }
 
 sub commafy {

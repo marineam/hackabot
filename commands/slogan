@@ -9,9 +9,11 @@ use strict;
 use LWP::Simple;
 use URI::Escape;
 use HTML::Entities;
+use Hackabot::Client;
 
-my $nick = $ENV{'HBEV_SENT_BY'};
-my $msg = <>;
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
 
 $msg =~ s/\s*$//;
 $msg = uri_escape($msg);

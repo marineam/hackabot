@@ -14,13 +14,7 @@ if ($default eq "fortune") {
 	$default = "";
 }
 
-my $msg;
-while (<>) {
-	if (/^msg\s*(.*)/) {
-		$msg = $1;
-	}
-}
-
+my $msg = <>;
 if (not defined $msg) {
 	$msg = "";
 }
@@ -38,10 +32,10 @@ if ($msg =~ /^(#\S+)/) {
 else {
 	print "sendnext\n";
 	if ($msg =~ /^([a-z]+)/) {
-		print fortune($1);
+		fortune($1);
 	}
 	else {
-		print fortune($default);
+		fortune($default);
 	}
 }
 
@@ -51,7 +45,7 @@ sub fortune {
 	my $text = "";
 	if ($type eq "list") {
 		my @files;
-		opendir(DIR, "$ENV{'HACKABOT_DIR'}/misc/cookies");
+		opendir(DIR, "$ENV{'HB_ROOT'}/misc/cookies");
 		while ($_ = readdir(DIR)) {
 			if (/^[^\.].*\.dat$/) {
 				s/\.dat$//;
@@ -59,12 +53,9 @@ sub fortune {
 			}
 		}
 		closedir(DIR);
-		$text = "Fortunes: ".join(" ", sort @files);
+		print "Fortunes: ".join(" ", sort @files);
 	}
 	else {
-		$text = `fortune -n 190 -s $ENV{'HACKABOT_DIR'}/misc/cookies/$type`;
-		chomp $text;
+		system("fortune -n 190 -s $ENV{'HB_ROOT'}/misc/cookies/$type");
 	}
-
-	return $text;
 }

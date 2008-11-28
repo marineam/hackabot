@@ -6,30 +6,23 @@
 ##HACKABOT_HELP##
 
 use strict;
-use LWP::Simple;
 use URI::Escape;
 use HTML::Entities;
+use Hackabot::Client;
 
-my ($nick, $msg);
-while (<>) {
-	if (/^nick\s*(\S*)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s*(.*)/) {
-		$msg = $1;
-	}
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+
+if (not $msg) {
+    $msg = $nick;
 }
 
-if (defined $nick and defined $msg) {
-	$msg =~ s/\s*$//;
-	$msg = uri_escape($msg);
-	my $slogan = `curl -s -d "name=$msg" http://www.rootcompromise.org/hhg/ | grep filter:glow | sed -e 's/<[^>]*>//g' -e 's/^ *//g'`;
-	chomp $slogan;
+$msg =~ s/\s*$//;
+$msg = uri_escape($msg);
+my $hacker = `curl -s -d "name=$msg" http://www.rootcompromise.org/hhg/ | grep filter:glow | sed -e 's/<[^>]*>//g' -e 's/^ *//g'`;
+chomp $hacker;
 
-	$slogan = decode_entities($slogan);
+$hacker = decode_entities($hacker);
 
-	print "send $nick: $slogan";
-}
-else {
-	die "slogan: nick or message not defined :-/\n";
-}
+print "send $nick: $hacker";
