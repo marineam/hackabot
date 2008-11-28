@@ -6,30 +6,19 @@
 ##HACKABOT_HELP##
 
 use strict;
-
 use LWP::Simple;
-use IO::Handle;
-STDOUT->autoflush(1);
 
-my $msg;
-while (<>) {
-	if (/^msg\s*(.*)/) {
-		$msg = $1;
-	}
-}
-
+my $msg = <>;
 if (defined $msg) {
-	if ($msg =~ /(#\S+)\s+(.+\S)/) {
+    chomp $msg;
+	if ($msg =~ /(#\S+)\s+(.*)/) {
 		my $insult = insult();
 		print "to $1\n";
 		print "send $2: $insult\n";
 	}
-	elsif ($msg =~ /\s*(.+\S)/) {
+    else {
 		my $insult = insult();
-		print "send $1: $insult\n";
-	}
-	else {
-		print "send Usage: !insult [#chan] nick";
+		print "send $msg: $insult\n";
 	}
 }
 

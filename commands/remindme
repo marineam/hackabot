@@ -6,25 +6,29 @@
 ##HACKABOT_HELP##
 
 use strict;
+use Hackabot::Client;
+use IO::Handle;
+STDOUT->autoflush(1);
 
-my ($nick, $msg, $time);
-while (<>) {
-	if (/^nick\s*(\S*)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s*([0-9]+)\s+(.*)/) {
-		$time = $1;
-		$msg = 	$2;
-	}
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $time;
+
+if ($msg =~ /^([0-9]+)\s+(.*)/) {
+	$time = $1;
+	$msg = $2;
 }
 
-if (defined $nick and defined $msg and defined $time) {
+if (defined $time) {
 	$time = $time*60;
+
+	print "send $nick: ok...\n";
 
 	sleep $time;
 
-	print "send $nick: Times up!! *$msg*";
+	print "send $nick: Times up!! *$msg*\n";
 }
 else {
-	die "remindme: nick, minutes, or message not defined!!\n";
+	print "send $nick: You need to give me a number!\n";
 }

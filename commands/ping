@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOST="`grep ^msg | sed -e 's/^msg\s*//' | sed -e 's/\s.*//'`"
+HOST="`head -n 1`"
 
 echo sendnext
 RESULT=$(ping -c 1 -W 2 "$HOST")

@@ -6,17 +6,23 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use Time::localtime;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
 
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
+my ($find, $replace, $option);
+if ($msg =~ /^\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/([ig]*)/) {
+	$find = $1;
+	$replace = $2;
+	$option = $3;
+}
+
+if (defined $find and defined $replace) {
+	print "send " . replace($nick, $chan, $find, $replace, $option);
+}
 
 sub replace {
 	my $nick = shift;
@@ -28,11 +34,8 @@ sub replace {
 	my $row;
 	my $ret = "$nick: Sorry, I can't match the expression '$find'.\n";
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "see: Failed to connect to database\n";
-	}
-	
+	$dbh = $hbc->dbi;
+
 	my $qnick = $dbh->quote($nick);
 	if (defined $chan) {
 		$chan = $dbh->quote($chan);
@@ -43,9 +46,9 @@ sub replace {
 
 	for (my $i = 0; $i < 50; $i++) {
 		if (defined $option and $option =~ /g/) {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE chan = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
+			$sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
 		} else {
-			$sth = $dbh->prepare("SELECT id, text, nick, type FROM log WHERE nick = $qnick AND chan = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
+			$sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE sent_by = $qnick AND channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
 		}
 		$sth->execute();
 		if ($row = $sth->fetchrow_hashref()) {
@@ -62,7 +65,7 @@ sub replace {
 							last;
 						}
 					}
-					
+
 					my $str = substr($text,$lastpos,$pos-$lastpos);
 
 					if (defined $option and $option =~ /i/) {
@@ -77,7 +80,7 @@ sub replace {
 						no strict 'refs';
 						$match[$j] = ${"$j"};
 					}
- 					for (my $j = 1; $j <= 9; $j++) {
+					for (my $j = 1; $j <= 9; $j++) {
 						$str =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
 					}
 
@@ -85,12 +88,12 @@ sub replace {
 					$lastpos = $lastpos+length($str);
 					pos($text) = $lastpos;
 				}
-				
+
 				if ($row->{'type'} eq "msg") {
-					$ret = "$row->{'nick'} actually meant: $text";
+					$ret = "$row->{'sent_by'} actually meant: $text";
 				}
 				elsif ($row->{'type'} eq "action") {
-					$ret = "correction: * $row->{'nick'} $text";
+					$ret = "correction: * $row->{'sent_by'} $text";
 				}
 				else {
 					$ret = "ERROR: unknown type: $row->{'type'}.";
@@ -110,32 +113,3 @@ sub replace {
 
 	return $ret;
 }
-
-my ($nick, $chan, $find, $replace, $arg, $option, $type);
-while (<>) {
-	if (/^type\s*(\S*)/) {
-		$type = $1;
-	}
-	elsif (/^nick\s*(\S*)/) {
-		$nick = $1;
-	}
-	elsif (/^to\s*(\S*)/) {
-		$chan = $1;
-	}
-	elsif (/^msg\s*\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/([ig]*)/) {
-		$find = $1;
-		$replace = $2;
-		$option = $3;
-	}
-}
-
-if (defined $type and $type ne "pubmsg") {
-	$chan = undef;
-}
-
-if (defined $nick and defined $find and defined $replace) {
-	print "send " . replace($nick, $chan, $find, $replace, $option);
-}
-#else {
-#	die "s: malformed request\n";
-#}

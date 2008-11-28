@@ -8,10 +8,10 @@
 use strict;
 
 my $url = "http://limerickdb.com/?random2";
-while (<>) {
-	if (/^msg\s+(\d+)/) {
-		$url = "http://limerickdb.com/?$1";
-	}
+
+my $msg = <>;
+if (defined $msg and $msg =~ /^msg\s+(\d+)/) {
+	$url = "http://limerickdb.com/?$1";
 }
 
 open(PAGE, "lynx -dump '$url' |");
