@@ -121,7 +121,7 @@ class HBLineProtocol(LineOnlyReceiver):
 
     def handle_sendnext(self, args):
         """Alias for 'dump'"""
-        
+ 
         self.handle_dump(args)
 
     def _dump_line(self, line):
@@ -283,7 +283,7 @@ class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
 
     def outConnectionLost(self):
         if self._buffer:
-            self.lineReceived("%s\n" % self._buffer)
+            self.lineReceived(self._buffer)
 
     def processEnded(self, reason):
         if not isinstance(reason.value, error.ProcessDone):
