@@ -6,142 +6,74 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'});
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
 
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-my ($msg, $type, $chan, $nick);
-while (<>) {
-	if (/^type\s+(\S+)/) {
-		$type = $1;
-	}
-	elsif (/^to\s+(#\S+)/) {
-		$chan = $1;
-	}
-	elsif (/^nick\s+(\S+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(.*)\s*$/) {
-		$msg = $1;
-	}
-}
-
-if ($type eq "privmsg") {
+if ($hbc->private) {
 	$chan = $nick;
 }
 
-if (not defined $chan) {
-	die "hangman: uh, chan is not defined?!?\n";
-}
-
-my ($dbh, $sth);
-
-if ($type eq "privmsg" and $msg =~ /^(#\S+)\s+(\S+.*)$/) {
+if ($hbc->private and $msg =~ /^(#\S+)\s+(\S+.*)$/) {
 	my $destchan = $1;
 	my $phrase = $2;
+	my $guess = $phrase;
+	$guess =~ s/[a-z]/_/ig;
 
-	#if (not $phrase =~ /^[a-z ]+$/i) {
-	#	print "send Only phrases containing letters are allowed.";
-	#	exit;
-	#}
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0});
-	if (!$dbh) {
-		die "hangman: Failed to connect to database\n";
-	}
-
-	my $qdestchan = $dbh->quote($destchan);
-	my $qphrase = $dbh->quote($phrase);
-	my $qnick = $dbh->quote($nick);
-
-	$dbh->do("INSERT INTO hangman SET chan = $qdestchan, state = 1, "
-		."phrase = $qphrase, nick = $qnick ")
-		or $dbh->do("UPDATE hangman SET "
-		."phrase = $qphrase, nick = $qnick "
-		."WHERE chan = $qdestchan AND state = 1")
+	my $dbh = $hbc->dbi;
+	$dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
+		VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
+		phrase = VALUES(phrase),
+		guess = VALUES(guess),
+		final = NULL, wrong = ''",
+		undef, $destchan, $phrase, $guess)
 		or die("hangman: db update failed\n");
-	$dbh->disconnect;
 
-	print "send Next phrase for $destchan set to $phrase\n";
+	print "send Phrase for $destchan set to $phrase\n";
 	print "to $destchan\n";
-	print "action is ready with the next hangman from $nick\n";
+	print "me is ready with a new hangman game from $nick\n";
+	print "sendnext\n";
+	print "    $guess\n";
 }
 elsif ($msg =~ /^new$/) {
 	# New game
 
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "hangman: Failed to connect to database\n";
-	}
-
-	my $qchan = $dbh->quote($chan);
-
-	$sth = $dbh->prepare("SELECT phrase FROM hangman "
-		."WHERE chan = $qchan AND state = 1");
-	$sth->execute;
-	my ($row, $phrase, $update);
-	
-	$row = $sth->fetchrow_hashref;
-	if (not defined $row->{'phrase'}) {
-		$update = 0;
-		$phrase = getrandom("$ENV{'HACKABOT_DIR'}/misc/wordlist");
-	}
-	else {
-		$update = 1;
-		$phrase = $row->{'phrase'};
-	}
-	$sth->finish();
+	my $phrase = getrandom("$ENV{'HB_ROOT'}/misc/wordlist");
 	my $guess = $phrase;
 	$guess =~ s/[a-z]/_/ig;
-	my $qphrase = $dbh->quote($phrase);
-	my $qguess = $dbh->quote($guess);
 
-	$dbh->do("DELETE FROM hangman WHERE chan = $qchan AND state = 0");
-	if ($update) {
-		$dbh->do("UPDATE hangman SET state = 0, "
-		."guess = $qguess WHERE chan = $qchan AND state = 1")
+	my $dbh = $hbc->dbi;
+	$dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
+		VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
+		phrase = VALUES(phrase),
+		guess = VALUES(guess)
+		final = NULL, wrong = ''",
+		undef, $chan, $phrase, $guess)
 		or die("hangman: db update failed\n");
-	}
-	else {
-		$dbh->do("INSERT INTO hangman SET chan = $qchan, state = 0, "
-		."phrase = $qphrase, guess = $qguess")
-		or die("hangman: db update failed\n");
-	}
 
-	print "send New Hangman Game!\n";
+	print "me is ready with a new hangman game\n";
 	print "sendnext\n";
 	print "    $guess\n";
-
-	$dbh->disconnect;
 }
 elsif ($msg =~ /^([a-z])$/i) {
 	# Guess
 	my $char = $1;
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "hangman: Failed to connect to database\n";
-	}
 
-	my $qchan = $dbh->quote($chan);
+	my $dbh = $hbc->dbi;
+	my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
+		FROM hangman WHERE chan = ?");
+	$sth->execute($chan);
 
-	$sth = $dbh->prepare("SELECT phrase, guess, wrong, final FROM hangman "
-		."WHERE chan = $qchan AND state = 0");
-	$sth->execute;
-	my $row;
-	
-	$row = $sth->fetchrow_hashref;
+	my $row = $sth->fetchrow_hashref;
 	if (not defined $row->{'guess'} or not defined $row->{'phrase'}) {
-		print "send No hangman game.";
+		print "send You need to start a game first!";
 		exit;
 	}
-	$sth->finish;
+
 	my $phrase = $row->{'phrase'};
 	my $guess = $row->{'guess'};
 	my $wrong = $row->{'wrong'};
@@ -180,45 +112,31 @@ elsif ($msg =~ /^([a-z])$/i) {
 		$final = "'lose'";
 		$guess = $phrase;
 	}
-	else {
-		$final = "NULL";
-	}
-		
-	my $qwrong = $dbh->quote($wrong);
-	my $qguess = $dbh->quote($guess);
-	$dbh->do("UPDATE hangman SET guess = $qguess, wrong = $qwrong, "
-		."final = $final WHERE chan = $qchan AND state = 0")
+
+	$dbh->do("UPDATE hangman SET guess = ?, wrong = ?,
+		final = ? WHERE chan = ?", undef,
+		$guess, $wrong, $final, $chan)
 		or die("hangman: db update failed\n");
-	
+
 	print "sendnext\n";
-	print getshow($guess, $wrong, ($final eq "NULL")? undef : $final);
-	
-	$dbh->disconnect;
+	print getshow($guess, $wrong, $final);
 }
 else {
 	# Show
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "hangman: Failed to connect to database\n";
-	}
+	my $dbh = $hbc->dbi;
+	my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
+		FROM hangman WHERE chan = ?");
+	$sth->execute($chan);
 
-	my $qchan = $dbh->quote($chan);
+	my $row = $sth->fetchrow_hashref;
 
-	$sth = $dbh->prepare("SELECT phrase, guess, wrong, final FROM hangman "
-		."WHERE chan = $qchan AND state = 0");
-	$sth->execute;
-	my ($row, $phrase, $update);
-	
-	$row = $sth->fetchrow_hashref;
-	$sth->finish;
 	if (defined $row->{'phrase'} and not defined $row->{'final'} and
 			lc($row->{'phrase'}) eq lc($msg)) {
 		$row->{'guess'} = $row->{'phrase'};
 		$row->{'final'} = "'win'";
-		
-		my $qguess = $dbh->quote($row->{'guess'});
-		$dbh->do("UPDATE hangman SET guess = $qguess, "
-			."final = 'win' WHERE chan = $qchan AND state = 0")
+
+		$dbh->do("UPDATE hangman SET guess = ?, final = 'win'
+			WHERE chan = ?", undef, $row->{'guess'})
 			or die("hangman: db update failed\n");
 	}
 	elsif (defined $row->{'phrase'} and
@@ -230,21 +148,19 @@ else {
 	elsif (defined $row->{'phrase'} and length($msg)) {
 		$row->{'guess'} = $row->{'phrase'};
 		$row->{'final'} = "'lose'";
-		
-		my $qguess = $dbh->quote($row->{'guess'});
-		$dbh->do("UPDATE hangman SET guess = $qguess, "
-			."final = 'lose' WHERE chan = $qchan AND state = 0")
+
+		$dbh->do("UPDATE hangman SET guess = ?, final = 'lose'
+			WHERE chan = ?", undef, $row->{'guess'})
 			or die("hangman: db update failed\n");
-	}	
+	}
+
 	if (defined $row->{'guess'} and defined $row->{'wrong'}) {
 		print "sendnext\n";
 		print getshow($row->{'guess'}, $row->{'wrong'}, $row->{'final'});
 	}
 	else {
-		print "send No hangman game.";
+		print "send You need to start a game first!";
 	}
-	
-	$dbh->disconnect;
 }
 
 sub getrandom {

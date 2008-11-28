@@ -7,40 +7,14 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use Time::localtime;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}); 
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
 
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-my $privmsg = 0;
-my ($chan, $msg, $nick);
-while (<>) {
-	if (/^type\s+privmsg/) {
-		$privmsg = 1;
-	}
-	elsif (/^to\s+(.+)/) {
-		$chan = $1;
-	}
-	elsif (/^nick\s+(.+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(\S.+)/) {
-		$msg = $1;
-	}
-}
-
-if (not defined $nick or not defined $chan) {
-	die "group: not all info was given.\n";
-}
-
-if (not defined $msg) {
+if (not $msg) {
 	exit;
 }
 elsif ($msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
@@ -50,13 +24,7 @@ elsif ($msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
 	$text =~ s/\s+/,/g; #incase it was space sperated
 	$text =~ s/,,/,/g;  #incase it was space and , seperated
 
-	my $ret;
-	if ($privmsg) {
-		$ret = add_group($group, $text, $nick);
-	}
-	else {
-		$ret = add_group($group, $text, $nick, $chan);
-	}
+	my $ret = add_group($group, $text, $nick, $chan);
 	print "send $nick: $ret\n";
 	exit;
 }
@@ -74,14 +42,7 @@ elsif ($msg =~ /^(\S+)\s+--add\s+(\S.*)/) {
 	}
 
 	$text = "$names,$text";
-
-	my $ret;
-	if ($privmsg) {
-		$ret = edit_group($group, $text, $nick);
-	}
-	else {
-		$ret = edit_group($group, $text, $nick, $chan);
-	}
+	my $ret = add_group($group, $text, $nick, $chan);
 	print "send $nick: $ret\n";
 	exit;
 }
@@ -105,13 +66,7 @@ elsif ($msg =~ /^(\S+)\s+--del\s+(\S.*)/) {
 		$names =~ s/^$name$//;
 	}
 
-	my $ret;
-	if ($privmsg) {
-		$ret = edit_group($group, $names, $nick);
-	}
-	else {
-		$ret = edit_group($group, $names, $nick, $chan);
-	}
+	my $ret = add_group($group, $names, $nick, $chan);
 	print "send $nick: $ret\n";
 	exit;
 }
@@ -142,27 +97,15 @@ else {
 
 sub get_group {
 	my $group = shift;
-	my ($dbh, $sth);
 
-	if (not defined $group) {
-		die "group: group undefined\n";
-	}
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		die "group: Failed to connect to database\n";
-	}
-	
-	$group = $dbh->quote($group);
-	
-	$sth = $dbh->prepare("SELECT name,names FROM `group` WHERE name = $group");
-	$sth->execute;
+    my $dbh = $hbc->dbi;
+	my $sth = $dbh->prepare("SELECT name,names FROM `group` WHERE name = ?");
+	$sth->execute($group);
 	my $row = $sth->fetchrow_hashref;
 	my $value;
 	if (defined $row->{'names'}) {
 		$value = $row->{'names'};
 	}
-	$sth->finish();
 
 	return $value;
 }
@@ -173,64 +116,14 @@ sub add_group {
 	my $nick = shift;
 	my $chan = shift;
 
-	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		print STDERR "group: Failed to connect to database\n";
-		return  "I'm a failure! I couldn't add it. :-(";
-	}
-	
-	my $time = `date "+%F %R"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-	
-	$group = $dbh->quote($group);
-	$text = $dbh->quote($text);
-	$nick = $dbh->quote($nick);
-	if (defined $chan) {
-		$chan = $dbh->quote($chan);
-	}
-	else {
-		$chan = 'NULL';
-	}
-	
-	my $ret = "Successfully added.";
-	$dbh->do("INSERT `group` SET name = $group, names = $text, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
-
-	$dbh->disconnect;
-
-	return $ret;
-}
-
-sub edit_group {
-	my $group = shift;
-	my $text = shift;
-	my $nick = shift;
-	my $chan = shift;
-
-	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		print STDERR "group: Failed to connect to database\n";
-		return  "I'm a failure! I couldn't update it. :-(";
-	}
-	
-	my $time = `date "+%F %R"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-	
-	$group = $dbh->quote($group);
-	$text = $dbh->quote($text);
-	$nick = $dbh->quote($nick);
-	if (defined $chan) {
-		$chan = $dbh->quote($chan);
-	}
-	else {
-		$chan = 'NULL';
-	}
-	
+    my $dbh = $hbc->dbi;
 	my $ret = "Successfully updated.";
-	$dbh->do("UPDATE `group` SET names = $text, nick = $nick, chan = $chan, date = $time WHERE name = $group") or $ret = "I'm a failure! I couldn't update it. :-(";
-
-	$dbh->disconnect;
+	$dbh->do("INSERT `group` (name, names, nick, chan, date)
+       VALUES(?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE
+       names = VALUES(names), nick = VALUES(nick),
+       chan = VALUES(chan), date = VALUES(date)",
+       undef, $group, $text, $nick, $chan)
+       or $ret = "I'm a failure! I couldn't add it. :-(";
 
 	return $ret;
 }
@@ -238,18 +131,10 @@ sub edit_group {
 sub delete_group {
 	my $group = shift;
 
-	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		print STDERR "group: Failed to connect to database\n";
-		return  "I'm a failure! I couldn't delete it. :-(";
-	}
-	
-	$group = $dbh->quote($group);
-	
+    my $dbh = $hbc->dbi;
 	my $ret = "If the group was there it is gone now.";
-	$dbh->do("DELETE FROM `group` WHERE name = $group") or $ret = "I'm a failure! I couldn't delete it. :-(";
-
-	$dbh->disconnect;
+	$dbh->do("DELETE FROM `group` WHERE name = ?", undef, $group)
+        or $ret = "I'm a failure! I couldn't delete it. :-(";
 
 	return $ret;
 }
