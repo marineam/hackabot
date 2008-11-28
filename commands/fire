@@ -41,15 +41,14 @@ if ($name and not $name =~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
 		print "me fires $name for the ${val}th time!\n";
 	}
 }
-elsif ($name =~ /(-v|--value)/) {
-	$name =~ s/(-v|--value)\s+(\S+)/$2/;
-	my $val = $hbc->counger_get("fire", $name);
+elsif ($name =~ /(-v|--value)\s+(\S+)/) {
+	my $val = $hbc->counter_get("fire", $2);
 	if ($val == "") { $val = 0; }
 	if ($val == "1") {
-		print "send $name has been fired $val time!\n";
+		print "send $2 has been fired $val time!\n";
 	}
 	else {
-		print "send $name has been fired $val times!\n";
+		print "send $2 has been fired $val times!\n";
 	}
 }
 else {

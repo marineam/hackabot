@@ -6,108 +6,111 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use Time::localtime;
-use XML::Simple;
+use warnings;
+use Time::Piece;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}, 
-	ForceArray => ['privatechan'],
+my $hbc = Hackabot::Client->new(
+    ForceArray => ['privatechan'],
 	KeyAttr => { privatechan => "+chan" });
-my $CMDCFG = $CONFIG->{'cmdconfig'}->{'seen'};
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $msg = $hbc->readline;
+my $asker = $hbc->sent_by;
+my $chan = $hbc->channel;
+my ($nick, $where);
 
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-sub seen {
-	my $nick = shift;
-	my $asker = shift;
-	my $chan = shift;
-	my $where = shift;
-	my ($dbh, $sth);
-	my $row;
-	my $ret;
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 1 });
-	if (!$dbh) {
-		die "see: Failed to connect to database\n";
-	}
-
-	my $restrict = "";
-	if (defined $where) {
-		$restrict .= " AND chan = ".$dbh->quote($where);
-	}
-	foreach my $priv (keys %{$CMDCFG->{"privatechan"}}) {
-		if ($priv eq $chan) {
-			next;
-		}
-		$restrict .= " AND chan != ".$dbh->quote($priv);
-	}
-	
-	$nick = $dbh->quote($nick);
-
-	# Ignore priv for msg, action, notice so chan IS NULL only for quit
-	$sth = $dbh->prepare("SELECT date, text, chan, type FROM log WHERE nick = $nick AND ( ( ( type = 'msg' OR type = 'action' OR type = 'notice' OR type = 'join' OR type = 'part' ) AND chan IS NOT NULL  $restrict ) OR ( type = 'quit' AND chan IS NULL ) ) ORDER BY id DESC LIMIT 1");
-	$sth->execute();
-	if ($row = $sth->fetchrow_hashref) {
-		$row->{'text'} =~ s/^"(.*)"$/$1/;
-		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
-			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
-		}
-		if ($row->{'type'} eq "action") {
-			$ret = "$asker: $nick was last seen in $row->{'chan'} saying \"/me $row->{'text'}\" at $row->{'date'}.\n";
-		}
-		elsif ($row->{'type'} eq "join") {
-			$ret = "$asker: $nick was last seen joining $row->{'chan'} at $row->{'date'}.\n";
-		}
-		elsif ($row->{'type'} eq "part") {
-			$ret = "$asker: $nick was last seen leaving $row->{'chan'} saying \"$row->{'text'}\" at $row->{'date'}.\n";
-		}
-		elsif ($row->{'type'} eq "quit") {
-			$ret = "$asker: $nick was last seen quitting with \"$row->{'text'}\" at $row->{'date'}.\n";
-		}
-	}
-	else {
-		$ret = "$asker: Sorry, I haven't seen $nick.\n";
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	return $ret;
+my @private = [];
+if (defined $hbc->{'conf'}->{'commands'}->{'seen'}) {
+	@private = keys %{$hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}};
 }
 
-my ($nick, $asker, $chan, $where);
-while (<>) {
-	if (/^nick\s*(\S*)/) {
-		$asker = $1;
-	}
-	if (/^to\s*(\S*)/) {
-		$chan = $1;
-	}
-	elsif (/^msg\s*here\s*(\S*)/) {
-		$nick = $1;
-		$where = "here";
-	}
-	elsif (/^msg\s*(#\S*)\s*(\S*)/) {
+if ($msg =~ /^here\s+(\S+)/) {
+	$nick = $1;
+	$where = "here";
+}
+elsif ($msg =~ /^(#\S+)\s+(\S+)/) {
 		$nick = $2;
 		$where = $1;
-	}
-	elsif (/^msg\s*(\S*)/) {
+}
+elsif ($msg =~ /^(\S+)/) {
 		$nick = $1;
-	}
 }
 
-if (defined $nick and defined $asker, and defined $chan) {
-	if ($where eq "here") {
+if (defined $nick) {
+	if (defined $where and $where eq "here") {
 		print "send " . seen($nick, $asker, $chan, $chan);
 	}
 	else {
-		print "send " . seen($nick, $asker, $chan, $where);
+        my $text = seen($nick, $chan, $where);
+        if (defined $text) {
+            print "send $asker: $nick was last seen $text\n";
+        }
+        else {
+            print "send $asker: Sorry, I haven't seen $nick\n";
+        }
 	}
 }
-else {
-	die "seen: All info not sent :-/\n";
+
+sub seen {
+	my ($nick, $chan, $where) = @_;
+    my $ret;
+
+	my $dbh = $hbc->dbi;
+
+	my $restrict = "";
+	if (defined $where) {
+		$restrict .= " AND channel = ".$dbh->quote($where);
+	}
+	foreach my $priv (@private) {
+		if ($priv eq $chan) {
+			next;
+		}
+		$restrict .= " AND channel != ".$dbh->quote($priv);
+	}
+
+	# Ignore privivate messages so chan IS NULL only for quit
+	my $sth = $dbh->prepare("SELECT date, text, channel, type FROM log
+		WHERE date <> ? AND sent_by = ? AND ( ( ( 
+		type = 'msg' OR type = 'action' OR type = 'notice' OR 
+		type = 'join' OR type = 'part' ) AND channel IS NOT NULL 
+		$restrict ) OR ( type = 'quit' AND channel IS NULL ) )
+		ORDER BY id DESC LIMIT 1");
+	$sth->execute($hbc->time->strftime("%Y-%m-%d %H:%M:%S"), $nick);
+	if (my $row = $sth->fetchrow_hashref) {
+		my $text = $row->{'text'};
+		$text =~ s/^"(.*)"$/$1/;
+		my $time = Time::Piece->strptime($row->{'date'}, "%Y-%m-%d %H:%M:%S");
+		my $now = localtime;
+
+		my $ftime;
+		if ($time->date eq $now->date) {
+			$ftime = $time->strftime("today at %H:%M");
+		}
+		elsif ($time->week == $now->week) {
+			$ftime = $time->strftime("%a at %H:%M");
+		}
+		elsif ($time->year == $now->year) {
+			$ftime = $time->strftime("on %b %d");
+        }
+		else {
+			$ftime = $time->strftime("on %Y-%m-%d");
+		}
+
+		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
+			return "in $row->{'channel'} saying \"$text\" $ftime.";
+		}
+		if ($row->{'type'} eq "action") {
+			return "in $row->{'channel'} doing \"$text\" $ftime.";
+		}
+		elsif ($row->{'type'} eq "join") {
+			$ret = "joining $row->{'channel'} at $ftime.";
+		}
+		elsif ($row->{'type'} eq "part") {
+			$ret = "leaving $row->{'channel'} saying \"$text\" at $ftime.";
+		}
+		elsif ($row->{'type'} eq "quit") {
+			$ret = "quitting with \"$text\" $time.";
+		}
+	}
+
+	return $ret;
 }

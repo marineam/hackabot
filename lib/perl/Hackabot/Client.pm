@@ -7,6 +7,7 @@ use warnings;
 
 use DBI;
 use XML::Simple;
+use Time::Piece;
 use IO::Handle;
 use Socket;
 
@@ -14,7 +15,7 @@ sub new {
     my $class = shift;
     my $self = bless({}, $class);
 
-    $self->{'conf'} = XMLin($ENV{'HB_XML'});
+    $self->{'conf'} = XMLin($ENV{'HB_XML'}, @_);
 
     return $self;
 }
@@ -110,6 +111,10 @@ sub private {
     else {
         return 0;
     }
+}
+
+sub time {
+    return localtime($ENV{'HBEV_TIME'});
 }
 
 sub sent_by {
