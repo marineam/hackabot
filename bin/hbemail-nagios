@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+
+use strict;
+my $root;
+
+BEGIN {
+    # Figure out the source root based on this file
+    my @path = split("/", $ENV{'PWD'}."/".__FILE__);
+    $root = join("/", @path[0 .. $#path-2]);
+}
+
+use lib $root."/lib/perl";
+use Hackabot::Client;
+
+my $hbc = Hackabot::Client->new;
+$hbc->connect($root."/sock");
+
+my $r;
+my $chan = shift;
+if (not defined $chan or not $chan) {
+    print "Usage: $0 #channel";
+    exit(1);
+}
+else {
+    $r = $hbc->cmd("to $chan");
+    $r =~ /^ok/ or die $r;
+}
+
+my $data;
+my $header = 1;
+while (<>) {
+	chomp;
+	if (/^Subject:/ and $header) {
+		s/^Subject:\s*//;
+		$data = $_;
+	}
+	elsif (/^$/ and $header) {
+		$header = 0;
+	}
+	elsif (/^Info/ and not $header) {
+		s/^Info:\s*//;
+		$data .= ", $_";
+	}
+	elsif (/^Date/ and not $header) {
+		s/^Date:\s*//;
+		$data .= " $_";
+	}
+}
+
+chomp($data);
+$r = $hbc->cmd("notice $data")."\n";
+$r =~ /^ok/ or die $r;
+$hbc->close;
