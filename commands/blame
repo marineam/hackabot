@@ -14,17 +14,16 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($msg =~ /^--add\s+(.+)/) {
-	my $blame = $1;
-	chomp $blame;
-	my $ret = add_blame($blame, $nick, $chan);
-	print "send $nick: $ret\n";
+	chomp $1;
+    $hbc->quote_add("blame", $1);
+    print "send $nick: Successfully added\n";
 }
 elsif ($hbc->private) {
 	print "send I blame you!!!\n";
 }
 else {
 	 if ($msg eq "") {
-		$msg = get_blame();
+		$msg = $hbc->quote_get("blame");
 	}
 
 	my @names = $hbc->names($chan);
@@ -32,53 +31,4 @@ else {
 		my $name = $names[int(rand(@names))];
 		print "me blames $name for $msg.\n";
 	}
-}
-
-sub get_blame {
-	my ($dbh, $sth);
-
-	$dbh = $hbc->dbi or die;
-
-	my $time = `date "+%y%m%d%H%M"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-
-	$sth = $dbh->prepare("SELECT id,text,lastused FROM blame ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
-	$sth->execute;
-	my $row = $sth->fetchrow_hashref;
-	my $value = $row->{'text'};
-	my $id = $row->{'id'};
-	$sth->finish();
-
-	$id = $dbh->quote($id);
-	$dbh->do("UPDATE blame SET lastused = $time WHERE id = $id")
-		or $value .= " and the inability to update the blame database";
-
-	$dbh->disconnect;
-
-	return $value;
-}
-
-sub add_blame {
-	my $txt = shift;
-	my $nick = shift;
-	my $chan = shift;
-
-	my $dbh = $hbc->dbi;
-
-	$txt = $dbh->quote($txt);
-	$nick = $dbh->quote($nick);
-	if ($hbc->private) {
-		$chan = $dbh->quote($chan);
-	}
-	else {
-		$chan = 'NULL';
-	}
-
-	my $ret = "Successfully added.";
-	$dbh->do("INSERT blame SET text = $txt, nick = $nick, chan = $chan, date = NOW()") or $ret = "I'm a failure! I couldn't add it. :-(";
-
-	$dbh->disconnect;
-
-	return $ret;
 }

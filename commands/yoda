@@ -8,18 +8,13 @@
 use strict;
 use LWP::UserAgent;
 use HTTP::Request::Common;
+use Hackabot::Client;
 
-my ($phrase, $asker);
-while (<>) {
-	if (/^nick\s*(\S*)/) {
-		$asker = $1;
-	}
-	elsif (/^msg\s*(.*\S+)/) {
-		$phrase = $1;
-	}
-}
+my $hbc = Hackabot::Client->new;
+my $phrase = $hbc->readline;
+my $asker = $hbc->sent_by;
 
-if (defined $phrase and defined $asker) {
+if ($phrase) {
 	my $r = (POST 'http://www.yodaspeak.co.uk/index.php',
 		['YodaMe' => $phrase]);
 	my $ua = LWP::UserAgent->new;
@@ -27,7 +22,7 @@ if (defined $phrase and defined $asker) {
 	$y =~ s/.*YodaSpeak[^>]+>//s;
 	print STDERR $y;
 	$y =~ s/<.*//s;
-	
+
 	if ($y) {
 		print "send $asker: $y\n";
 	}

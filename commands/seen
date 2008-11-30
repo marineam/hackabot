@@ -11,15 +11,15 @@ use Time::Piece;
 use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new(
-    ForceArray => ['privatechan'],
-	KeyAttr => { privatechan => "+chan" });
+    ForceArray => ['private'],
+	KeyAttr => { private => "+chan" });
 my $msg = $hbc->readline;
 my $asker = $hbc->sent_by;
 my $chan = $hbc->channel;
 my ($nick, $where);
 
 my @private = [];
-if (defined $hbc->{'conf'}->{'commands'}->{'seen'}) {
+if (defined $hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}) {
 	@private = keys %{$hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}};
 }
 

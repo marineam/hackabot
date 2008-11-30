@@ -51,6 +51,11 @@ sub connect {
     $conn->autoflush(1);
 
     $self->{'conn'} = $conn;
+
+    my $to = $self->reply_to;
+    if ($to) {
+        $self->cmd("to $to");
+    }
 }
 
 sub close {
@@ -81,6 +86,8 @@ sub cmd {
     if (not defined $ret) {
         $ret = "error connection lost with no result";
     }
+
+    chomp $ret;
     return $ret;
 }
 
@@ -129,6 +136,15 @@ sub sent_by {
 sub sent_to {
     if (defined $ENV{'HBEV_SENT_TO'}) {
         return $ENV{'HBEV_SENT_TO'};
+    }
+    else {
+        return "";
+    }
+}
+
+sub reply_to {
+    if (defined $ENV{'HBEV_REPLY_TO'}) {
+        return $ENV{'HBEV_REPLY_TO'};
     }
     else {
         return "";
@@ -218,6 +234,40 @@ sub counter_list {
         ORDER BY value $order LIMIT 3");
     $sth->execute or die "DB select failded!";
     return @{$sth->fetchall_arrayref({})};
+}
+
+sub quote_get {
+    my ($self, $type) = @_;
+    my ($dbh, $sth);
+
+    $dbh = $self->dbi or die;
+
+    $sth = $dbh->prepare("SELECT `id`, `text` FROM 
+        `$type` ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+    $sth->execute or die;
+    my @row = $sth->fetchrow_array;
+    my $value = $row[1];
+    my $id = $row[0];
+
+    # Not sure why I originally used this format instead of just using
+    # seconds since epoch, but I'll stick with it for compaitbility's sake.
+    my $time = localtime->strftime("%y%m%d%H%M");
+
+    $dbh->do("UPDATE `$type` SET lastused = ? WHERE id = ?",
+        undef, $time, $id) or die;
+
+    return $value;
+}
+
+sub quote_add {
+    my ($self, $type, $text) = @_;
+    my $nick = $self->sent_by;
+    my $chan = $self->channel;
+
+    my $dbh = $self->dbi or die;
+
+    $dbh->do("INSERT `$type` (`text`, `nick`, `chan`, `date`)
+       VALUES (?, ?, ?, NOW())", undef, $text, $nick, $chan) or die;
 }
 
 1;

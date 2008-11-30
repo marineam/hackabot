@@ -7,18 +7,13 @@
 
 use XML::Simple;
 use URI::Escape;
+use Hackabot::Client;
 
-my ($location, $asker);
-while (<>) {
-  if (/^nick\s+(\S+)/) {
-    $asker = $1; 
-  }
-  elsif (/^msg\s+(\S+)/) {
-    $location = $1; 
-  }
-}
+my $hbc = Hackabot::Client->new;
+my $asker = $hbc->sent_by;
+my $location = $hbc->readline;
 
-if (($location ne "") and defined $asker ) {
+if ($location ne "") {
     $location = uri_escape($location);
     my $output_current = `wget --quiet -O - http:\/\/api.wunderground.com\/auto\/wui\/geo\/WXCurrentObXML\/index.xml?query=$location`;
     my $output_forecast = `wget --quiet -O - http:\/\/api.wunderground.com\/auto\/wui\/geo\/ForecastXML\/index.xml?query=$location`;

@@ -6,192 +6,44 @@
 ##HACKABOT_HELP##
 
 use strict;
-use DBI;
-use Time::localtime;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}, 
-	ForceArray => ['topicmask'],
-	KeyAttr => { topicmask => "+chan" });
-my $CMDCFG = $CONFIG->{'cmdconfig'}->{'topic'};
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
+my $hbc = Hackabot::Client->new(
+    ForceArray => ['prefix'],
+    KeyAttr => { prefix => "+chan" });
+my $conf = $hbc->{'conf'}->{'commands'}->{'topic'}->{'prefix'};
+my $msg = $hbc->readline;
+my $chan = $hbc->channel;
+my $nick = $hbc->sent_by;
 
-my $client = "/".$CONFIG->{'directory'}."/scripts/client";
-my $socket = "/".$CONFIG->{'directory'}."/".$CONFIG->{'socket'};
-
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-my $privmsg = 0;
-my ($chan, $msg, $nick);
-while (<>) {
-	if (/^type\s+privmsg/) {
-		$privmsg = 1;
-	}
-	elsif (/^to\s+(.+)/) {
-		$chan = $1;
-	}
-	elsif (/^nick\s+(.+)/) {
-		$nick = $1;
-	}
-	elsif (/^msg\s+(.+)/) {
-		$msg = $1;
-	}
+if ($msg =~ /^--add\s+(.+)/) {
+    chomp $1;
+    $hbc->quote_add("topic", $1);
+    print "send $nick: Successfully added\n";
 }
-
-if (not defined $nick or not defined $chan) {
-	die "topic: not all info was given.\n";
+elsif ($hbc->private) {
+    print "send Uh, this isn't a channel...\n";
 }
+else {
+    my $prefix = $conf->{$chan}->{'content'};
+    if (not defined $prefix) {
+        $prefix = "";
+    }
 
-if (defined $msg and $msg =~ /^--add\s+(.+)/) {
-	my $topic = $1;
-	chomp $topic;
-	my $ret;
-	if ($privmsg) {
-		$ret = add_topic($topic, $nick);
-	}
-	else {
-		$ret = add_topic($topic, $nick, $chan);
-	}
-	print "send $nick: $ret\n";
-	exit;
-}
-#if (defined $msg and $msg =~ /^--list/) {
-#	my $ret;
-#	if ($privmsg) {
-#		$ret = list_topic();
-#	}
-#	else {
-#		$ret = "Please don't flood public channels with --list\n";
-#	}
-#	print "sendnext\n";
-#	print "$nick: All the topics I know:\n";
-#	print $ret;
-#	print "$nick: And that is the end of the list.";
-#	exit;
-#}
+    if ($msg =~ /^--append\s*(.*)/) {
+        $msg = $1;
 
-if ($privmsg) {
-	print "send Uh, this isn't a channel...\n";
-	exit;
-}
+        my $old = $hbc->cmd("topic");
+        if ($old =~ /^ok\s*(\S+.*)/) {
+            $msg = "$1 $msg";
+        }
+    }
+    elsif (not $msg) {
+        $msg = $prefix.$hbc->quote_get("topic");
+    }
+    else {
+        $msg = $prefix.$msg;
+    }
 
-my $append = 0;
-if (defined $msg and $msg =~ /^--append\s*(.*)/) {
-	$msg = $1;
-	$append = 1;
-}
-
-if (not defined $msg) {
-	$msg = 	get_topic();
-}
-if (defined $msg and $chan =~ /^#.+/) { # Should always be true by now
-
-	if ($append) {
-		my $old = `echo 'currenttopic $chan' | $client $socket`;
-		chomp $old;
-		$old =~ /^\S+\s+\S+\s+(\S+.*)$/;
-		if (defined $1) {
-			$old = "$1 ";
-		}
-		else {
-			$old = "";
-		}
-		$msg = $old.$msg;
-	}
-	elsif (defined $CMDCFG->{'topicmask'}->{$chan}->{'msg'}) {
-		$msg = $CMDCFG->{'topicmask'}->{$chan}->{'msg'}.$msg;
-	}
-
-	print "to $chan\n";
-	print "topic $msg\n";
-}
-
-
-sub get_topic {
-	my ($dbh, $sth);
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		die "topic: Failed to connect to database\n";
-	}
-	
-	my $time = `date "+%y%m%d%H%M"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-
-	$sth = $dbh->prepare("SELECT id,text,lastused FROM topic ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
-	$sth->execute;
-	my $row = $sth->fetchrow_hashref;
-	my $value = $row->{'text'};
-	my $id = $row->{'id'};
-	$sth->finish();
-
-	$id = $dbh->quote($id);
-	$dbh->do("UPDATE topic SET lastused = $time WHERE id = $id") 
-		or $value .= " and the inability to update the topic database";
-
-	$dbh->disconnect;
-
-	return $value;
-}
-
-sub list_topic {
-	my ($dbh, $sth);
-
-	$dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		die "topic: Failed to connect to database\n";
-	}
-	
-	$sth = $dbh->prepare("SELECT text FROM topic WHERE 1");
-	$sth->execute;
-	my $row;
-	my $value;
-	while ($row = $sth->fetchrow_hashref) {
-		$value .= $row->{'text'}."\n";
-	}
-	$sth->finish();
-
-	$dbh->disconnect;
-
-	if (not defined $value) {
-		$value = "Nothing found in the db :-/";
-	}
-
-	return $value;
-}
-
-sub add_topic {
-	my $txt = shift;
-	my $nick = shift;
-	my $chan = shift;
-
-	my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-	if (!$dbh) {
-		print STDERR "topic: Failed to connect to database\n";
-		return  "I'm a failure! I couldn't add it. :-(";
-	}
-	
-	my $time = `date "+%F %R"`;
-	chomp $time;
-	$time = $dbh->quote($time);
-	
-	$txt = $dbh->quote($txt);
-	$nick = $dbh->quote($nick);
-	if (defined $chan) {
-		$chan = $dbh->quote($chan);
-	}
-	else {
-		$chan = 'NULL';
-	}
-	
-	my $ret = "Successfully added.";
-	$dbh->do("INSERT topic SET text = $txt, nick = $nick, chan = $chan, date = $time") or $ret = "I'm a failure! I couldn't add it. :-(";
-
-	$dbh->disconnect;
-
-	return $ret;
+    print "topic $msg\n";
 }

@@ -6,4 +6,5 @@
 ##HACKABOT_HELP##
 
 echo sendnext
-lynx -source www.woot.com | egrep "ctl00_ContentPlaceHolder_TitleHeader|PriceSpan" | sed -e 's/<[^>]*>//g' | perl -pi -e 's/^\s*(\S*.*)/$1/'
+curl -s http://www.woot.com/blog/rss.aspx | grep -m2 "<title>" | \
+    tail -n1 | sed -e 's%.*<title>\(.*\)</title>.*%\1%'

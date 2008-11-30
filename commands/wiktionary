@@ -7,18 +7,13 @@
 
 use strict;
 use URI::Escape;
+use Hackabot::Client;
 
-my ($search, $asker);
-while (<>) {
-	if (/^nick\s*(\S*)/) {
-		$asker = $1;
-	}
-	elsif (/^msg\s*(.*)/) {
-		$search = $1;
-	}
-}
+my $hbc = Hackabot::Client->new;
+my $search = $hbc->readline;
+my $asker = $hbc->sent_by;
 
-if (defined $search and defined $asker) {
+if ($search) {
 	$search = uri_escape($search);
 	my $google = `lynx --head --dump "http://en.wiktionary.org/wiki/Special:Search?search=$search\&go=Go"`;
 	my $url;

@@ -46,7 +46,7 @@
     <commands>
         <topic>
             <!-- prepends text before every topic -->
-            <prefix chan="#somechan">Cool People ::</prefix>
+            <prefix chan="#somechan">Cool People :: </prefix>
         </topic>
         <seen>
             <!-- don't print messages in here elsewhere -->

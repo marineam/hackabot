@@ -121,7 +121,7 @@ class HBLineProtocol(LineOnlyReceiver):
 
     def handle_sendnext(self, args):
         """Alias for 'dump'"""
- 
+
         self.handle_dump(args)
 
     def _dump_line(self, line):
@@ -220,6 +220,22 @@ class HBLineProtocol(LineOnlyReceiver):
 
         # FIXME: handle this gracefully
         reactor.stop()
+
+    def handle_topic(self, args):
+        """Get or set a topic in a channel using the current to.
+
+        topic [<some message>]
+        """
+
+        if self.to() in self.conn().channels:
+            if args:
+                self.conn().topic(self.to(), args)
+                self.sendLine("ok")
+            else:
+                topic = self.conn().channels[self.to()]['topic']
+                self.sendLine("ok %s" % topic)
+        else:
+            raise CommandError("not in channel '%s'" % self.to())
 
     def handle_names(self, args):
         """Get the list of names in a channel.

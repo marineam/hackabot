@@ -5,27 +5,22 @@
 ##HACKABOT_HELP##
 
 import SOAPpy
-import re
 import sys
+
+import hackabot
+from hackabot.client import Client
 
 server = SOAPpy.SOAPProxy("http://api.urbandictionary.com/soap")
 
-for line in sys.stdin.readlines():
-    if re.match(r'msg\s+(\S+.*)', line):
-        c = re.match(r'msg\s+(\S+.*)', line)
-        msg = c.group(1)
-    elif re.match(r'nick\s*(\S*)', line):
-        c = re.match(r'nick\s*(\S*)', line)
-	nick = c.group(1)
-        
-
-if msg and re.match(r'(\S+.*)', msg):
+hbc = Client()
+msg = hbc.readline()
+nick = hbc.sent_by()
+if msg:
     urban = server.lookup("7df8eccad5391dbbb45e81fa77f4c1a8", msg)
-    if len(urban) > 1:
+    if len(urban):
         if(len(urban[0].definition) < 256):
-	    print "send "+nick+": "+urban[0].definition+"\n"
-	else:
-	    print "send "+nick+": "+urban[0].url+"\n"
+            print "send %s: %s" % (nick, urban[0].definition.strip())
+        else:
+            print "send %s: %s" % (nick, urban[0].url.strip())
     else:
-        print "send "+nick+": I couldn't find a definition for "+msg+"\n"
-    	
+        print "send %s: I couldn't find a definition for %s" % (nick, msg)
