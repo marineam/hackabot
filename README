@@ -1,0 +1,94 @@
+Hackabot README
+===============
+
+    A crazy, hackable, and hacked up IRC bot.
+	Licensed under the GNU GPL v2 or later.
+
+INTRODUCTION
+------------
+
+This bot was mainly written by Michael Marineau and includes
+contributions from other people including various staff of the OSU Open
+Source Lab. See docs/credits.txt for individual contributors. This bot
+is more widely known by it's original incarnation as 'manatee' on
+Freenode.
+
+The current implementation (it has been rewritten several times) by now
+features a core bot is written in Python using the Twisted framework.
+Commands and other event handlers can be implemented as plugins for the
+core bot or as individual scripts in commands/ or hooks/<type>/ which
+are called on demand. Most of the time writing features as external
+scripts is the way to go as plugins must always us non-blocking IO and
+play nice with Twisted.
+
+INSTALL
+-------
+
+The bot should be run directly from its source tree (don't copy
+anything to /usr/bin). The code depends on the current directory layout
+to find all of its various pieces. Since the bot has a lot of random
+commands that you may not even want I've split the dependency list
+between the core requirements and the various noodly bits.
+
+Core Requirements
+~~~~~~~~~~~~~~~~~
+
+Python >= 2.5 (but not >= 3.0 yet)
+Twisted >= 8.1.0
+Twisted Words >= 8.1.0
+MySQLdb (optional)
+
+Earlier releases of Twisted probably will work (at least back to 2.5)
+but at the moment I have only tested against 8.1.0. Hackabot can be run
+without a database but many commands and hooks depend on it so you
+probably want it unless you are simply using Hackabot as a framework.
+
+Misc Requirements
+~~~~~~~~~~~~~~~~~
+
+Most external commands/hooks will be happy with the following:
+
+Bash
+Perl
+DBI
+DBD::mysql
+XML::Simple
+URI::Escape
+lynx
+wget
+
+And some lesser things:
+
+URI::Find::Rule         (TinyURL hook)
+WWW::Shorten::TinyURL   (TinyURL hook)
+SOAPpy                  (Urban Dictionary command)
+figlet                  (figlet command)
+cowsay                  (cowsay command)
+and other stuff I forget...
+
+CONFIGURATION
+-------------
+
+An example config file showing and explaining all the options is
+etc/hackabot.example.xml and a more minimal one is hackabot.simple.xml.
+The basics should be pretty clear from those examples.
+
+To set up access to various commands create an ACL config file and point
+to it using an acl tag in the main config file. The example and
+documentation is in etc/acl.example.xml. ACL files can be defined
+globally or per network.
+
+RUNNING
+-------
+
+Once the config files are in place start hackabot with the config file
+as the argument:
+./bin/hackabot etc/hackabot.xml
+
+If you want the bot to background the bot try this:
+./bin/hackabot --log-file var/hackabot.log etc/hackabot.xml &
+
+
+Further documentation can be found in the docs directory. Enjoy!
+
+-- Michael Marineau <mike@marineau.org>
