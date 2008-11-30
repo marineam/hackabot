@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+use strict;
+my $root;
+
+BEGIN {
+    # Figure out the source root based on this file
+    my @path = split("/", $ENV{'PWD'}."/".__FILE__);
+    $root = join("/", @path[0 .. $#path-2]);
+}
+
+use lib $root."/lib/perl";
+use Hackabot::Client;
+
+my $hbc = Hackabot::Client->new;
+$hbc->connect($root."/sock");
+
+while(<>) {
+    chomp $_;
+	print $hbc->cmd($_)."\n";
+}
+
+$hbc->close();

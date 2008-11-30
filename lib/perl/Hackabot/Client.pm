@@ -15,7 +15,12 @@ sub new {
     my $class = shift;
     my $self = bless({}, $class);
 
-    $self->{'conf'} = XMLin($ENV{'HB_XML'}, @_);
+    if (defined $ENV{'HB_XML'}) {
+        $self->{'conf'} = XMLin($ENV{'HB_XML'}, @_);
+    }
+    else {
+        $self->{'conf'} = {};
+    }
 
     return $self;
 }
@@ -41,9 +46,19 @@ sub dbi {
 
 sub connect {
     my $self = shift;
+    my $sock = shift;
+
+    if (not defined $sock) {
+        if (defined $ENV{'HB_ROOT'}) {
+            $sock = $ENV{'HB_ROOT'}."/sock";
+        }
+        else {
+            die "Hackabot control socket location is unknown!";
+        }
+    }
 
     my $conn;
-    my $addr = sockaddr_un($ENV{'HB_ROOT'}."/sock");
+    my $addr = sockaddr_un($sock);
 
     # Not good to die in a module, but whatever
     socket($conn,PF_UNIX,SOCK_STREAM,0) or die "Unable to create a socket!";
