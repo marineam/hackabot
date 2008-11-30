@@ -2,38 +2,31 @@
 
 """Dump the current DB schema"""
 
-# This doesn't share some code like it should yet. :-(
-
 import os
 import sys
-from ConfigParser import SafeConfigParser
-import MySQLdb
 
 if __name__ == "__main__":
-    # Assume this file is HB_ROOT/bin/hackabot
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append("%s/lib/python" % root)
 
-    from hackabot import env, db
+    from hackabot import conf, db, load_conf
+    import MySQLdb
 
-    env.init(root)
+    load_conf(sys.argv[1])
+    config = conf.find("database")
+    assert config is not None
 
-    conffp = open(sys.argv[1])
-    config = SafeConfigParser()
-    config.readfp(conffp)
-    conffp.close()
-
-    hostname = config.get("database", "hostname")
-    database = config.get("database", "database")
-    username = config.get("database", "username")
-    password = config.get("database", "password")
+    hostname = config.get("hostname")
+    database = config.get("database")
+    username = config.get("username")
+    password = config.get("password")
 
     conn = MySQLdb.connect(host=hostname, db=database,
             user=username, passwd=password)
     version = db.current_schema(conn)
     conn.close()
 
-    dump = open("%s/schema-%03d.sql" % (env.HB_MYSQL, version), 'w')
+    dump = open("%s/schema-%03d.sql" % (conf.get('mysql'), version), 'w')
     print "Dumping %s to %s" % (database, dump.name)
     os.dup2(dump.fileno(), 1)
     dump.close()

@@ -40,11 +40,15 @@ def load_conf(conffile):
         'hooks': "%s/hooks" % root,
     }
 
-    fd = open(conffile)
-    vars['xml'] = fd.read()
-    fd.close()
+    if conffile:
+        fd = open(conffile)
+        vars['xml'] = fd.read()
+        fd.close()
 
-    _conf = ElementTree.fromstring(vars['xml'])
+        _conf = ElementTree.fromstring(vars['xml'])
+    else:
+        _conf = ElementTree.Element("hackabot")
+
     _conf.attrib.update(vars)
     conf._set_target_(_conf)
 
