@@ -18,7 +18,12 @@ class Help(object):
 
         text = event['text'].strip()
         if text:
-            if text in plugin.manager.commands:
+            event['command'] = text
+            ok, reply = conn.factory.acl.check(event)
+            if not ok:
+                if reply:
+                    send = reply
+            elif text in plugin.manager.commands:
                 send = plugin.manager.commands[text].__doc__
                 if send is None:
                     send = "Command '%s' is missing a help message." % text
@@ -54,8 +59,15 @@ class Help(object):
                         and os.access(cmd, os.X_OK)):
                     commands.append(os.path.basename(cmd))
 
-            commands.sort()
-            send = "Commands: %s" % " ".join(commands)
+            allowed = []
+            for cmd in commands:
+                event['command'] = cmd
+                ok, nill = conn.factory.acl.check(event)
+                if ok and cmd not in allowed:
+                    allowed.append(cmd)
+
+            allowed.sort()
+            send = "Commands: %s" % " ".join(allowed)
 
         for line in send.splitlines():
             line = line.strip()

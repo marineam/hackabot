@@ -1,4 +1,10 @@
 <hackabot>
+    <!-- ACLs:
+        Define another XML file that contains the various ACLs to use.
+        The path is relative to this one.
+    -->
+    <acl file="acl.xml" />
+
     <!-- Networks:
         Defines what networks to connect to and network specific behavior.
         There may be multiple network sections.
@@ -10,6 +16,9 @@
         id="foonet"
         nick="hackabot"
         name="I'm sooo twisted!" >
+
+        <!-- You can also use different acl files for each network -->
+        <acl file="acl.foonet.xml" />
 
         <!-- Servers:
             Defines what servers to connect to for this network.

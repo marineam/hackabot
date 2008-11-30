@@ -1,0 +1,21 @@
+<hackabot>
+    <!-- this a fairly minimal config and a good starting point -->
+
+    <acl file="acl.xml" />
+
+    <network nick="hackabot">
+        <server hostname="irc.freenode.net" />
+        <autojoin chan="#hackabot" />
+    </network>
+
+    <!-- even this could be removed if you don't want db support
+         many commands/plugins depend on db support but not all -->
+    <database namehost="dbhost.some.org"
+              database="dbname"
+              username="user"
+              password="secret" />
+
+    <!-- can be removed if you don't need support for external commands.
+         note that some of the scripts in ./hooks and ./commands use this -->
+    <listen/>
+</hackabot>

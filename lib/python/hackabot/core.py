@@ -9,6 +9,7 @@ from twisted.internet import protocol, reactor
 from twisted.python import context
 
 from hackabot import conf, db, log, plugin
+from hackabot.acl import ACL
 
 class ConfigError(Exception):
     pass
@@ -159,7 +160,11 @@ class HBotConnection(irc.IRCClient):
             cmdevent['command'] = command
             cmdevent['text'] = text
 
-            plugin.manager.command(self, cmdevent)
+            ok, reply = self.factory.acl.check(cmdevent)
+            if reply:
+                self.msg(event['reply_to'], reply)
+            if ok:
+                plugin.manager.command(self, cmdevent)
 
     def action(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -441,6 +446,7 @@ class HBotNetwork(protocol.ClientFactory):
         self.nickname = config.get('nick', None)
         self.realname = config.get('name', self.nickname)
         self.username = self.nickname
+        self.acl = ACL(config)
 
         servers = config.findall('server')
         if not servers:
