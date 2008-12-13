@@ -9,11 +9,10 @@ use strict;
 use URI::Escape;
 
 my ($one, $two);
-while (<>) {
-	if (/^msg\s+("[^"]+"|'[^']+'|[^'"\s]\S*)\s+("[^"]+"|'[^']+'|[^'"\s]\S*)/) {
-		$one = $1;
-		$two = $2;
-	}
+$_ = <>;
+if (/^("[^"]+"|'[^']+'|[^'"\s]\S*)\s+("[^"]+"|'[^']+'|[^'"\s]\S*)/) {
+    $one = $1;
+    $two = $2;
 }
 
 if (defined $one and defined $two) {
