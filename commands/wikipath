@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Shortest path between two Wikipedia pages! http://www.netsoc.tcd.ie/~mu/wiki/
+# !wikipath "page one" "page two"
+##HACKABOT_HELP##
+
+use strict;
+use URI::Escape;
+
+my ($one, $two);
+while (<>) {
+	if (/^msg\s+("[^"]+"|'[^']+'|[^'"\s]\S*)\s+("[^"]+"|'[^']+'|[^'"\s]\S*)/) {
+		$one = $1;
+		$two = $2;
+	}
+}
+
+if (defined $one and defined $two) {
+	# Double quotes don't work for queries
+	$one =~ s/^"(.*)"$/'$1'/;
+	$two =~ s/^"(.*)"$/'$1'/;
+	$one = uri_escape($one);
+	$two = uri_escape($two);
+	my $result = `lynx -dump -width 1000 'http://www.netsoc.tcd.ie/~mu/cgi-bin/shortpath.cgi?from=$one&to=$two' | grep -A1 'view reverse path' | tail -n1`;
+	$result =~ s/^ *\[2\]//;
+	$result =~ s/\[\d+\]/-> /g;
+	chomp $result;
+	print "send $result\n";
+}
+else {
+	print "send Bad wikipath query :-/\n";
+}
