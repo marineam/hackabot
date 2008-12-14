@@ -5,7 +5,7 @@ import time
 from xml.etree.ElementTree import tostring
 
 from twisted.words.protocols import irc
-from twisted.internet import protocol, reactor
+from twisted.internet import protocol, reactor, error
 from twisted.python import context
 
 from hackabot import conf, db, log, plugin
@@ -35,7 +35,7 @@ class HBotManager(object):
             id = network.get("id", None)
 
             if id not in self._networks:
-                net = HBotNetwork(network)
+                net = HBotNetwork(self, network)
             else:
                 raise ConfigError("Duplicate network id '%s'" % name)
 
@@ -50,11 +50,32 @@ class HBotManager(object):
             ConfigError("Missing network id!")
 
     def connect(self):
+        """Connect to all configured networks"""
         for net in self._networks.itervalues():
             net.connect()
 
+    def disconnect(self, message=''):
+        """Disconnect all configured networks"""
+
+        log.info("Quitting with message '%s'" % message)
+        for net in self._networks.itervalues():
+            net.disconnect(message)
+
     def default(self):
+        """The default network"""
         return self._default
+
+    def networkLost(self, id):
+        """Callback for when a network stops reconnecting"""
+
+        # If there are no active networks left then quit
+        active = False
+        for net in self._networks.itervalues():
+            if net.reconnect:
+                active = True
+
+        if not active:
+            reactor.stop()
 
     def __getitem__(self, key):
         return self._networks[key]
@@ -440,8 +461,10 @@ class HBotNetwork(protocol.ClientFactory):
     protocol = HBotConnection
     noisy = False
 
-    def __init__(self, config):
+    def __init__(self, manager, config):
         self.config = config
+        self.manager = manager
+        self.reconnect = False
         self.id = config.get('id', None)
         self.nickname = config.get('nick', None)
         self.realname = config.get('name', self.nickname)
@@ -496,6 +519,7 @@ class HBotNetwork(protocol.ClientFactory):
     def connect(self):
         """Connect to a server in this IRC network"""
 
+        self.reconnect = True
         server = self._server(next=True)
 
         if server.get('ssl', False):
@@ -504,7 +528,25 @@ class HBotNetwork(protocol.ClientFactory):
             reactor.connectTCP(server.get('hostname'),
                     int(server.get('port', 6667)), self)
 
+    def disconnect(self, message):
+        """Disconnect from an IRC network"""
+
+        self.reconnect = False
+        if self._connection:
+            self._connection.quit(message)
+            # Close the connection if the server doesn't within 5 seconds
+            reactor.callLater(5, self._force_disconnect)
+
+    def _force_disconnect(self):
+        if self._connection:
+            log.warn("Killing connection...")
+            #self._connection.transport.loseConnection()
+
     def _reconnect(self):
+        if not self.reconnect:
+            self.manager.networkLost(self.id)
+            return
+
         # Failure! Try again...
         reactor.callLater(self._delay, self.connect)
 
@@ -523,14 +565,17 @@ class HBotNetwork(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         addr = connector.getDestination()
-        log.warn("Lost connection to %s:%s: %s" % (addr.host, addr.port,
-            reason.value), prefix=self.logstr)
+        if isinstance(reason.value, error.ConnectionDone):
+            log.info("Connection to %s:%s closed" % (addr.host, addr.port))
+        else:
+            log.warn("Connection to %s:%s lost: %s" %
+                    (addr.host, addr.port, reason.value), prefix=self.logstr)
         self._connection = None
         self._reconnect()
 
     def clientConnectionFailed(self, connector, reason):
         addr = connector.getDestination()
-        log.warn("Failed to connect to %s:%s: %s" % (addr.host, addr.port,
-            reason.value), prefix=self.logstr)
+        log.warn("Connecting to %s:%s failed: %s" %
+                (addr.host, addr.port, reason.value), prefix=self.logstr)
         self._connection = None
         self._reconnect()

@@ -218,8 +218,7 @@ class HBLineProtocol(LineOnlyReceiver):
         
         quit [<some reason>]"""
 
-        # FIXME: handle this gracefully
-        reactor.stop()
+        core.manager.disconnect(args)
 
     def handle_topic(self, args):
         """Get or set a topic in a channel using the current to.
