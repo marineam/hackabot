@@ -52,10 +52,27 @@ def load_conf(conffile):
     _conf.attrib.update(vars)
     conf._set_target_(_conf)
 
+def basic(conffile):
+    """Start up the Hackabot framework, but don't actually fire up"""
+
+    from hackabot import db, log
+
+    log.init(sys.stdout, "INFO")
+
+    try:
+        load_conf(conffile)
+    except IOError, (exno, exstr):
+        log.error("Failed to open %s: %s" % (conffile, exstr))
+        sys.exit(1)
+
+    try:
+        db.init()
+    except db.DBError, ex:
+        log.error(str(ex))
+        sys.exit(1)
+
 def run(argv=sys.argv):
     """Start up Hackabot"""
-
-    global env
 
     from hackabot import core, db, plugin, remote, log
 
@@ -80,13 +97,15 @@ def run(argv=sys.argv):
 
     try:
         db.init()
+    except db.DBError, ex:
+        log.error(str(ex))
+        sys.exit(1)
+
+    try:
         core.init()
         plugin.init()
         remote.init()
     except core.ConfigError, ex:
-        log.error(str(ex))
-        sys.exit(1)
-    except db.DBError, ex:
         log.error(str(ex))
         sys.exit(1)
 
