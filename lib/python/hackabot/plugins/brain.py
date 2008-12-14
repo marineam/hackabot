@@ -61,7 +61,6 @@ class Brain(object):
         # The weighting system is slightly bogus, however the middle value
         # seems to be a reasonable one most of the time so far...
         answer = answers[len(answers)//2][0]
-        log.info(answers)
 
         reactor.callFromThread(conn.msg, event['reply_to'], answer)
 
