@@ -3,7 +3,6 @@
 import sys
 from os import path
 from optparse import OptionParser
-from xml.etree import ElementTree
 
 from twisted.internet import reactor
 
@@ -26,6 +25,8 @@ def parse_options(argv):
 
 def load_conf(conffile):
     """Configuration stuff!"""
+
+    from hackabot.etree import ElementTree
 
     # Assuming the normal svn layout, find the source root
     root = path.abspath(__file__).rsplit("/",4)[0]
@@ -132,5 +133,5 @@ class _Wrapper(object):
 
 conf = _Wrapper()
 __version__ = "2.0"
-__all__ = [ "client", "conf", "core", "db", "load_conf", "log",
+__all__ = [ "client", "conf", "core", "db", "etree", "load_conf", "log",
             "plugin", "protocol", "remote", "run" ]

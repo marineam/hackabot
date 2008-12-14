@@ -14,7 +14,14 @@ class Admin(object):
         """Various administrative commands.
         !admin reload | quit
         """
-        request, space, args = event['text'].partition(" ")
+
+        line = event['text'].split(None, 1)
+        if not line:
+            conn.msg(event['reply_to'], "Try !help admin")
+            return
+        else:
+            request = line.pop(0)
+            args = "".join(line)
 
         if request == "reload":
             conn.msg(event['reply_to'],

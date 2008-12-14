@@ -2,13 +2,13 @@
 
 import re
 import time
-from xml.etree.ElementTree import tostring
 
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, error
 from twisted.python import context
 
 from hackabot import conf, db, log, plugin
+from hackabot.etree import ElementTree
 from hackabot.acl import ACL
 
 class ConfigError(Exception):
@@ -123,7 +123,7 @@ class HBotConnection(irc.IRCClient):
             if to and msg:
                 self.msg(to, msg)
             else:
-                log.error("Invalid automsg: %s" % tostring(automsg))
+                log.error("Invalid automsg: %s" % ElementTree.tostring(automsg))
 
         for autojoin in self.factory.config.findall('autojoin'):
             chan = autojoin.get('chan', None)
@@ -132,7 +132,7 @@ class HBotConnection(irc.IRCClient):
             if chan:
                 self.join(chan, password)
             else:
-                log.error("Invalid autojoin: %s" % tostring(autojoin))
+                log.error("Invalid autojoin: %s" % ElementTree.tostring(autojoin))
 
     def nickChanged(self, nick):
         log.info("Nick changed to: %s" % nick)

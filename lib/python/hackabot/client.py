@@ -2,7 +2,9 @@
 
 import os
 import sys
-from xml.etree import ElementTree
+
+# Relative import just in case the python path isn't set correctly
+from etree import ElementTree
 
 class Client(object):
 

@@ -33,10 +33,11 @@ between the core requirements and the various noodly bits.
 Core Requirements
 ~~~~~~~~~~~~~~~~~
 
-Python >= 2.5 (but not >= 3.0 yet)
-Twisted >= 8.1.0
+Python >= 2.4
+Twisted Core >= 8.1.0
 Twisted Words >= 8.1.0
-MySQLdb (optional)
+MySQLdb (optional, but many things use it)
+lxml or elementtree if using Python 2.4
 
 Earlier releases of Twisted probably will work (at least back to 2.5)
 but at the moment I have only tested against 8.1.0. Hackabot can be run
@@ -56,6 +57,9 @@ XML::Simple
 URI::Escape
 lynx
 wget
+
+Of course if you are running without db support DBI/DBD is optional but be
+sure to disable those external commands as it won't happen automatically.
 
 And some lesser things:
 

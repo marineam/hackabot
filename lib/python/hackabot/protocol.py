@@ -40,12 +40,16 @@ class HBLineProtocol(LineOnlyReceiver):
             self._dump_line(line)
             return
 
-        line = line.strip()
-        command, space, args = line.partition(" ")
+        line = line.strip().split(None, 1)
+        if not line:
+            return
+
+        command = line.pop(0)
+        args = "".join(line)
 
         if hasattr(self, "handle_%s" % command):
             try:
-                getattr(self, "handle_%s" % command)(args.strip())
+                getattr(self, "handle_%s" % command)(args)
             except CommandError, ex:
                 self.sendLine("error %s" % ex)
         else:
@@ -204,7 +208,12 @@ class HBLineProtocol(LineOnlyReceiver):
         part <channel> [<some reason>]
         """
 
-        channel, nill, reason = args.partition(" ")
+        args = args.split(None, 1)
+        if not args:
+            raise CommandError("no channel provided")
+        else:
+            channel = args.pop(0)
+            reason = "".join(args)
 
         if channel not in self.conn().channels:
             raise CommandError("not in channel '%s'" % args)
