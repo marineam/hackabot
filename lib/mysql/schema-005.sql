@@ -1,8 +1,8 @@
 -- MySQL dump 10.11
 --
--- Host: billybob    Database: hackabot
+-- Host: billybob    Database: manatee
 -- ------------------------------------------------------
--- Server version	5.0.60
+-- Server version	5.0.70
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -22,11 +22,11 @@
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `bar_adj` (
-  `adj_id` int(10) unsigned NOT NULL auto_increment,
-  `adj_name` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`adj_id`),
-  UNIQUE KEY `adj_name` (`adj_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `adj_name` (`name`)
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -36,27 +36,27 @@ SET character_set_client = @saved_cs_client;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `bar_location` (
-  `location_id` int(10) unsigned NOT NULL auto_increment,
-  `location_name` varchar(255) NOT NULL default '',
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
   `lastused` int(11) NOT NULL default '1',
-  PRIMARY KEY  (`location_id`),
-  UNIQUE KEY `location_name` (`location_name`),
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `location_name` (`name`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `bar_n`
+-- Table structure for table `bar_noun`
 --
 
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
-CREATE TABLE `bar_n` (
-  `n_id` int(10) unsigned NOT NULL auto_increment,
-  `n_name` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`n_id`),
-  UNIQUE KEY `n_name` (`n_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE `bar_noun` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `n_name` (`name`)
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -74,7 +74,47 @@ CREATE TABLE `blame` (
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `brain_chains`
+--
+
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `brain_chains` (
+  `key_1` varchar(20) NOT NULL,
+  `sep_1` varchar(5) NOT NULL,
+  `key_2` varchar(20) NOT NULL,
+  `sep_2` varchar(5) NOT NULL,
+  `key_3` varchar(20) NOT NULL,
+  `sep_3` varchar(5) NOT NULL,
+  `key_4` varchar(20) NOT NULL,
+  `sep_4` varchar(5) NOT NULL,
+  `key_5` varchar(20) NOT NULL,
+  `weight` int(11) NOT NULL default '1',
+  `date` datetime NOT NULL,
+  UNIQUE KEY `all` (`key_1`,`key_2`,`key_3`,`key_4`,`key_5`),
+  KEY `keyword` (`key_1`),
+  KEY `next` (`key_1`,`key_2`,`key_3`,`key_4`),
+  KEY `prev` (`key_2`,`key_3`,`key_4`,`key_5`)
+) DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `brain_keywords`
+--
+
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `brain_keywords` (
+  `word` varchar(20) NOT NULL,
+  `weight` int(11) NOT NULL default '1',
+  `date` datetime NOT NULL,
+  PRIMARY KEY  (`word`),
+  KEY `weight` (`weight`)
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -90,7 +130,7 @@ CREATE TABLE `fire` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -106,7 +146,7 @@ CREATE TABLE `group` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -117,14 +157,12 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `hangman` (
   `chan` varchar(20) NOT NULL default '',
-  `state` tinyint(4) NOT NULL default '0',
   `final` enum('win','lose') default NULL,
-  `phrase` varchar(255) NOT NULL default '',
-  `guess` varchar(255) NOT NULL default '',
-  `wrong` varchar(255) NOT NULL default '',
-  `nick` varchar(20) default NULL,
-  PRIMARY KEY  (`chan`,`state`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `phrase` varchar(100) NOT NULL,
+  `guess` varchar(100) NOT NULL,
+  `wrong` varchar(30) NOT NULL,
+  PRIMARY KEY  (`chan`)
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -143,7 +181,7 @@ CREATE TABLE `log` (
   `type` enum('msg','action','notice','join','part','quit','stats','topic','kick','rename') NOT NULL default 'msg',
   `date` datetime NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -153,11 +191,11 @@ SET character_set_client = @saved_cs_client;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `lunch_adj` (
-  `adj_id` int(10) unsigned NOT NULL auto_increment,
-  `adj_name` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`adj_id`),
-  UNIQUE KEY `adj_name` (`adj_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `adj_name` (`name`)
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -167,27 +205,27 @@ SET character_set_client = @saved_cs_client;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `lunch_location` (
-  `location_id` int(10) unsigned NOT NULL auto_increment,
-  `location_name` varchar(255) NOT NULL default '',
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
   `lastused` int(11) NOT NULL default '1',
-  PRIMARY KEY  (`location_id`),
-  UNIQUE KEY `location_name` (`location_name`),
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `location_name` (`name`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `lunch_n`
+-- Table structure for table `lunch_noun`
 --
 
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
-CREATE TABLE `lunch_n` (
-  `n_id` int(10) unsigned NOT NULL auto_increment,
-  `n_name` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`n_id`),
-  UNIQUE KEY `n_name` (`n_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE `lunch_noun` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `n_name` (`name`)
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -200,7 +238,7 @@ CREATE TABLE `metadata` (
   `name` varchar(20) NOT NULL,
   `value` varchar(20) NOT NULL,
   PRIMARY KEY  (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -215,7 +253,7 @@ CREATE TABLE `quotes` (
   `nick` varchar(20) NOT NULL default '',
   `date` varchar(20) NOT NULL default '',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -233,7 +271,7 @@ CREATE TABLE `reminder` (
   `created` varchar(20) default NULL,
   PRIMARY KEY  (`id`),
   KEY `time` (`time`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -249,7 +287,7 @@ CREATE TABLE `score` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -266,7 +304,7 @@ CREATE TABLE `tard` (
   `chan` varchar(20) default NULL,
   `date` varchar(20) default NULL,
   PRIMARY KEY  (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -284,7 +322,7 @@ CREATE TABLE `topic` (
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -302,7 +340,7 @@ CREATE TABLE `whip` (
   `lastused` int(10) NOT NULL default '1',
   PRIMARY KEY  (`id`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -323,7 +361,7 @@ CREATE TABLE `wtf` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `acronym_i` (`acronym_i`),
   KEY `lastused` (`lastused`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+)  DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -335,4 +373,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2008-11-01 17:15:00
+-- Dump completed on 2008-12-14 19:43:50

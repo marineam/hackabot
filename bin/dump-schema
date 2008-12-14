@@ -2,6 +2,7 @@
 
 """Dump the current DB schema"""
 
+import re
 import os
 import sys
 
@@ -11,6 +12,10 @@ if __name__ == "__main__":
 
     from hackabot import conf, db, load_conf
     import MySQLdb
+
+    if len(sys.argv) != 2:
+        sys.stderr.write("Usage: %s config.xml" % sys.argv[0])
+        sys.exit(1)
 
     load_conf(sys.argv[1])
     config = conf.find("database")
@@ -28,8 +33,15 @@ if __name__ == "__main__":
 
     dump = open("%s/schema-%03d.sql" % (conf.get('mysql'), version), 'w')
     print "Dumping %s to %s" % (database, dump.name)
-    os.dup2(dump.fileno(), 1)
+    input = os.popen("mysqldump --no-data --skip-add-drop-table "
+            "--host='%s' --user='%s' --password='%s' '%s'"
+            % (hostname, username, password, database))
+
+    for line in input:
+        if line.startswith(") ENGINE="):
+            line = re.sub("ENGINE=\w+\s*", "", line)
+            line = re.sub("AUTO_INCREMENT=\w+\w*", "", line)
+        dump.write(line)
+
+    input.close()
     dump.close()
-    os.execvp("mysqldump", ("mysqldump", "--no-data",
-        "--skip-add-drop-table", "--host=%s" % hostname,
-        "--user=%s" % username, "--password=%s" % password, database))
