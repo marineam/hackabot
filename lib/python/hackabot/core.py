@@ -318,7 +318,7 @@ class HBotConnection(irc.IRCClient):
 
     def userQuit(self, user, msg):
         log.debug("%s quit: %s" % (user, msg))
-        for chan in self.channels:
+        for chan in self.channels.itervalues():
             chan['users'].discard(user)
 
         event = {
@@ -332,7 +332,7 @@ class HBotConnection(irc.IRCClient):
 
     def userRenamed(self, oldname, newname):
         log.debug("%s changed to %s" % oldname, newname)
-        for chan in self.channels:
+        for chan in self.channels.itervalues():
             if oldname in chan['users']:
                 chan['users'].discard(oldname)
                 chan['users'].add(newname)
