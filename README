@@ -55,6 +55,7 @@ DBI
 DBD::mysql
 XML::Simple
 URI::Escape
+Time::Piece
 lynx
 wget
 
