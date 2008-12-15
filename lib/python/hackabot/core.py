@@ -116,6 +116,7 @@ class HBotConnection(irc.IRCClient):
         self.nickname = self.factory.nickname
         self.username = self.factory.username
         self.realname = self.factory.realname
+        self.password = self.factory.password
 
         # Used to track channel information
         self.channels = {}
@@ -479,6 +480,7 @@ class HBotNetwork(protocol.ClientFactory):
         self.nickname = config.get('nick', None)
         self.realname = config.get('name', self.nickname)
         self.username = self.nickname
+        self.password = None
         self.acl = ACL(config)
 
         servers = config.findall('server')
@@ -531,6 +533,9 @@ class HBotNetwork(protocol.ClientFactory):
 
         self.reconnect = True
         server = self._server(next=True)
+
+        # Reset password as it is configured per-server
+        self.password = server.get('password', None)
 
         use_ssl = server.get('ssl', 'false').lower()
         if use_ssl not in ('true', 'false'):
