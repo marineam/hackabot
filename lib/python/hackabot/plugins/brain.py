@@ -23,9 +23,9 @@ class Brain(object):
                     "", event['text'], 1)
             deferred = db.pool.runInteraction(self._answer, conn, event)
             deferred.addErrback(self._error)
-        else:
-            deferred = db.pool.runInteraction(self._insert, event)
-            deferred.addErrback(self._error)
+
+        deferred = db.pool.runInteraction(self._insert, event)
+        deferred.addErrback(self._error)
 
     def me(self, conn, event):
         if not db.pool or event['sent_by'] == conn.nickname:
