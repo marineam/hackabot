@@ -20,8 +20,15 @@ def _logger(event):
         if level in LEVELS and _log_level < LEVELS.index(level):
             return
 
+        # Use the smarter function if available
+        if hasattr(log, 'textFromEventDict'):
+            text = log.textFromEventDict(event)
+        else:
+            text = "\n".join(event['message'])
+            if not text:
+                text = str(event.get('failure', ''))
+
         prefix = event.get('prefix', event.get('system', '-'))
-        text = log.textFromEventDict(event).replace("\n", "\n\t")
         date = time.strftime("%b %d %H:%M:%S",
                 time.localtime(event.get('time', None)))
 

@@ -34,15 +34,14 @@ Core Requirements
 ~~~~~~~~~~~~~~~~~
 
 Python >= 2.4
-Twisted Core >= 8.1.0
-Twisted Words >= 8.1.0
-MySQLdb (optional, but many things use it)
+Twisted Core >= 2.5
+Twisted Words >= 2.5
+MySQLdb (optional, see below)
 lxml or elementtree if using Python 2.4
 
-Earlier releases of Twisted probably will work (at least back to 2.5)
-but at the moment I have only tested against 8.1.0. Hackabot can be run
-without a database but many commands and hooks depend on it so you
-probably want it unless you are simply using Hackabot as a framework.
+Hackabot can be run without a database but many commands and hooks
+depend on it so you probably want it unless you are simply using
+Hackabot as a framework for your own stuff.
 
 Misc Requirements
 ~~~~~~~~~~~~~~~~~
