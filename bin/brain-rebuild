@@ -16,11 +16,18 @@ if __name__ == "__main__":
     import hackabot
     from hackabot.plugins.brain import brain
 
-    if len(sys.argv) != 3:
-        sys.stderr.write("Usage: %s config.xml nickname" % sys.argv[0])
+    if len(sys.argv) < 2:
+        sys.stderr.write("Usage: %s config.xml [ignorenick ...]" % sys.argv[0])
         sys.exit(1)
 
     hackabot.basic(sys.argv[1])
-    deferred = brain.rebuild(sys.argv[2])
+
+    ignore = set(sys.argv[2:])
+    for net in hackabot.conf.findall("network"):
+        nick = net.get('nick', None)
+        if nick:
+            ignore.add(nick)
+
+    deferred = brain.rebuild(ignore)
     deferred.addBoth(done)
     reactor.run()

@@ -33,13 +33,13 @@ class Brain(object):
         event['text'] = "/me %s" % event['text']
         self.msg(conn, event)
 
-    def rebuild(self, nick):
+    def rebuild(self, ignore):
         """Drop and rebuild the *entire* index.
 
         Ignore messages sent by nick (presumably this bot)
         """
 
-        deferred = db.pool.runInteraction(self._rebuild, nick)
+        deferred = db.pool.runInteraction(self._rebuild, ignore)
         deferred.addErrback(self._error)
         return deferred
 
@@ -157,37 +157,63 @@ class Brain(object):
         else:
             return answer, weight
 
-    def _rebuild(self, cursor, nick):
+    def _rebuild(self, cursor, ignore):
+        # We don't want transactions for this process...
+        cursor.execute("SET autocommit=1")
+
+        log.info("The following nicks are ignored: %s" % " ".join(ignore))
+
         log.info("Truncating tables...")
         cursor.execute("TRUNCATE TABLE `brain_keywords`")
         cursor.execute("TRUNCATE TABLE `brain_chains`")
 
+        log.info("Fetching log...")
+        cursor.execute("SELECT `id` FROM `log` ORDER BY `id` DESC LIMIT 1")
+
+        lastid = cursor.fetchone()
+        if not lastid:
+            log.warn("The log is empty! Aborting rebuild.")
+            return
+        else:
+            lastid = float(lastid[0])
+
+        cursor.execute("SELECT `id`, `sent_by`, `channel`, `type`, `text` "
+                "FROM `log` WHERE `type` = 'msg' OR `type` = 'action'")
         log.info("Starting rebuild...")
-        nick = "%s%%" % nick
-        cursor.execute("SELECT `text`, `channel`, `type` FROM `log` "
-                "WHERE `sent_by` NOT LIKE %s AND `text` NOT LIKE %s "
-                "AND (`type` = 'msg' OR `type` = 'action')", (nick, nick))
 
         i = 0
-        for row in cursor:
-            if not re.match("^\w", row[0]):
+        for id, sent_by, channel, type, text in cursor:
+            if not reactor.running:
+                log.warn("Aborting rebuild!")
+                break
+
+            for nick in ignore:
+                # Ignore some nicks, ie bots
+                if sent_by.startswith(nick):
+                    continue
+
+            # Strip of nicks in targeted messages
+            text = re.sub("^\w+:\s*", "", text)
+
+            if not re.match("^\w", text):
                 continue
 
             i += 1
             if i % 100 == 0:
-                log.info("Processed %s records..." % i)
+                log.info("At row %s (%.1f%%)" % (id, (id/lastid)*100))
 
-            event = {'channel': row[1]}
-            if row[2] == 'action':
-                event['text'] = "/me %s" % row[0]
+            event = {'channel': channel}
+            if type == 'action':
+                event['text'] = "/me %s" % text
             else:
-                event['text'] = row[0]
+                event['text'] = text
             self._insert(cursor, event)
 
-        log.info("Finished rebuild!")
+        if reactor.running:
+            log.info("Finished rebuild!")
 
     def _insert(self, cursor, event):
-        words = re.findall("(\w+)(\W*)", event['text'])
+        words = re.findall("(^/me|\w+)(\W*)", event['text'])
 
         # Words longer that 20 chars probably are urls or other bogus crap
         # but since simply removing said crap may create bogus chains just
