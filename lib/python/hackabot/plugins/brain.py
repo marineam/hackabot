@@ -62,7 +62,10 @@ class Brain(object):
         # seems to be a reasonable one most of the time so far...
         answer = answers[len(answers)//2][0]
 
-        reactor.callFromThread(conn.msg, event['reply_to'], answer)
+        if answer.startswith("/me "):
+            reactor.callFromThread(conn.me, event['reply_to'], answer[4:])
+        else:
+            reactor.callFromThread(conn.msg, event['reply_to'], answer)
 
     def _get_keyword(self, cursor, text):
         words = re.findall("\w+", text)
