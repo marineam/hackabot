@@ -10,7 +10,7 @@
 
     <!-- even this could be removed if you don't want db support
          many commands/plugins depend on db support but not all -->
-    <database namehost="dbhost.some.org"
+    <database hostname="dbhost.some.org"
               database="dbname"
               username="user"
               password="secret" />
