@@ -191,7 +191,7 @@ class Brain(object):
             for nick in ignore:
                 # Ignore some nicks, ie bots
                 if sent_by.startswith(nick):
-                    skip = true
+                    skip = True
             if skip:
                 continue
 
