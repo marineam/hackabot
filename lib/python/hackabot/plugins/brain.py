@@ -187,10 +187,13 @@ class Brain(object):
                 log.warn("Aborting rebuild!")
                 break
 
+            skip = False
             for nick in ignore:
                 # Ignore some nicks, ie bots
                 if sent_by.startswith(nick):
-                    continue
+                    skip = true
+            if skip:
+                continue
 
             # Strip of nicks in targeted messages
             text = re.sub("^\w+:\s*", "", text)
