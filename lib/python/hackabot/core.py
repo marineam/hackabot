@@ -7,6 +7,16 @@ from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, error
 from twisted.python import context
 
+# SSL support is screwy
+try:
+   from twisted.internet import ssl
+except ImportError:
+   # happens the first time the interpreter tries to import it
+   ssl = None
+if ssl and not ssl.supported:
+   # happens second and later times
+   ssl = None
+
 from hackabot import conf, db, log, plugin
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
@@ -522,11 +532,22 @@ class HBotNetwork(protocol.ClientFactory):
         self.reconnect = True
         server = self._server(next=True)
 
-        if server.get('ssl', False):
-            raise Exception("SSL Connections are unimplemented!")
+        use_ssl = server.get('ssl', 'false').lower()
+        if use_ssl not in ('true', 'false'):
+            raise ConfigError("<server ssl=? /> must be 'true' or 'false'")
+
+        if use_ssl and not ssl:
+            raise ConfigError("SSL support requires the OpenSSL Python module")
+
+        timeout = 30 # should this be configurable?
+
+        if use_ssl:
+            context = ssl.ClientContextFactory()
+            reactor.connectSSL(server.get('hostname'),
+                    int(server.get('port', 6667)), self, context, timeout)
         else:
             reactor.connectTCP(server.get('hostname'),
-                    int(server.get('port', 6667)), self)
+                    int(server.get('port', 6667)), self, timeout)
 
     def disconnect(self, message):
         """Disconnect from an IRC network"""
