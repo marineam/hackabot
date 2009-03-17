@@ -541,12 +541,11 @@ class HBotNetwork(protocol.ClientFactory):
         if use_ssl not in ('true', 'false'):
             raise ConfigError("<server ssl=? /> must be 'true' or 'false'")
 
-        if use_ssl and not ssl:
-            raise ConfigError("SSL support requires the OpenSSL Python module")
-
         timeout = 30 # should this be configurable?
 
-        if use_ssl:
+        if use_ssl == 'true':
+            if not ssl:
+                raise ConfigError("SSL support requires pyOpenSSL")
             context = ssl.ClientContextFactory()
             reactor.connectSSL(server.get('hostname'),
                     int(server.get('port', 6667)), self, context, timeout)
