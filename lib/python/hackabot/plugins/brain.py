@@ -255,4 +255,5 @@ class Brain(object):
     def _error(self, result):
         log.error(result)
 
-brain = Brain()
+# disable this plugin for now
+#brain = Brain()
