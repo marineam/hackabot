@@ -1,10 +1,46 @@
 """Hackabot"""
 
+import os
 import sys
-from os import path
 from optparse import OptionParser
 
 from twisted.internet import reactor
+
+def daemonize(pid_file):
+    """Background the current process"""
+
+    log.debug("daemonizing process")
+
+    try:
+        # A trivial check to see if we are already running
+        pidfd = open(pid_file)
+        pid = int(pidfd.readline().strip())
+        pidfd.close()
+
+        if os.path.isdir('/proc/%s' % pid):
+            log.error("PID file exits and process %s is running!" % pid)
+            sys.exit(1)
+    except:
+        # Assume all is well if the test fails
+        pass
+
+    try:
+        pidfd = open(pid_file, 'w')
+    except IOError, ex:
+        log.error("Failed to open PID file %s" % pid_file)
+        sys.exit(1)
+
+    if os.fork() > 0:
+        os._exit(0)
+
+    os.chdir("/")
+    os.setsid()
+
+    if os.fork() > 0:
+        os._exit(0)
+
+    pidfd.write("%s\n" % os.getpid())
+    pidfd.close()
 
 def parse_options(argv):
     """Parse Hackabot command line parameters"""
@@ -13,6 +49,8 @@ def parse_options(argv):
     parser.add_option("-l", "--log-file", dest="file")
     parser.add_option("-v", "--log-level", dest="level", default="INFO",
             help="one of: %s" % ", ".join(log.LEVELS))
+    parser.add_option("-p", "--pid-file", dest="pid",
+            help="daemonize the process, write pid to the given file")
 
     (options, args) = parser.parse_args(argv[1:])
 
@@ -29,7 +67,7 @@ def load_conf(conffile):
     from hackabot.etree import ElementTree
 
     # Assuming the normal svn layout, find the source root
-    root = path.abspath(__file__).rsplit("/",4)[0]
+    root = os.path.abspath(__file__).rsplit("/",4)[0]
 
     vars = {
         'conf': conffile,
@@ -109,6 +147,9 @@ def run(argv=sys.argv):
     except core.ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
+
+    if (options.pid):
+        daemonize(options.pid)
 
     # Delay taking over stdio so any startup errors can go to stderr
     log.init_stdio()
