@@ -12,6 +12,7 @@ class ACL(object):
         elif conf.find("acl") is not None:
             conffile = conf.find("acl").get("file", None)
         else:
+            log.debug("No ACL file to load")
             self._conf = None
             return
 
@@ -20,6 +21,7 @@ class ACL(object):
             self._conf = None
             return
 
+        log.debug("Loading ACL file %s" % conffile)
         self._conf = ElementTree.parse(conffile)
 
     def check(self, event):
@@ -81,7 +83,7 @@ class ACL(object):
         for cmd in self._conf.findall("command")+[self._conf.find("default")]:
             if cmd.get("name", None) == command or cmd.tag == "default":
                 acl = cmd
-                private = cmd.find("private", None)
+                private = cmd.find("private")
                 if private is not None:
                     acl = private
                     for person in private.findall("person"):
