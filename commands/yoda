@@ -20,7 +20,6 @@ if ($phrase) {
 	my $ua = LWP::UserAgent->new;
 	my $y = $ua->request($r)->content;
 	$y =~ s/.*YodaSpeak[^>]+>//s;
-	print STDERR $y;
 	$y =~ s/<.*//s;
 
 	if ($y) {
