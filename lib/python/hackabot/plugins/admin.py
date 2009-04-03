@@ -12,7 +12,7 @@ class Admin(object):
     @staticmethod
     def command_admin(conn, event):
         """Various administrative commands.
-        !admin reload | quit
+        !admin reload | quit | join #chan | part #chan
         """
 
         line = event['text'].split(None, 1)
@@ -29,6 +29,10 @@ class Admin(object):
             plugin.manager.reload()
         elif request == "quit":
             core.manager.disconnect(args)
+        elif request == "join":
+            conn.join(args)
+        elif request == "part":
+            conn.part(args)
         else:
             conn.msg(event['reply_to'],
                     "Unknown admin request: '%s'" % request)
