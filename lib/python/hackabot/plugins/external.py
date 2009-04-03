@@ -29,7 +29,7 @@ class ExternalPlugins(object):
         if not commands:
             return
 
-        vars = os.environ
+        vars = os.environ.copy()
         for key, val in conf.items():
             vars["HB_%s" % key.upper()] = str(val)
 
