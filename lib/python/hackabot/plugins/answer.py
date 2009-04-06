@@ -25,7 +25,8 @@ class Answer(object):
         )
 
     def msg(self, conn, event):
-        if event['text'].startswith(conn.nickname):
+        if (event['text'].startswith(conn.nickname) and
+                event['text'].endswith('?')):
             conn.msg(event['reply_to'], random.choice(self.answers))
 
 answer = Answer()
