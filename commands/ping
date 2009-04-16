@@ -3,7 +3,7 @@
 HOST="`head -n 1`"
 
 echo sendnext
-RESULT=$(ping -c 1 -W 2 "$HOST")
+RESULT=$(ping -c 1 -W 2 "$HOST" 2>/dev/null)
 
 case "$?" in
 	0)
