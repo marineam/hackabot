@@ -3,7 +3,7 @@ from zope.interface import implements
 from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
-from hackabot import log, db
+from hackabot import db
 
 class DBLogger(object):
     """Log events to the database.

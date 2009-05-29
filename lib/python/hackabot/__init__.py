@@ -1,5 +1,7 @@
 """Hackabot"""
 
+__version__ = "2.0"
+
 import os
 import sys
 from optparse import OptionParser
@@ -94,8 +96,6 @@ def load_conf(conffile):
 def basic(conffile):
     """Start up the Hackabot framework, but don't actually fire up"""
 
-    from hackabot import db, log
-
     log.init(sys.stdout, "INFO")
 
     try:
@@ -112,8 +112,6 @@ def basic(conffile):
 
 def run(argv=sys.argv):
     """Start up Hackabot"""
-
-    from hackabot import core, db, plugin, remote, log
 
     options, conffile = parse_options(argv)
 
@@ -173,6 +171,6 @@ class _Wrapper(object):
         return getattr(self.__target, key)
 
 conf = _Wrapper()
-__version__ = "2.0"
-__all__ = [ "client", "conf", "core", "db", "etree", "load_conf", "log",
-            "plugin", "protocol", "remote", "run" ]
+
+# Import late to avoid circles...
+from hackabot import core, db, plugin, remote, log

@@ -3,7 +3,6 @@ import re
 
 from zope.interface import implements
 from twisted.plugin import IPlugin
-from twisted.python.failure import Failure
 
 from hackabot.plugin import IHackabotPlugin
 from hackabot import log, db

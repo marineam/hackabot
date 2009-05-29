@@ -2,7 +2,6 @@
 
 from zope.interface import implements
 from twisted.plugin import IPlugin
-from twisted.internet import reactor
 
 from hackabot import core, plugin
 

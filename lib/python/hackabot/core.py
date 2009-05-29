@@ -5,7 +5,6 @@ import time
 
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, error
-from twisted.python import context
 
 # SSL support is screwy
 try:
@@ -17,7 +16,7 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import conf, db, log, plugin
+from hackabot import conf, log, plugin
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
 
@@ -47,7 +46,7 @@ class HBotManager(object):
             if id not in self._networks:
                 net = HBotNetwork(self, network)
             else:
-                raise ConfigError("Duplicate network id '%s'" % name)
+                raise ConfigError("Duplicate network id '%s'" % id)
 
             if not self._default:
                 self._default = net
@@ -153,7 +152,7 @@ class HBotConnection(irc.IRCClient):
         event = {
                 'type': 'rename',
                 'old': old,
-                'new': new,
+                'new': nick,
                 'time': time.time()
                 }
 

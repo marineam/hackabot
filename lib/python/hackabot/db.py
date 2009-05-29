@@ -13,6 +13,7 @@ OLDTABLES = ("bar_adj","bar_location","bar_n","blame","fire","group",
         "hangman","log","lunch_adj","lunch_location","lunch_n","quotes",
         "reminder","score","tard","topic","whip","wtf")
 
+MySQLdb = None
 pool = None
 
 class DBError(Exception):
@@ -97,7 +98,7 @@ def _load_sql(db, dump):
         sql = dumpfd.read()
         dumpfd.close()
     except IOError, (errno, errstr):
-        raise DBError("Failed to read %s: %s" % (schema_file, errstr))
+        raise DBError("Failed to read %s: %s" % (dump, errstr))
 
     cursor = db.cursor()
 

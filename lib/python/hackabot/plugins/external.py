@@ -1,6 +1,5 @@
 
 import os
-import time
 from glob import glob
 
 from zope.interface import implements
