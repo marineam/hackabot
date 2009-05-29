@@ -363,7 +363,7 @@ class HBotConnection(irc.IRCClient):
         plugin.manager.hook(self, event)
 
     def userRenamed(self, oldname, newname):
-        log.debug("%s changed to %s" % oldname, newname)
+        log.debug("%s changed to %s" % (oldname, newname))
         for chan in self.channels.itervalues():
             if oldname in chan['users']:
                 chan['users'].discard(oldname)
