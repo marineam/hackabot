@@ -16,6 +16,9 @@ OLDTABLES = ("bar_adj","bar_location","bar_n","blame","fire","group",
 MySQLdb = None
 pool = None
 
+# Make the ConnectionLost exception easier to find
+ConnectionLost = adbapi.ConnectionLost
+
 class DBError(Exception):
     pass
 
@@ -161,6 +164,9 @@ def _set_version(db, version):
 
     cursor.close()
 
+def _connected(connection):
+    log.debug("Created database connection...")
+
 def init():
     """Create db pool and check/upgrade schema revision"""
     global pool, MySQLdb
@@ -209,4 +215,5 @@ def init():
     # Everything is in order, setup the pool for all to use.
     pool = adbapi.ConnectionPool("MySQLdb", host=dbcfg['hostname'],
             db=dbcfg['database'], user=dbcfg['username'],
-            passwd=dbcfg['password'], cp_noisy=False)
+            passwd=dbcfg['password'], cp_noisy=False,
+            cp_reconnect=True, cp_openfun=_connected)

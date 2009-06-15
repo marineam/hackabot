@@ -94,9 +94,14 @@ class DBLogger(object):
                 'count', 'type', 'time'):
             assert key in event
 
-        db.pool.runOperation("INSERT INTO `log` "
+        sql = ("INSERT INTO `log` "
             "(`sent_by`,`sent_to`,`channel`,`text`,`count`,`type`,`date`) "
             "VALUES (%(sent_by)s, %(sent_to)s, %(channel)s, %(text)s, "
-            "%(count)s, %(type)s, FROM_UNIXTIME(%(time)s) )", event)
+            "%(count)s, %(type)s, FROM_UNIXTIME(%(time)s) )")
+
+        try:
+            db.pool.runOperation(sql, event)
+        except db.ConnectionLost
+            db.pool.runOperation(sql, event)
 
 logger = DBLogger()
