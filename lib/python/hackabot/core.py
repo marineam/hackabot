@@ -102,6 +102,9 @@ class HBotConnection(irc.IRCClient):
     This class cannot hold any state needed between reconnects, etc.
     """
 
+    # Regex for !cmd commands
+    COMMAND = re.compile("^!(\w+)(\W.*|$)")
+
     sourceURL = None
 
     def connectionMade(self):
@@ -180,8 +183,8 @@ class HBotConnection(irc.IRCClient):
 
         plugin.manager.hook(self, event)
 
-        if len(msg) > 1 and msg[0] == '!':
-            match = re.match("(\w+)(\W.*|$)", msg[1:])
+        match = self.COMMAND.match(msg)
+        if match:
             command = match.group(1)
             text = match.group(2)
             text = text.strip()
