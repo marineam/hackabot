@@ -101,7 +101,7 @@ class DBLogger(object):
 
         try:
             db.pool.runOperation(sql, event)
-        except db.ConnectionLost
+        except db.ConnectionLost:
             db.pool.runOperation(sql, event)
 
 logger = DBLogger()
