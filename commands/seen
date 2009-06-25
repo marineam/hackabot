@@ -53,11 +53,13 @@ sub seen {
 	if (defined $where) {
 		$restrict .= " AND channel = ".$dbh->quote($where);
 	}
-	foreach my $priv (@private) {
-		if ($priv eq $chan) {
-			next;
+	if (defined $chan) {
+		foreach my $priv (@private) {
+			if ($priv eq $chan) {
+				next;
+			}
+			$restrict .= " AND channel != ".$dbh->quote($priv);
 		}
-		$restrict .= " AND channel != ".$dbh->quote($priv);
 	}
 
 	# Ignore privivate messages so chan IS NULL only for quit
