@@ -59,7 +59,7 @@ class ACL(object):
         for cmd in self._conf.findall("command")+[self._conf.find("default")]:
             if cmd.get("name", None) == command or cmd.tag == "default":
                 acl = cmd
-                for chan in cmd.findall("command"):
+                for chan in cmd.findall("public"):
                     if chan.get("chan", None) == channel:
                         acl = chan
                         for person in chan.findall("person"):
