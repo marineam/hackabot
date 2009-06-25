@@ -11,7 +11,7 @@ use Time::Piece;
 use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new(
-    ForceArray => ['private'],
+	ForceArray => ['private'],
 	KeyAttr => { private => "+chan" });
 my $msg = $hbc->readline;
 my $asker = $hbc->sent_by;
@@ -28,31 +28,24 @@ if ($msg =~ /^here\s+(\S+)/) {
 	$where = "here";
 }
 elsif ($msg =~ /^(#\S+)\s+(\S+)/) {
-		$nick = $2;
-		$where = $1;
+	$nick = $2;
+	$where = $1;
 }
 elsif ($msg =~ /^(\S+)/) {
-		$nick = $1;
+	$nick = $1;
 }
 
 if (defined $nick) {
 	if (defined $where and $where eq "here") {
-		print "send " . seen($nick, $asker, $chan, $chan);
+		$where = $chan;
 	}
-	else {
-        my $text = seen($nick, $chan, $where);
-        if (defined $text) {
-            print "send $asker: $nick was last seen $text\n";
-        }
-        else {
-            print "send $asker: Sorry, I haven't seen $nick\n";
-        }
-	}
+	my $text = seen($nick, $chan, $where);
+	print "send $asker: $text\n";
 }
 
 sub seen {
 	my ($nick, $chan, $where) = @_;
-    my $ret;
+	my $ret;
 
 	my $dbh = $hbc->dbi;
 
@@ -68,13 +61,13 @@ sub seen {
 	}
 
 	# Ignore privivate messages so chan IS NULL only for quit
-	my $sth = $dbh->prepare("SELECT date, text, channel, type FROM log
-		WHERE date <> ? AND sent_by = ? AND ( ( ( 
+	my $sth = $dbh->prepare("SELECT sent_by, date, text, channel, type
+		FROM log WHERE date <> ? AND sent_by LIKE ? AND ( ( ( 
 		type = 'msg' OR type = 'action' OR type = 'notice' OR 
 		type = 'join' OR type = 'part' ) AND channel IS NOT NULL 
 		$restrict ) OR ( type = 'quit' AND channel IS NULL ) )
 		ORDER BY id DESC LIMIT 1");
-	$sth->execute($hbc->time->strftime("%Y-%m-%d %H:%M:%S"), $nick);
+	$sth->execute($hbc->time->strftime("%Y-%m-%d %H:%M:%S"), "$nick%");
 	if (my $row = $sth->fetchrow_hashref) {
 		my $text = $row->{'text'};
 		$text =~ s/^"(.*)"$/$1/;
@@ -90,26 +83,31 @@ sub seen {
 		}
 		elsif ($time->year == $now->year) {
 			$ftime = $time->strftime("on %b %d");
-        }
+		}
 		else {
 			$ftime = $time->strftime("on %Y-%m-%d");
 		}
 
+		$ret = "$row->{'sent_by'} was last seen ";
+
 		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
-			return "in $row->{'channel'} saying \"$text\" $ftime.";
+			$ret .= "in $row->{'channel'} saying \"$text\" $ftime.";
 		}
-		if ($row->{'type'} eq "action") {
-			return "in $row->{'channel'} doing \"$text\" $ftime.";
+		elsif ($row->{'type'} eq "action") {
+			$ret .= "in $row->{'channel'} doing \"$text\" $ftime.";
 		}
 		elsif ($row->{'type'} eq "join") {
-			$ret = "joining $row->{'channel'} at $ftime.";
+			$ret .= "joining $row->{'channel'} at $ftime.";
 		}
 		elsif ($row->{'type'} eq "part") {
-			$ret = "leaving $row->{'channel'} saying \"$text\" at $ftime.";
+			$ret .= "leaving $row->{'channel'} saying \"$text\" at $ftime.";
 		}
 		elsif ($row->{'type'} eq "quit") {
-			$ret = "quitting with \"$text\" $time.";
+			$ret .= "quitting with \"$text\" $time.";
 		}
+	}
+	else {
+		$ret = "Sorry, I haven't seen $nick";
 	}
 
 	return $ret;
