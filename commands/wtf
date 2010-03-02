@@ -8,48 +8,18 @@
 use strict;
 use DBI;
 use Time::localtime;
-use XML::Simple;
+use Hackabot::Client;
 
-my $CONFIG = XMLin($ENV{'HACKABOT_CFG'}); 
-my $DBCFG = $CONFIG->{'cmdconfig'}->{'database'};
-
-my $dbhost = $DBCFG->{'host'};
-my $dbname = $DBCFG->{'name'};
-my $dbuser = $DBCFG->{'user'};
-my $dbpass = $DBCFG->{'pass'};
-
-my $privmsg = 0;
-my ($chan, $msg, $nick);
-while (<>) {
-    if (/^type\s+privmsg/) {
-        $privmsg = 1;
-    }
-    elsif (/^to\s+(.+)/) {
-        $chan = $1;
-    }
-    elsif (/^nick\s+(.+)/) {
-        $nick = $1;
-    }
-    elsif (/^msg\s+(\S.+)/) {
-        $msg = $1;
-    }
-}
-
-if (not defined $nick or not defined $chan) {
-    die "wtf: not all info was given.\n";
-}
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
 
 if (defined $msg and $msg =~ /^--add\s+(\S+)\s+(\S.*)/) {
     my $wtf = $1;
     my $text = $2;
     chomp $text;
-    my $ret;
-    if ($privmsg) {
-        $ret = add_wtf($wtf, $text, $nick);
-    }
-    else {
-        $ret = add_wtf($wtf, $text, $nick, $chan);
-    }
+    my $ret = add_wtf($wtf, $text, $nick);
     print "send $nick: $ret\n";
     exit;
 }
@@ -67,11 +37,8 @@ sub get_wtf {
     my $wtf = shift;
     my ($dbh, $sth);
 
-    $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-    if (!$dbh) {
-        die "wtf: Failed to connect to database\n";
-    }
-    
+    $dbh = $hbc->dbi;
+
     my $time = `date "+%y%m%d%H%M"`;
     chomp $time;
     $time = $dbh->quote($time);
@@ -114,11 +81,7 @@ sub add_wtf {
     my $nick = shift;
     my $chan = shift;
 
-    my $dbh = DBI->connect("DBI:mysql:$dbname:$dbhost", $dbuser, $dbpass, { PrintError => 0 });
-    if (!$dbh) {
-        print STDERR "wtf: Failed to connect to database\n";
-        return  "I'm a failure! I couldn't add it. :-(";
-    }
+    my $dbh = $hbc->dbi;
     
     my $time = `date "+%F %R"`;
     chomp $time;
