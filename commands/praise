@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Tell someone they are wonderful!
+# !praise [#chan] nick
+##HACKABOT_HELP##
+
+use strict;
+use LWP::Simple;
+
+my $msg = <>;
+if (defined $msg) {
+    chomp $msg;
+    if ($msg =~ /(#\S+)\s+(.*)/) {
+        my $praise = praise();
+        print "to $1\n";
+        print "send $2: $praise\n";
+    }
+    else {
+        my $praise = praise();
+        print "send $msg: $praise\n";
+    }
+}
+
+sub praise {
+    my $praise = get("http://www.madsci.org/cgi-bin/cgiwrap/~lynn/jardin/SCG");
+
+    if ($praise =~ /<h2>\s*(\S+.*\S)\s*<\/h2>/s) {
+        $praise = $1;
+        $praise =~ s/\n/ /g;
+        return $praise;
+    }
+    else {
+        return "I Hate You!";
+    }
+}
