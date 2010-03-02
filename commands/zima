@@ -10,13 +10,14 @@ use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new;
 my $msg = $hbc->readline;
+my $chan = $hbc->channel;
 
 if ($msg =~ /(#\S+)\s+(.+)/) {
     print "to $1\n";
     $msg = $2;
 }
 
-if (not $msg)
+if (not $msg) {
     my @names = $hbc->names($chan);
     $msg = $names[int(rand(@names))];
 }

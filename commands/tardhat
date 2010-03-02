@@ -24,7 +24,9 @@ if ($msg !~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
     }
 
     $msg =~ s/^(\S+)/$1/;
-    add_tard($1);
+    if (defined $1) {
+        add_tard($1);
+    }
     print_tard();
 }
 elsif ($msg =~ /(-h|--high|-l|--low|-n|--nicks)/) {
