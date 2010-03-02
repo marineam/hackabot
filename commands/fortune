@@ -56,6 +56,6 @@ sub fortune {
         print "Fortunes: ".join(" ", sort @files);
     }
     else {
-        system("fortune -n 190 -s $ENV{'HB_ROOT'}/misc/cookies/$type");
+        system("fortune -n 400 -s $ENV{'HB_ROOT'}/misc/cookies/$type");
     }
 }
