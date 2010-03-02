@@ -7,7 +7,7 @@
 
 use strict;
 
-my @allow = ( "bunny", "default", "koala", "small", "tux", "beaver", "owl", "shamrock", "clover", "sun");
+my @allow = ( "bunny", "default", "koala", "small", "tux", "beaver", "owl", "shamrock", "clover", "sun", "koolaid");
 
 my $default = `basename $0`;
 chomp $default;
@@ -36,6 +36,9 @@ elsif ($msg =~ /^-l/) {
 elsif ($msg =~ /^-f\s*(\S*)\s+(\S+.*)/) {
     my $cow = $1;
     my $phrase = $2;
+    if ($cow eq "koolaid") {
+        $phrase .= " Oh Yeaaaah!";
+    }
     if (grep(/^$cow$/, @allow)) {
         cowsay($phrase, $cow);
     }
