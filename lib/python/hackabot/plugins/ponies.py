@@ -9,8 +9,6 @@ from zope.interface import implements
 from twisted.plugin import IPlugin
 from hackabot.plugin import IHackabotPlugin
 
-equines = ("pony", "ponies", "horse")
-
 class Ponies(object):
     implements(IPlugin, IHackabotPlugin)
 
@@ -21,8 +19,8 @@ class Ponies(object):
 
         message = event["text"].lower()
 
-        if any(x in message for x in equines):
-            conn.msg(event["reply_to"], "OMG Ponies!!!")
+        if "pony" in message or "ponies" in message:
+            conn.msg(event["reply_to"], "OMG!! Ponies!!!")
 
     me = msg
 
