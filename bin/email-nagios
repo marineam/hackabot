@@ -29,22 +29,22 @@ else {
 my $data;
 my $header = 1;
 while (<>) {
-	chomp;
-	if (/^Subject:/ and $header) {
-		s/^Subject:\s*//;
-		$data = $_;
-	}
-	elsif (/^$/ and $header) {
-		$header = 0;
-	}
-	elsif (/^Info/ and not $header) {
-		s/^Info:\s*//;
-		$data .= ", $_";
-	}
-	elsif (/^Date/ and not $header) {
-		s/^Date:\s*//;
-		$data .= " $_";
-	}
+    chomp;
+    if (/^Subject:/ and $header) {
+        s/^Subject:\s*//;
+        $data = $_;
+    }
+    elsif (/^$/ and $header) {
+        $header = 0;
+    }
+    elsif (/^Info/ and not $header) {
+        s/^Info:\s*//;
+        $data .= ", $_";
+    }
+    elsif (/^Date/ and not $header) {
+        s/^Date:\s*//;
+        $data .= " $_";
+    }
 }
 
 chomp($data);

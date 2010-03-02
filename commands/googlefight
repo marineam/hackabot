@@ -35,44 +35,44 @@ elsif ($msg =~ /(\S+)$/) {
 }
 
 if (defined $word1 and defined $word2) {
-	my $hits1 = gethits($word1);
-	my $hits2 = gethits($word2);
+    my $hits1 = gethits($word1);
+    my $hits2 = gethits($word2);
 
-	my $result;
-	if ($hits1 > $hits2) {
-		$result = "$word1 wins with ".commafy($hits1).". vs. $word2 with ".commafy($hits2).", a difference of ". commafy($hits1 - $hits2) ." results.";
-	}
-	elsif ($hits1 < $hits2) {
-		$result = "$word2 wins with ".commafy($hits2)." vs. $word1 with ".commafy($hits1).", a difference of ". commafy($hits2 - $hits1) ." results.";
-	}
-	elsif ($hits1 == $hits2) {
-		$result = "It is a draw between $word1 and $word2 with ".commafy($hits1)." results.";
-	}
-	else {
-		$result = "I'm confused!";
-	}
+    my $result;
+    if ($hits1 > $hits2) {
+        $result = "$word1 wins with ".commafy($hits1).". vs. $word2 with ".commafy($hits2).", a difference of ". commafy($hits1 - $hits2) ." results.";
+    }
+    elsif ($hits1 < $hits2) {
+        $result = "$word2 wins with ".commafy($hits2)." vs. $word1 with ".commafy($hits1).", a difference of ". commafy($hits2 - $hits1) ." results.";
+    }
+    elsif ($hits1 == $hits2) {
+        $result = "It is a draw between $word1 and $word2 with ".commafy($hits1)." results.";
+    }
+    else {
+        $result = "I'm confused!";
+    }
 
-	print "send $nick: $result";
+    print "send $nick: $result";
 }
 else {
     print "send Usage: word1 word2";
 }
 
 sub commafy {
-	$_=reverse shift;
-	s/(...)(?=.)/$1,/g;
-	return reverse $_;
+    $_=reverse shift;
+    s/(...)(?=.)/$1,/g;
+    return reverse $_;
 }
 
 sub gethits {
-	my $word = shift;
+    my $word = shift;
 
-	if (not defined $word) {
-		return 0;
-	}
+    if (not defined $word) {
+        return 0;
+    }
 
-	$word = uri_escape($word);
-	my $google = `lynx --dump "http://www.google.com/search?q=$word" | grep -m1 Results | sed -e 's/.*of about *//' -e 's/  *.*//' -e 's/,//g'`;
-	chomp $google;
-	return int($google);
+    $word = uri_escape($word);
+    my $google = `lynx --dump "http://www.google.com/search?q=$word" | grep -m1 Results | sed -e 's/.*of about *//' -e 's/  *.*//' -e 's/,//g'`;
+    chomp $google;
+    return int($google);
 }

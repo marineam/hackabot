@@ -11,8 +11,8 @@ use Time::Piece;
 use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new(
-	ForceArray => ['private'],
-	KeyAttr => { private => "+chan" });
+    ForceArray => ['private'],
+    KeyAttr => { private => "+chan" });
 my $msg = $hbc->readline;
 my $asker = $hbc->sent_by;
 my $chan = $hbc->channel;
@@ -20,97 +20,97 @@ my ($nick, $where);
 
 my @private = [];
 if (defined $hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}) {
-	@private = keys %{$hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}};
+    @private = keys %{$hbc->{'conf'}->{'commands'}->{'seen'}->{'private'}};
 }
 
 if ($msg =~ /^here\s+(\S+)/) {
-	$nick = $1;
-	$where = "here";
+    $nick = $1;
+    $where = "here";
 }
 elsif ($msg =~ /^(#\S+)\s+(\S+)/) {
-	$nick = $2;
-	$where = $1;
+    $nick = $2;
+    $where = $1;
 }
 elsif ($msg =~ /^(\S+)/) {
-	$nick = $1;
+    $nick = $1;
 }
 
 if (defined $nick) {
-	if (defined $where and $where eq "here") {
-		$where = $chan;
-	}
-	my $text = seen($nick, $chan, $where);
-	print "send $asker: $text\n";
+    if (defined $where and $where eq "here") {
+        $where = $chan;
+    }
+    my $text = seen($nick, $chan, $where);
+    print "send $asker: $text\n";
 }
 
 sub seen {
-	my ($nick, $chan, $where) = @_;
-	my $ret;
+    my ($nick, $chan, $where) = @_;
+    my $ret;
 
-	my $dbh = $hbc->dbi;
+    my $dbh = $hbc->dbi;
 
-	my $restrict = "";
-	if (defined $where) {
-		$restrict .= " AND channel = ".$dbh->quote($where);
-	}
-	if (defined $chan) {
-		foreach my $priv (@private) {
-			if ($priv eq $chan) {
-				next;
-			}
-			$restrict .= " AND channel != ".$dbh->quote($priv);
-		}
-	}
+    my $restrict = "";
+    if (defined $where) {
+        $restrict .= " AND channel = ".$dbh->quote($where);
+    }
+    if (defined $chan) {
+        foreach my $priv (@private) {
+            if ($priv eq $chan) {
+                next;
+            }
+            $restrict .= " AND channel != ".$dbh->quote($priv);
+        }
+    }
 
-	# Ignore privivate messages so chan IS NULL only for quit
-	my $sth = $dbh->prepare("SELECT sent_by, date, text, channel, type
-		FROM log WHERE date <> ? AND sent_by LIKE ? AND ( ( ( 
-		type = 'msg' OR type = 'action' OR type = 'notice' OR 
-		type = 'join' OR type = 'part' ) AND channel IS NOT NULL 
-		$restrict ) OR ( type = 'quit' AND channel IS NULL ) )
-		ORDER BY id DESC LIMIT 1");
-	$sth->execute($hbc->time->strftime("%Y-%m-%d %H:%M:%S"), "$nick%");
-	if (my $row = $sth->fetchrow_hashref) {
-		my $text = $row->{'text'};
-		$text =~ s/^"(.*)"$/$1/;
-		my $time = Time::Piece->strptime($row->{'date'}, "%Y-%m-%d %H:%M:%S");
-		my $now = localtime;
+    # Ignore privivate messages so chan IS NULL only for quit
+    my $sth = $dbh->prepare("SELECT sent_by, date, text, channel, type
+        FROM log WHERE date <> ? AND sent_by LIKE ? AND ( ( ( 
+        type = 'msg' OR type = 'action' OR type = 'notice' OR 
+        type = 'join' OR type = 'part' ) AND channel IS NOT NULL 
+        $restrict ) OR ( type = 'quit' AND channel IS NULL ) )
+        ORDER BY id DESC LIMIT 1");
+    $sth->execute($hbc->time->strftime("%Y-%m-%d %H:%M:%S"), "$nick%");
+    if (my $row = $sth->fetchrow_hashref) {
+        my $text = $row->{'text'};
+        $text =~ s/^"(.*)"$/$1/;
+        my $time = Time::Piece->strptime($row->{'date'}, "%Y-%m-%d %H:%M:%S");
+        my $now = localtime;
 
-		my $ftime;
-		if ($time->date eq $now->date) {
-			$ftime = $time->strftime("today at %H:%M");
-		}
-		elsif ($time->week == $now->week) {
-			$ftime = $time->strftime("%a at %H:%M");
-		}
-		elsif ($time->year == $now->year) {
-			$ftime = $time->strftime("on %b %d");
-		}
-		else {
-			$ftime = $time->strftime("on %Y-%m-%d");
-		}
+        my $ftime;
+        if ($time->date eq $now->date) {
+            $ftime = $time->strftime("today at %H:%M");
+        }
+        elsif ($time->week == $now->week) {
+            $ftime = $time->strftime("%a at %H:%M");
+        }
+        elsif ($time->year == $now->year) {
+            $ftime = $time->strftime("on %b %d");
+        }
+        else {
+            $ftime = $time->strftime("on %Y-%m-%d");
+        }
 
-		$ret = "$row->{'sent_by'} was last seen ";
+        $ret = "$row->{'sent_by'} was last seen ";
 
-		if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
-			$ret .= "in $row->{'channel'} saying \"$text\" $ftime.";
-		}
-		elsif ($row->{'type'} eq "action") {
-			$ret .= "in $row->{'channel'} doing \"$text\" $ftime.";
-		}
-		elsif ($row->{'type'} eq "join") {
-			$ret .= "joining $row->{'channel'} at $ftime.";
-		}
-		elsif ($row->{'type'} eq "part") {
-			$ret .= "leaving $row->{'channel'} saying \"$text\" at $ftime.";
-		}
-		elsif ($row->{'type'} eq "quit") {
-			$ret .= "quitting with \"$text\" $time.";
-		}
-	}
-	else {
-		$ret = "Sorry, I haven't seen $nick";
-	}
+        if ($row->{'type'} eq "msg" or $row->{'type'} eq "notice") {
+            $ret .= "in $row->{'channel'} saying \"$text\" $ftime.";
+        }
+        elsif ($row->{'type'} eq "action") {
+            $ret .= "in $row->{'channel'} doing \"$text\" $ftime.";
+        }
+        elsif ($row->{'type'} eq "join") {
+            $ret .= "joining $row->{'channel'} at $ftime.";
+        }
+        elsif ($row->{'type'} eq "part") {
+            $ret .= "leaving $row->{'channel'} saying \"$text\" at $ftime.";
+        }
+        elsif ($row->{'type'} eq "quit") {
+            $ret .= "quitting with \"$text\" $time.";
+        }
+    }
+    else {
+        $ret = "Sorry, I haven't seen $nick";
+    }
 
-	return $ret;
+    return $ret;
 }

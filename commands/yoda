@@ -15,17 +15,17 @@ my $phrase = $hbc->readline;
 my $asker = $hbc->sent_by;
 
 if ($phrase) {
-	my $r = (POST 'http://www.yodaspeak.co.uk/index.php',
-		['YodaMe' => $phrase]);
-	my $ua = LWP::UserAgent->new;
-	my $y = $ua->request($r)->content;
-	$y =~ s/.*YodaSpeak[^>]+>//s;
-	$y =~ s/<.*//s;
+    my $r = (POST 'http://www.yodaspeak.co.uk/index.php',
+        ['YodaMe' => $phrase]);
+    my $ua = LWP::UserAgent->new;
+    my $y = $ua->request($r)->content;
+    $y =~ s/.*YodaSpeak[^>]+>//s;
+    $y =~ s/<.*//s;
 
-	if ($y) {
-		print "send $asker: $y\n";
-	}
-	else {
-		print "send $asker: Not responding Yoda is\n";
-	}
+    if ($y) {
+        print "send $asker: $y\n";
+    }
+    else {
+        print "send $asker: Not responding Yoda is\n";
+    }
 }

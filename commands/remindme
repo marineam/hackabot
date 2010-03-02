@@ -16,19 +16,19 @@ my $nick = $hbc->sent_by;
 my $time;
 
 if ($msg =~ /^([0-9]+)\s+(.*)/) {
-	$time = $1;
-	$msg = $2;
+    $time = $1;
+    $msg = $2;
 }
 
 if (defined $time) {
-	$time = $time*60;
+    $time = $time*60;
 
-	print "send $nick: ok...\n";
+    print "send $nick: ok...\n";
 
-	sleep $time;
+    sleep $time;
 
-	print "send $nick: Times up!! *$msg*\n";
+    print "send $nick: Times up!! *$msg*\n";
 }
 else {
-	print "send $nick: You need to give me a number!\n";
+    print "send $nick: You need to give me a number!\n";
 }

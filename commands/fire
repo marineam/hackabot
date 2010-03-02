@@ -14,58 +14,58 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($name and not $name =~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
-	if (not defined $chan) {
-		print "send If you are going to fire people, do it in public damnit.\n";
-		exit;
-	}
+    if (not defined $chan) {
+        print "send If you are going to fire people, do it in public damnit.\n";
+        exit;
+    }
 
-	$hbc->counter_add("fire", $name, 1);
-	my $val = $hbc->counter_get("fire", $name);
+    $hbc->counter_add("fire", $name, 1);
+    my $val = $hbc->counter_get("fire", $name);
 
-	if ($val eq "1") {
-		print "me fires $name!\n";
-	}
-	elsif ($val =~ /^1.$/) {
-		print "me fires $name for the ${val}th time!\n";
-	}
-	elsif ($val =~ /1$/) {
-		print "me fires $name for the ${val}st time!\n";
-	}
-	elsif ($val =~ /2$/) {
-		print "me fires $name for the ${val}nd time!\n";
-	}
-	elsif ($val =~ /3$/) {
-		print "me fires $name for the ${val}rd time!\n";
-	}
-	else {
-		print "me fires $name for the ${val}th time!\n";
-	}
+    if ($val eq "1") {
+        print "me fires $name!\n";
+    }
+    elsif ($val =~ /^1.$/) {
+        print "me fires $name for the ${val}th time!\n";
+    }
+    elsif ($val =~ /1$/) {
+        print "me fires $name for the ${val}st time!\n";
+    }
+    elsif ($val =~ /2$/) {
+        print "me fires $name for the ${val}nd time!\n";
+    }
+    elsif ($val =~ /3$/) {
+        print "me fires $name for the ${val}rd time!\n";
+    }
+    else {
+        print "me fires $name for the ${val}th time!\n";
+    }
 }
 elsif ($name =~ /(-v|--value)\s+(\S+)/) {
-	my $val = $hbc->counter_get("fire", $2);
-	if ($val == "") { $val = 0; }
-	if ($val == "1") {
-		print "send $2 has been fired $val time!\n";
-	}
-	else {
-		print "send $2 has been fired $val times!\n";
-	}
+    my $val = $hbc->counter_get("fire", $2);
+    if ($val == "") { $val = 0; }
+    if ($val == "1") {
+        print "send $2 has been fired $val time!\n";
+    }
+    else {
+        print "send $2 has been fired $val times!\n";
+    }
 }
 else {
-	my $order = ($name =~ /(-l|--low)/)? "ASC" : "DESC";
-	my $nicks = ($name =~ /(-n|--nicks)/)? $chan : undef;
+    my $order = ($name =~ /(-l|--low)/)? "ASC" : "DESC";
+    my $nicks = ($name =~ /(-n|--nicks)/)? $chan : undef;
 
-	my @list = $hbc->counter_list("fire", $order, $nicks);
-	print "sendnext\n";
+    my @list = $hbc->counter_list("fire", $order, $nicks);
+    print "sendnext\n";
 
-	if ($order eq "DESC") {
-		print "Sooo toasted:\n";
-	}
-	else {
-		print "A little toasted:\n";
-	}
+    if ($order eq "DESC") {
+        print "Sooo toasted:\n";
+    }
+    else {
+        print "A little toasted:\n";
+    }
 
-	foreach $_ (@list) {
-		print "  $_->{'value'} $_->{'name'}\n";
-	}
+    foreach $_ (@list) {
+        print "  $_->{'value'} $_->{'name'}\n";
+    }
 }

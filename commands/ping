@@ -6,17 +6,17 @@ echo sendnext
 RESULT=$(ping -c 1 -W 2 "$HOST" 2>/dev/null)
 
 case "$?" in
-	0)
-		echo "$RESULT" | grep '^64' | sed -e 's/^64 bytes from //' | sed -e 's/icmp_seq=.*time=//'
-		;;
-	1)
-		echo "no response from host"
-		;;
-	2)
-		echo "unknown host"
-		;;
-	*)
-		echo "unknown ping return value: $?"
-		;;
+    0)
+        echo "$RESULT" | grep '^64' | sed -e 's/^64 bytes from //' | sed -e 's/icmp_seq=.*time=//'
+        ;;
+    1)
+        echo "no response from host"
+        ;;
+    2)
+        echo "unknown host"
+        ;;
+    *)
+        echo "unknown ping return value: $?"
+        ;;
 esac
 

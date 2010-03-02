@@ -14,203 +14,203 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($hbc->private) {
-	$chan = $nick;
+    $chan = $nick;
 }
 
 if ($hbc->private and $msg =~ /^(#\S+)\s+(\S+.*)$/) {
-	my $destchan = $1;
-	my $phrase = $2;
-	my $guess = $phrase;
-	$guess =~ s/[a-z]/_/ig;
+    my $destchan = $1;
+    my $phrase = $2;
+    my $guess = $phrase;
+    $guess =~ s/[a-z]/_/ig;
 
 
-	my $dbh = $hbc->dbi;
-	$dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
-		VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
-		phrase = VALUES(phrase),
-		guess = VALUES(guess),
-		final = NULL, wrong = ''",
-		undef, $destchan, $phrase, $guess)
-		or die("hangman: db update failed\n");
+    my $dbh = $hbc->dbi;
+    $dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
+        VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
+        phrase = VALUES(phrase),
+        guess = VALUES(guess),
+        final = NULL, wrong = ''",
+        undef, $destchan, $phrase, $guess)
+        or die("hangman: db update failed\n");
 
-	print "send Phrase for $destchan set to $phrase\n";
-	print "to $destchan\n";
-	print "me is ready with a new hangman game from $nick\n";
-	print "sendnext\n";
-	print "    $guess\n";
+    print "send Phrase for $destchan set to $phrase\n";
+    print "to $destchan\n";
+    print "me is ready with a new hangman game from $nick\n";
+    print "sendnext\n";
+    print "    $guess\n";
 }
 elsif ($msg =~ /^new$/) {
-	# New game
+    # New game
 
-	my $phrase = getrandom("$ENV{'HB_ROOT'}/misc/wordlist");
-	my $guess = $phrase;
-	$guess =~ s/[a-z]/_/ig;
+    my $phrase = getrandom("$ENV{'HB_ROOT'}/misc/wordlist");
+    my $guess = $phrase;
+    $guess =~ s/[a-z]/_/ig;
 
-	my $dbh = $hbc->dbi;
-	$dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
-		VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
-		phrase = VALUES(phrase),
-		guess = VALUES(guess)
-		final = NULL, wrong = ''",
-		undef, $chan, $phrase, $guess)
-		or die("hangman: db update failed\n");
+    my $dbh = $hbc->dbi;
+    $dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
+        VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
+        phrase = VALUES(phrase),
+        guess = VALUES(guess)
+        final = NULL, wrong = ''",
+        undef, $chan, $phrase, $guess)
+        or die("hangman: db update failed\n");
 
-	print "me is ready with a new hangman game\n";
-	print "sendnext\n";
-	print "    $guess\n";
+    print "me is ready with a new hangman game\n";
+    print "sendnext\n";
+    print "    $guess\n";
 }
 elsif ($msg =~ /^([a-z])$/i) {
-	# Guess
-	my $char = $1;
+    # Guess
+    my $char = $1;
 
-	my $dbh = $hbc->dbi;
-	my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
-		FROM hangman WHERE chan = ?");
-	$sth->execute($chan);
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
+        FROM hangman WHERE chan = ?");
+    $sth->execute($chan);
 
-	my $row = $sth->fetchrow_hashref;
-	if (not defined $row->{'guess'} or not defined $row->{'phrase'}) {
-		print "send You need to start a game first!";
-		exit;
-	}
+    my $row = $sth->fetchrow_hashref;
+    if (not defined $row->{'guess'} or not defined $row->{'phrase'}) {
+        print "send You need to start a game first!";
+        exit;
+    }
 
-	my $phrase = $row->{'phrase'};
-	my $guess = $row->{'guess'};
-	my $wrong = $row->{'wrong'};
+    my $phrase = $row->{'phrase'};
+    my $guess = $row->{'guess'};
+    my $wrong = $row->{'wrong'};
 
-	if (defined $row->{'final'}) {
-		print "sendnext\n";
-		print getshow($guess, $wrong, $row->{'final'});
-		exit;
-	}
+    if (defined $row->{'final'}) {
+        print "sendnext\n";
+        print getshow($guess, $wrong, $row->{'final'});
+        exit;
+    }
 
-	if ($guess =~ /$char/i or $wrong =~ /$char/i) {
-		print "send $char has already been guessed.";
-		exit;
-	}
+    if ($guess =~ /$char/i or $wrong =~ /$char/i) {
+        print "send $char has already been guessed.";
+        exit;
+    }
 
-	if ($phrase =~ /$char/i) {
-		for (my $i = 0; $i < length($phrase); $i++) {
-			my $a = substr($phrase, $i, 1);
-			if ($a =~ /$char/i) {
-				substr($guess, $i, 1, $a);
-			}
-		}
-	}
-	else {
-		if (length($wrong) > 0) {
-			$wrong .= ",";
-		}
-		$wrong .= lc($char);
-	}
+    if ($phrase =~ /$char/i) {
+        for (my $i = 0; $i < length($phrase); $i++) {
+            my $a = substr($phrase, $i, 1);
+            if ($a =~ /$char/i) {
+                substr($guess, $i, 1, $a);
+            }
+        }
+    }
+    else {
+        if (length($wrong) > 0) {
+            $wrong .= ",";
+        }
+        $wrong .= lc($char);
+    }
 
-	my $final;
-	if ($guess eq $phrase) {
-		$final = "'win'";
-	}
-	elsif (getwrong($wrong) >= 6) {
-		$final = "'lose'";
-		$guess = $phrase;
-	}
+    my $final;
+    if ($guess eq $phrase) {
+        $final = "'win'";
+    }
+    elsif (getwrong($wrong) >= 6) {
+        $final = "'lose'";
+        $guess = $phrase;
+    }
 
-	$dbh->do("UPDATE hangman SET guess = ?, wrong = ?,
-		final = ? WHERE chan = ?", undef,
-		$guess, $wrong, $final, $chan)
-		or die("hangman: db update failed\n");
+    $dbh->do("UPDATE hangman SET guess = ?, wrong = ?,
+        final = ? WHERE chan = ?", undef,
+        $guess, $wrong, $final, $chan)
+        or die("hangman: db update failed\n");
 
-	print "sendnext\n";
-	print getshow($guess, $wrong, $final);
+    print "sendnext\n";
+    print getshow($guess, $wrong, $final);
 }
 else {
-	# Show
-	my $dbh = $hbc->dbi;
-	my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
-		FROM hangman WHERE chan = ?");
-	$sth->execute($chan);
+    # Show
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT phrase, guess, wrong, final
+        FROM hangman WHERE chan = ?");
+    $sth->execute($chan);
 
-	my $row = $sth->fetchrow_hashref;
+    my $row = $sth->fetchrow_hashref;
 
-	if (defined $row->{'phrase'} and not defined $row->{'final'} and
-			lc($row->{'phrase'}) eq lc($msg)) {
-		$row->{'guess'} = $row->{'phrase'};
-		$row->{'final'} = "'win'";
+    if (defined $row->{'phrase'} and not defined $row->{'final'} and
+            lc($row->{'phrase'}) eq lc($msg)) {
+        $row->{'guess'} = $row->{'phrase'};
+        $row->{'final'} = "'win'";
 
-		$dbh->do("UPDATE hangman SET guess = ?, final = 'win'
-			WHERE chan = ?", undef, $row->{'guess'})
-			or die("hangman: db update failed\n");
-	}
-	elsif (defined $row->{'phrase'} and
-			length($msg) != length($row->{'phrase'})) {
-		print "send Your guess had ".length($msg).
-			" characters but the phrase has ".
-			length($row->{'phrase'})."! :-P\n";
-	}
-	elsif (defined $row->{'phrase'} and length($msg)) {
-		$row->{'guess'} = $row->{'phrase'};
-		$row->{'final'} = "'lose'";
+        $dbh->do("UPDATE hangman SET guess = ?, final = 'win'
+            WHERE chan = ?", undef, $row->{'guess'})
+            or die("hangman: db update failed\n");
+    }
+    elsif (defined $row->{'phrase'} and
+            length($msg) != length($row->{'phrase'})) {
+        print "send Your guess had ".length($msg).
+            " characters but the phrase has ".
+            length($row->{'phrase'})."! :-P\n";
+    }
+    elsif (defined $row->{'phrase'} and length($msg)) {
+        $row->{'guess'} = $row->{'phrase'};
+        $row->{'final'} = "'lose'";
 
-		$dbh->do("UPDATE hangman SET guess = ?, final = 'lose'
-			WHERE chan = ?", undef, $row->{'guess'})
-			or die("hangman: db update failed\n");
-	}
+        $dbh->do("UPDATE hangman SET guess = ?, final = 'lose'
+            WHERE chan = ?", undef, $row->{'guess'})
+            or die("hangman: db update failed\n");
+    }
 
-	if (defined $row->{'guess'} and defined $row->{'wrong'}) {
-		print "sendnext\n";
-		print getshow($row->{'guess'}, $row->{'wrong'}, $row->{'final'});
-	}
-	else {
-		print "send You need to start a game first!";
-	}
+    if (defined $row->{'guess'} and defined $row->{'wrong'}) {
+        print "sendnext\n";
+        print getshow($row->{'guess'}, $row->{'wrong'}, $row->{'final'});
+    }
+    else {
+        print "send You need to start a game first!";
+    }
 }
 
 sub getrandom {
-	my $file = shift;
+    my $file = shift;
 
-	my $line;
-	open(DICT, $file);
-	rand($.) < 1 && ($line = $_) while <DICT>;
-	close(DICT);
+    my $line;
+    open(DICT, $file);
+    rand($.) < 1 && ($line = $_) while <DICT>;
+    close(DICT);
 
-	chomp($line);
-	return $line;
+    chomp($line);
+    return $line;
 }
 
 sub getshow {
-	my $guess = shift;
-	my $wrong = shift;
-	my $final = shift;
+    my $guess = shift;
+    my $wrong = shift;
+    my $final = shift;
 
-	my $num = getwrong($wrong);
+    my $num = getwrong($wrong);
 
-	if (defined $final) {
-		$final =~ s/.*win.*/Game Over: You WIN!/;
-		$final =~ s/.*lose.*/Game Over: You LOSE!/;
-	}
+    if (defined $final) {
+        $final =~ s/.*win.*/Game Over: You WIN!/;
+        $final =~ s/.*lose.*/Game Over: You LOSE!/;
+    }
 
-	my $result = "";
-	$result .= ($num >= 1)? " O " : "   ";
-	$result .= " $guess\n";
-	if (length($wrong) > 0 or $num > 1) {
-		$result .= ($num >= 3)? "/" : " ";
-		$result .= ($num >= 2)? "|" : " ";
-		$result .= ($num >= 4)? "\\" : " ";
-		$result .= " $wrong\n";
-	}
-	if (defined $final or $num >= 5) {
-		$result .= ($num >= 5)? "/" : " ";
-		$result .= ($num >= 6)? " \\" : "  ";
-		$result .= (defined $final)? " $final" : "";
-		$result .= "\n";
-	}
+    my $result = "";
+    $result .= ($num >= 1)? " O " : "   ";
+    $result .= " $guess\n";
+    if (length($wrong) > 0 or $num > 1) {
+        $result .= ($num >= 3)? "/" : " ";
+        $result .= ($num >= 2)? "|" : " ";
+        $result .= ($num >= 4)? "\\" : " ";
+        $result .= " $wrong\n";
+    }
+    if (defined $final or $num >= 5) {
+        $result .= ($num >= 5)? "/" : " ";
+        $result .= ($num >= 6)? " \\" : "  ";
+        $result .= (defined $final)? " $final" : "";
+        $result .= "\n";
+    }
 
-	return $result;
+    return $result;
 }
 
 sub getwrong {
-	my $wrong = shift;
+    my $wrong = shift;
 
-	my $w = $wrong;
-	$w =~ s/[^A-Z]//ig;
-	return length($w);
+    my $w = $wrong;
+    $w =~ s/[^A-Z]//ig;
+    return length($w);
 }
 

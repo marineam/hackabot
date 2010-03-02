@@ -14,18 +14,18 @@ my $search = $hbc->readline;
 my $asker = $hbc->sent_by;
 
 if ($search) {
-	$search = uri_escape($search);
-	my $google = `lynx --head --dump "http://en.wikipedia.org/wiki/Special:Search?search=$search\&go=Go"`;
-	my $url;
-	foreach(split(/\n/,$google)) {
-		if (/^Location:\s*(.+)/) {
-			$url = $1;
-		}
-	}
-	if (defined $url) {
-		print "send $asker: Wikipedia says $url\n";
-	}
-	else {
-		print "send $asker: Wikipedia didn't say much :-/\n";
-	}
+    $search = uri_escape($search);
+    my $google = `lynx --head --dump "http://en.wikipedia.org/wiki/Special:Search?search=$search\&go=Go"`;
+    my $url;
+    foreach(split(/\n/,$google)) {
+        if (/^Location:\s*(.+)/) {
+            $url = $1;
+        }
+    }
+    if (defined $url) {
+        print "send $asker: Wikipedia says $url\n";
+    }
+    else {
+        print "send $asker: Wikipedia didn't say much :-/\n";
+    }
 }

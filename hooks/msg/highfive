@@ -6,10 +6,10 @@ my $self = $ENV{'HB_NICK'};
 my $nick = $ENV{'HBEV_SENT_BY'};
 
 while (<>) {
-	if (/^\s*$self:?\s+(o\/|\\o)\s*$/) {
-		my $msg = $1;
+    if (/^\s*$self:?\s+(o\/|\\o)\s*$/) {
+        my $msg = $1;
 
-		print "send $nick: \\o\n" if ($msg eq "o/");
-		print "send $nick: o/\n" if ($msg eq "\\o");
-	}
+        print "send $nick: \\o\n" if ($msg eq "o/");
+        print "send $nick: o/\n" if ($msg eq "\\o");
+    }
 }

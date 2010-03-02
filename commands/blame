@@ -14,21 +14,21 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($msg =~ /^--add\s+(.+)/) {
-	chomp $1;
+    chomp $1;
     $hbc->quote_add("blame", $1);
     print "send $nick: Successfully added\n";
 }
 elsif ($hbc->private) {
-	print "send I blame you!!!\n";
+    print "send I blame you!!!\n";
 }
 else {
-	 if ($msg eq "") {
-		$msg = $hbc->quote_get("blame");
-	}
+     if ($msg eq "") {
+        $msg = $hbc->quote_get("blame");
+    }
 
-	my @names = $hbc->names($chan);
-	if (@names) {
-		my $name = $names[int(rand(@names))];
-		print "me blames $name for $msg.\n";
-	}
+    my @names = $hbc->names($chan);
+    if (@names) {
+        my $name = $names[int(rand(@names))];
+        print "me blames $name for $msg.\n";
+    }
 }

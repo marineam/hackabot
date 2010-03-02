@@ -11,51 +11,51 @@ my $default = `basename $0`;
 chomp $default;
 
 if ($default eq "fortune") {
-	$default = "";
+    $default = "";
 }
 
 my $msg = <>;
 if (not defined $msg) {
-	$msg = "";
+    $msg = "";
 }
 
 if ($msg =~ /^(#\S+)/) {
-	print "to $1\n";
-	print "sendnext\n";
-	if ($msg =~ /^#\S+\s+([a-z]+)/) {
-		print fortune($2);
-	}
-	else {
-		print fortune($default);
-	}
+    print "to $1\n";
+    print "sendnext\n";
+    if ($msg =~ /^#\S+\s+([a-z]+)/) {
+        print fortune($2);
+    }
+    else {
+        print fortune($default);
+    }
 }
 else {
-	print "sendnext\n";
-	if ($msg =~ /^([a-z]+)/) {
-		fortune($1);
-	}
-	else {
-		fortune($default);
-	}
+    print "sendnext\n";
+    if ($msg =~ /^([a-z]+)/) {
+        fortune($1);
+    }
+    else {
+        fortune($default);
+    }
 }
 
 sub fortune {
-	my $type = shift;
+    my $type = shift;
 
-	my $text = "";
-	if ($type eq "list") {
-		my @files;
-		opendir(DIR, "$ENV{'HB_ROOT'}/misc/cookies");
-		while ($_ = readdir(DIR)) {
-			if (/^[^\.].*\.dat$/) {
-				s/\.dat$//;
-				push(@files, $_);
-			}
-		}
-		closedir(DIR);
-		print "Fortunes: ".join(" ", sort @files);
-	}
-	else {
-		system("fortune -n 190 -s $ENV{'HB_ROOT'}/misc/cookies/$type");
-	}
+    my $text = "";
+    if ($type eq "list") {
+        my @files;
+        opendir(DIR, "$ENV{'HB_ROOT'}/misc/cookies");
+        while ($_ = readdir(DIR)) {
+            if (/^[^\.].*\.dat$/) {
+                s/\.dat$//;
+                push(@files, $_);
+            }
+        }
+        closedir(DIR);
+        print "Fortunes: ".join(" ", sort @files);
+    }
+    else {
+        system("fortune -n 190 -s $ENV{'HB_ROOT'}/misc/cookies/$type");
+    }
 }

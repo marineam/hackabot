@@ -16,7 +16,7 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if (not $msg) {
-	exit;
+    exit;
 }
 elsif ($msg =~ /^--list\s*$/) {
     my $groups = list_groups();
@@ -29,26 +29,26 @@ elsif ($msg =~ /^--list\s*$/) {
     }
 }
 elsif ($msg =~ /^(\S+)\s+--add\s+(.*\S)\s*$/) {
-	my $group = $1;
-	my $text = $2;
+    my $group = $1;
+    my $text = $2;
 
     my @list = split(/(\s+|,)/, $text);
 
-	my $names = get_group($group);
-	if (defined $names) {
+    my $names = get_group($group);
+    if (defined $names) {
         push @list, split(/,/, $names);
     }
 
-	my $ret = add_group($group, cleanup(@list), $nick, $chan);
-	print "send $nick: $ret\n";
+    my $ret = add_group($group, cleanup(@list), $nick, $chan);
+    print "send $nick: $ret\n";
 }
 elsif ($msg =~ /^(\S+)\s+--del(\s+(.*\S))?\s*$/) {
-	my $group = $1;
-	my $text = $3;
+    my $group = $1;
+    my $text = $3;
     my $ret;
 
-	my $names = get_group($group);
-	if (defined $names) {
+    my $names = get_group($group);
+    if (defined $names) {
         my %orig = ();
         my %del = ();
 
@@ -78,26 +78,26 @@ elsif ($msg =~ /^(\S+)\s+--del(\s+(.*\S))?\s*$/) {
         }
     }
     else {
-		$ret = "No such group '$group'\n";
-	}
+        $ret = "No such group '$group'\n";
+    }
 
-	print "send $nick: $ret\n";
+    print "send $nick: $ret\n";
 }
 else {
-	$msg =~ /(\S+)\s*(\S*.*)/;
-	my $group = $1;
-	my $text = $2;
-	my $names = get_group($group);
+    $msg =~ /(\S+)\s*(\S*.*)/;
+    my $group = $1;
+    my $text = $2;
+    my $names = get_group($group);
 
-	if (not defined $names) {
-		print "send No such group '$group'\n";
-	}
-	elsif ($text) {
-		print "send $names: $text\n";
-	}
-	else {
-		print "send $names\n";
-	}
+    if (not defined $names) {
+        print "send No such group '$group'\n";
+    }
+    elsif ($text) {
+        print "send $names: $text\n";
+    }
+    else {
+        print "send $names\n";
+    }
 }
 
 sub cleanup {
@@ -108,10 +108,10 @@ sub cleanup {
 
 sub list_groups {
     my $dbh = $hbc->dbi;
-	my $sth = $dbh->prepare("SELECT name FROM `group`");
+    my $sth = $dbh->prepare("SELECT name FROM `group`");
     my ($list, $row);
 
-	$sth->execute();
+    $sth->execute();
     while ($row = $sth->fetchrow_hashref) {
         if (defined $list) {
             $list .= ", ".$row->{'name'};
@@ -125,45 +125,45 @@ sub list_groups {
 }
 
 sub get_group {
-	my $group = shift;
+    my $group = shift;
 
     my $dbh = $hbc->dbi;
-	my $sth = $dbh->prepare("SELECT name,names FROM `group` WHERE name = ?");
-	$sth->execute($group);
-	my $row = $sth->fetchrow_hashref;
-	my $value;
-	if (defined $row->{'names'}) {
-		$value = $row->{'names'};
-	}
+    my $sth = $dbh->prepare("SELECT name,names FROM `group` WHERE name = ?");
+    $sth->execute($group);
+    my $row = $sth->fetchrow_hashref;
+    my $value;
+    if (defined $row->{'names'}) {
+        $value = $row->{'names'};
+    }
 
-	return $value;
+    return $value;
 }
 
 sub add_group {
-	my $group = shift;
-	my $text = shift;
-	my $nick = shift;
-	my $chan = shift;
+    my $group = shift;
+    my $text = shift;
+    my $nick = shift;
+    my $chan = shift;
 
     my $dbh = $hbc->dbi;
-	my $ret = "Successfully updated '$group'";
-	$dbh->do("INSERT `group` (name, names, nick, chan, date)
+    my $ret = "Successfully updated '$group'";
+    $dbh->do("INSERT `group` (name, names, nick, chan, date)
        VALUES(?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE
        names = VALUES(names), nick = VALUES(nick),
        chan = VALUES(chan), date = VALUES(date)",
        undef, $group, $text, $nick, $chan)
        or $ret = "I'm a failure! I couldn't add it. :-(";
 
-	return $ret;
+    return $ret;
 }
 
 sub delete_group {
-	my $group = shift;
+    my $group = shift;
 
     my $dbh = $hbc->dbi;
-	my $ret = "Deleted '$group'";
-	$dbh->do("DELETE FROM `group` WHERE name = ?", undef, $group)
+    my $ret = "Deleted '$group'";
+    $dbh->do("DELETE FROM `group` WHERE name = ?", undef, $group)
         or $ret = "I'm a failure! I couldn't delete it. :-(";
 
-	return $ret;
+    return $ret;
 }

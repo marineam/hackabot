@@ -14,18 +14,18 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($msg =~ /^--add\s+(.+)/) {
-	chomp $1;
+    chomp $1;
     $hbc->quote_add("whip", $1);
     print "send $nick: Successfully added\n";
 }
 elsif ($hbc->private) {
-	print "send I'll whip you!!!\n";
+    print "send I'll whip you!!!\n";
 }
 else {
     if ($msg eq "") {
         my @names = $hbc->names($chan);
         $msg = $names[int(rand(@names))];
-	}
+    }
 
     my $whip = $hbc->quote_get("whip");
 

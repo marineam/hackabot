@@ -15,101 +15,101 @@ my $chan = $hbc->channel;
 
 my ($find, $replace, $option);
 if ($msg =~ /^\/([^\\]?[^\/]*)\/([^\\]?[^\/]*)\/([ig]*)/) {
-	$find = $1;
-	$replace = $2;
-	$option = $3;
+    $find = $1;
+    $replace = $2;
+    $option = $3;
 }
 
 if (defined $find and defined $replace) {
-	print "send " . replace($nick, $chan, $find, $replace, $option);
+    print "send " . replace($nick, $chan, $find, $replace, $option);
 }
 
 sub replace {
-	my $nick = shift;
-	my $chan = shift;
-	my $find = shift;
-	my $replace = shift;
-	my $option = shift;
-	my ($dbh, $sth);
-	my $row;
-	my $ret = "$nick: Sorry, I can't match the expression '$find'.\n";
+    my $nick = shift;
+    my $chan = shift;
+    my $find = shift;
+    my $replace = shift;
+    my $option = shift;
+    my ($dbh, $sth);
+    my $row;
+    my $ret = "$nick: Sorry, I can't match the expression '$find'.\n";
 
-	$dbh = $hbc->dbi;
+    $dbh = $hbc->dbi;
 
-	my $qnick = $dbh->quote($nick);
-	if (defined $chan) {
-		$chan = $dbh->quote($chan);
-	}
-	else {
-		$chan = "NULL";
-	}
+    my $qnick = $dbh->quote($nick);
+    if (defined $chan) {
+        $chan = $dbh->quote($chan);
+    }
+    else {
+        $chan = "NULL";
+    }
 
-	for (my $i = 0; $i < 50; $i++) {
-		if (defined $option and $option =~ /g/) {
-			$sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
-		} else {
-			$sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE sent_by = $qnick AND channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
-		}
-		$sth->execute();
-		if ($row = $sth->fetchrow_hashref()) {
-			if ($row->{'text'} =~ m/$find/) {
-				my $text = $row->{'text'};
-				$replace =~ s/(?<!\\)[\\\$]([1-9])/__REPLACEMENT_$1__/g;
+    for (my $i = 0; $i < 50; $i++) {
+        if (defined $option and $option =~ /g/) {
+            $sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
+        } else {
+            $sth = $dbh->prepare("SELECT id, text, sent_by, type FROM log WHERE sent_by = $qnick AND channel = $chan AND ( type = 'msg' OR type = 'action' ) AND text NOT LIKE '!s/%' AND text NOT LIKE '!s %' ORDER BY id DESC LIMIT 1 OFFSET $i");
+        }
+        $sth->execute();
+        if ($row = $sth->fetchrow_hashref()) {
+            if ($row->{'text'} =~ m/$find/) {
+                my $text = $row->{'text'};
+                $replace =~ s/(?<!\\)[\\\$]([1-9])/__REPLACEMENT_$1__/g;
 
-				my $lastpos = 0;
-				while ($text =~ m/$find/gc) {
-					my $pos = pos($text);
-					if ($pos == $lastpos) {
-						$pos++;
-						if ($pos >= length($text)) {
-							last;
-						}
-					}
+                my $lastpos = 0;
+                while ($text =~ m/$find/gc) {
+                    my $pos = pos($text);
+                    if ($pos == $lastpos) {
+                        $pos++;
+                        if ($pos >= length($text)) {
+                            last;
+                        }
+                    }
 
-					my $str = substr($text,$lastpos,$pos-$lastpos);
+                    my $str = substr($text,$lastpos,$pos-$lastpos);
 
-					if (defined $option and $option =~ /i/) {
-						$str =~ s/$find/$replace/gi;
-					}
-					else {
-						$str =~ s/$find/$replace/g;
-					}
+                    if (defined $option and $option =~ /i/) {
+                        $str =~ s/$find/$replace/gi;
+                    }
+                    else {
+                        $str =~ s/$find/$replace/g;
+                    }
 
-					my @match;
-					for (my $j = 1; $j <= 9; $j++) {
-						no strict 'refs';
-						$match[$j] = ${"$j"};
-					}
-					for (my $j = 1; $j <= 9; $j++) {
-						$str =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
-					}
+                    my @match;
+                    for (my $j = 1; $j <= 9; $j++) {
+                        no strict 'refs';
+                        $match[$j] = ${"$j"};
+                    }
+                    for (my $j = 1; $j <= 9; $j++) {
+                        $str =~ s/__REPLACEMENT_${j}__/$match[$j]/g;
+                    }
 
-					$text = substr($text,0,$lastpos).$str.substr($text,$pos);
-					$lastpos = $lastpos+length($str);
-					pos($text) = $lastpos;
-				}
+                    $text = substr($text,0,$lastpos).$str.substr($text,$pos);
+                    $lastpos = $lastpos+length($str);
+                    pos($text) = $lastpos;
+                }
 
-				if ($row->{'type'} eq "msg") {
-					$ret = "$row->{'sent_by'} actually meant: $text";
-				}
-				elsif ($row->{'type'} eq "action") {
-					$ret = "correction: * $row->{'sent_by'} $text";
-				}
-				else {
-					$ret = "ERROR: unknown type: $row->{'type'}.";
-				}
-				$sth->finish();
-				last;
-			}
-		}
-		else {
-			$sth->finish();
-			last;
-		}
-		$sth->finish();
-	}
+                if ($row->{'type'} eq "msg") {
+                    $ret = "$row->{'sent_by'} actually meant: $text";
+                }
+                elsif ($row->{'type'} eq "action") {
+                    $ret = "correction: * $row->{'sent_by'} $text";
+                }
+                else {
+                    $ret = "ERROR: unknown type: $row->{'type'}.";
+                }
+                $sth->finish();
+                last;
+            }
+        }
+        else {
+            $sth->finish();
+            last;
+        }
+        $sth->finish();
+    }
 
-	$dbh->disconnect;
+    $dbh->disconnect;
 
-	return $ret;
+    return $ret;
 }

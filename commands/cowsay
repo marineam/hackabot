@@ -13,10 +13,10 @@ my $default = `basename $0`;
 chomp $default;
 
 if ($default eq "cowsay") {
-	$default = "default";
+    $default = "default";
 }
 else {
-	$default =~ s/say$//;
+    $default =~ s/say$//;
 }
 
 $ENV{'COWPATH'} = $ENV{'HB_ROOT'}."/misc/cows";
@@ -24,40 +24,40 @@ $ENV{'COWPATH'} = $ENV{'HB_ROOT'}."/misc/cows";
 my $msg = <>;
 
 if (not defined $msg or $msg =~ /^-h|--help/) {
-	usage();
+    usage();
 }
 elsif ($msg =~ /^-l/) {
-	print "send Critters:";
-	foreach my $cow (@allow) {
-		print " $cow";
-	}
-	print "\n";
+    print "send Critters:";
+    foreach my $cow (@allow) {
+        print " $cow";
+    }
+    print "\n";
 }
 elsif ($msg =~ /^-f\s*(\S*)\s+(\S+.*)/) {
-	my $cow = $1;
-	my $phrase = $2;
-	if (grep(/^$cow$/, @allow)) {
-		cowsay($phrase, $cow);
-	}
-	else {
-		print "send Sorry, no $cow here.\n";
-	}
+    my $cow = $1;
+    my $phrase = $2;
+    if (grep(/^$cow$/, @allow)) {
+        cowsay($phrase, $cow);
+    }
+    else {
+        print "send Sorry, no $cow here.\n";
+    }
 }
 else {
-	cowsay($msg);
+    cowsay($msg);
 }
 
 
 sub usage {
-	print "send Usage: !cowsay -l OR !cowsay [-f critter] phrase...\n";
+    print "send Usage: !cowsay -l OR !cowsay [-f critter] phrase...\n";
 }
 
 sub cowsay {
-	my $msg = shift;
-	my $cow = shift;
-	if (not defined $cow) {
-		$cow = $default;
-	}
-	print "sendnext\n";
-	system("cowsay", "-f", $cow, "--", $msg);
+    my $msg = shift;
+    my $cow = shift;
+    if (not defined $cow) {
+        $cow = $default;
+    }
+    print "sendnext\n";
+    system("cowsay", "-f", $cow, "--", $msg);
 }

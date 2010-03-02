@@ -11,26 +11,26 @@ use LWP::Simple;
 my $msg = <>;
 if (defined $msg) {
     chomp $msg;
-	if ($msg =~ /(#\S+)\s+(.*)/) {
-		my $insult = insult();
-		print "to $1\n";
-		print "send $2: $insult\n";
-	}
+    if ($msg =~ /(#\S+)\s+(.*)/) {
+        my $insult = insult();
+        print "to $1\n";
+        print "send $2: $insult\n";
+    }
     else {
-		my $insult = insult();
-		print "send $msg: $insult\n";
-	}
+        my $insult = insult();
+        print "send $msg: $insult\n";
+    }
 }
 
 sub insult {
-	my $insult = get("http://www.webweaving.org/");
+    my $insult = get("http://www.webweaving.org/");
 
-	if ($insult =~ /(Thou\s[^\n]*)/) {
-		$insult = $1;
-		chomp $insult;
-		return "$insult!";
-	}
-	else {
-		return "I Love You!";
-	}
+    if ($insult =~ /(Thou\s[^\n]*)/) {
+        $insult = $1;
+        chomp $insult;
+        return "$insult!";
+    }
+    else {
+        return "I Love You!";
+    }
 }

@@ -14,99 +14,99 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($msg !~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
-	if ($hbc->private) {
-		print "send $nick: This isn't a channel! Don't be rude in secret!\n";
-		exit;
-	}
-	if ($nick eq get_tard()) {
-		print "send $nick: Oh hush up, you are the tard!\n";
-		exit;
-	}
+    if ($hbc->private) {
+        print "send $nick: This isn't a channel! Don't be rude in secret!\n";
+        exit;
+    }
+    if ($nick eq get_tard()) {
+        print "send $nick: Oh hush up, you are the tard!\n";
+        exit;
+    }
 
-	$msg =~ s/^(\S+)/$1/;
-	add_tard($1);
-	print_tard();
+    $msg =~ s/^(\S+)/$1/;
+    add_tard($1);
+    print_tard();
 }
 elsif ($msg =~ /(-h|--high|-l|--low|-n|--nicks)/) {
-	my $order;
-	my $nicks;
+    my $order;
+    my $nicks;
 
-	$order = ($msg =~ /(-l|--low)/)? "ASC" : "DESC";
-	$nicks = ($msg =~ /(-n|--nicks)/)? $chan : undef;
+    $order = ($msg =~ /(-l|--low)/)? "ASC" : "DESC";
+    $nicks = ($msg =~ /(-n|--nicks)/)? $chan : undef;
 
-	my @list = $hbc->counter_list("tard", $order, $nicks);
-	print "sendnext\n";
+    my @list = $hbc->counter_list("tard", $order, $nicks);
+    print "sendnext\n";
 
-	if ($order eq "DESC") {
-		print "Top Tards:\n";
-	}
-	else {
-		print "Little Tards:\n";
-	}
+    if ($order eq "DESC") {
+        print "Top Tards:\n";
+    }
+    else {
+        print "Little Tards:\n";
+    }
 
-	foreach $_ (@list) {
-		print "  $_->{'value'} $_->{'name'}\n";
-	}
+    foreach $_ (@list) {
+        print "  $_->{'value'} $_->{'name'}\n";
+    }
 }
 elsif ($msg =~ /(-v|--value)\s+(\S+)/) {
-	my $val = $hbc->counter_get("tard", $2);
-	if ($val == "") { $val = 0; }
-	if ($val == "1") {
-		print "send $2 has been a tard $val time!\n";
-	}
-	else {
-		print "send $2 has been a tard $val times!\n";
-	}
+    my $val = $hbc->counter_get("tard", $2);
+    if ($val == "") { $val = 0; }
+    if ($val == "1") {
+        print "send $2 has been a tard $val time!\n";
+    }
+    else {
+        print "send $2 has been a tard $val times!\n";
+    }
 }
 else {
-	print_tard();
+    print_tard();
 }
 
 
 sub add_tard {
-	my $name = shift;
+    my $name = shift;
 
-	$hbc->counter_add("tard", $name, 1);
+    $hbc->counter_add("tard", $name, 1);
 
-	my $dbh = $hbc->dbi;
-	$dbh->do("UPDATE tard SET tard = 0 WHERE tard = 1");
-	$dbh->do("UPDATE tard SET tard = 1 WHERE name = ?", undef, $name);
+    my $dbh = $hbc->dbi;
+    $dbh->do("UPDATE tard SET tard = 0 WHERE tard = 1");
+    $dbh->do("UPDATE tard SET tard = 1 WHERE name = ?", undef, $name);
 }
 
 sub get_tard {
-	my ($dbh, $sth);
+    my ($dbh, $sth);
 
-	my $dbh = $hbc->dbi;
-	my $sth = $dbh->prepare("SELECT name FROM tard WHERE tard = 1 LIMIT 1");
-	$sth->execute;
-	return $sth->fetchrow_array;
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT name FROM tard WHERE tard = 1 LIMIT 1");
+    $sth->execute;
+    return $sth->fetchrow_array;
 }
 
 
 sub print_tard {
-	my $tard = get_tard();
-	if (not defined $tard) {
-		return;
-	}
+    my $tard = get_tard();
+    if (not defined $tard) {
+        return;
+    }
 
-	my $tlen = length($tard);
-	my $offset = $tlen / 2 - 3;
-	my $offstr = "";
-	my $offnik = "";
-	if ($offset < 0) {
-		for (my $i = $offset; $i < -1; $i++) {
-			$offnik .= " ";
-		}
-	}
-	else {
-		for (my $i = $offset; $i > 0; $i--) {
-			$offstr .= " ";
-		}
-	}
+    my $tlen = length($tard);
+    my $offset = $tlen / 2 - 3;
+    my $offstr = "";
+    my $offnik = "";
+    if ($offset < 0) {
+        for (my $i = $offset; $i < -1; $i++) {
+            $offnik .= " ";
+        }
+    }
+    else {
+        for (my $i = $offset; $i > 0; $i--) {
+            $offstr .= " ";
+        }
+    }
 
-	print "sendnext\n";
-	print $offstr."  /\\\n";
-	print $offstr." /  \\\n";
-	print $offstr."/TARD\\\n";
-	print $offnik.$tard."\n";
+    print "sendnext\n";
+    print $offstr."  /\\\n";
+    print $offstr." /  \\\n";
+    print $offstr."/TARD\\\n";
+    print $offnik.$tard."\n";
 }

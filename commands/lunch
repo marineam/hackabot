@@ -79,14 +79,14 @@ sub add {
 $_ = <>;
 
 if (/^$/) {
-	print "me ".make_lunch();
+    print "me ".make_lunch();
 }
 elsif (/^add\s+(\S+.*)$/) {
-	print "send ".add("location", $1);
+    print "send ".add("location", $1);
 }
 elsif (/^noun\s+(\S+.*)$/) {
-	print "send ".add("noun", $1);
+    print "send ".add("noun", $1);
 }
 elsif (/^adj\s+(\S+.*)$/) {
-	print "send ".add("adj", $1);
+    print "send ".add("adj", $1);
 }

@@ -3,7 +3,7 @@
 use strict;
 
 while (<>) {
-	if (/(ponies|pony)/i) {
-		print "send OMG!!! Ponies!!!\n";
-	}
+    if (/(ponies|pony)/i) {
+        print "send OMG!!! Ponies!!!\n";
+    }
 }

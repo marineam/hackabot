@@ -1,34 +1,34 @@
 <hackabotacl>
-	<!-- default applies if no command specific acl exists -->
-	<default action="allow">
-		<public chan="#stayquiet" action="deny">
-			<person nick="loudguy" action="allow" />
-		</public>
-		<private action="allow">
-			<person nick="brat" action="deny" />
-		</private>
-	</default>
-	<!-- override the default for a single command -->
-	<command name="somecommand" action="deny" msg="Go away..." >
-		<public chan="#somechan" action="deny"
-		msg="You're not special enough.">
-			<person nick="coolguy" action="allow" />
-		</public>
-		<private action="deny" msg="You're not special enough.">
-			<person nick="coolguy" action="allow" />
-		</private>
-		<!-- allow this person in every undefined channel -->
-		<!-- this would apply to private messages of <private> was
-		     not defined, but in this case <private> takes over. -->
-		<person nick="someone" action="allow" />
-	</command>
-	<!-- example of a chan that hates cows -->
-	<command name="cowsay" action="allow">
-		<public chan="#cranky" action="deny" >
-			<person nick="someone" action="allow" />
-		</public>
-	</command>
-	<!-- example for when sloganizer breaks -->
-	<!--<command name="slogan" action="deny" 
-	msg="Sorry, http://www.sloganizer.net was broken last I checked" />-->
+    <!-- default applies if no command specific acl exists -->
+    <default action="allow">
+        <public chan="#stayquiet" action="deny">
+            <person nick="loudguy" action="allow" />
+        </public>
+        <private action="allow">
+            <person nick="brat" action="deny" />
+        </private>
+    </default>
+    <!-- override the default for a single command -->
+    <command name="somecommand" action="deny" msg="Go away..." >
+        <public chan="#somechan" action="deny"
+        msg="You're not special enough.">
+            <person nick="coolguy" action="allow" />
+        </public>
+        <private action="deny" msg="You're not special enough.">
+            <person nick="coolguy" action="allow" />
+        </private>
+        <!-- allow this person in every undefined channel -->
+        <!-- this would apply to private messages of <private> was
+             not defined, but in this case <private> takes over. -->
+        <person nick="someone" action="allow" />
+    </command>
+    <!-- example of a chan that hates cows -->
+    <command name="cowsay" action="allow">
+        <public chan="#cranky" action="deny" >
+            <person nick="someone" action="allow" />
+        </public>
+    </command>
+    <!-- example for when sloganizer breaks -->
+    <!--<command name="slogan" action="deny" 
+    msg="Sorry, http://www.sloganizer.net was broken last I checked" />-->
 </hackabotacl>

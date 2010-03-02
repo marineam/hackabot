@@ -10,8 +10,8 @@ FIRST=`echo "$MSG" | awk '{print $1}'`
 LAST=`echo "$MSG" | awk '{print $2}'`
 
 if [ "$FIRST" == "" ] || [ "$LAST" == "" ]; then
-	echo send "Usage: !googlepage Firstname Lastname"
-	exit
+    echo send "Usage: !googlepage Firstname Lastname"
+    exit
 fi
 
 MAXRESULTS=1000

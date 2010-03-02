@@ -17,7 +17,7 @@ $hbc->connect($root."/sock");
 
 while(<>) {
     chomp $_;
-	print $hbc->cmd($_)."\n";
+    print $hbc->cmd($_)."\n";
 }
 
 $hbc->close();

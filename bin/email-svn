@@ -30,18 +30,18 @@ my $data;
 my $header = 1;
 my $log = 0;
 while (<>) {
-	chomp;
-	if (/^Subject:/ and $header) {
-		s/^Subject:\s*//;
-		$data = "$_ -";
-	}
+    chomp;
+    if (/^Subject:/ and $header) {
+        s/^Subject:\s*//;
+        $data = "$_ -";
+    }
     elsif (/^Log:/ and not $header) {
         $log = 1;
     }
-	elsif (/^$/) {
-		$header = 0;
+    elsif (/^$/) {
+        $header = 0;
         $log = 0;
-	}
+    }
     elsif ($log) {
         $data .= " $_";
     }
