@@ -258,7 +258,7 @@ sub quote_get {
     $dbh = $self->dbi or die;
 
     $sth = $dbh->prepare("SELECT `id`, `text` FROM 
-        `$type` ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+        `$type` ORDER BY RAND()*`lastused` ASC LIMIT 1");
     $sth->execute or die;
     my @row = $sth->fetchrow_array;
     my $value = $row[1];
