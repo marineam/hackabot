@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+##HACKABOT_HELP##
+# Get or add a random quote
+# !quote [something]
+##HACKABOT_HELP##
+
+use strict;
+use Hackabot::Client;
+
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $chan = $hbc->channel;
+my $nick = $hbc->sent_by;
+
+if ($msg =~ /\S/) {
+    chomp $msg;
+    $hbc->quote_add("quote", $msg, 1);
+    print "send $nick: Successfully added\n";
+}
+else {
+    my $quote = $hbc->quote_get("quote");
+
+    print "send $quote\n";
+}

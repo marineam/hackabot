@@ -1,0 +1,107 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Who's an ass?
+# !asshat [someone | --value someone | --low | --high | --nicks]
+##HACKABOT_HELP##
+
+use strict;
+use Hackabot::Client;
+
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
+
+if ($msg !~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
+    if ($hbc->private) {
+        print "send $nick: This isn't a channel! Don't be rude in secret!\n";
+        exit;
+    }
+    if ($nick eq get_ass()) {
+        print "send $nick: Oh hush up, you are the ass!\n";
+        exit;
+    }
+
+    $msg =~ s/^(\S+)/$1/;
+    if (defined $1) {
+        add_ass($1);
+    }
+    print_ass();
+}
+elsif ($msg =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+    my $order;
+    my $nicks;
+
+    $order = ($msg =~ /(-l|--low)/)? "ASC" : "DESC";
+    $nicks = ($msg =~ /(-n|--nicks)/)? $chan : undef;
+
+    my @list = $hbc->counter_list("ass", $order, $nicks);
+    print "sendnext\n";
+
+    if ($order eq "DESC") {
+        print "Top Asshats:\n";
+    }
+    else {
+        print "Little Asshats:\n";
+    }
+
+    foreach $_ (@list) {
+        print "  $_->{'value'} $_->{'name'}\n";
+    }
+}
+elsif ($msg =~ /(-v|--value)\s+(\S+)/) {
+    my $val = $hbc->counter_get("ass", $2);
+    if ($val == "") { $val = 0; }
+    if ($val == "1") {
+        print "send $2 has been a ass $val time!\n";
+    }
+    else {
+        print "send $2 has been a ass $val times!\n";
+    }
+}
+else {
+    print_ass();
+}
+
+
+sub add_ass {
+    my $name = shift;
+
+    $hbc->counter_add("ass", $name, 1);
+
+    my $dbh = $hbc->dbi;
+    $dbh->do("UPDATE ass SET ass = 0 WHERE ass = 1");
+    $dbh->do("UPDATE ass SET ass = 1 WHERE name = ?", undef, $name);
+}
+
+sub get_ass {
+    my ($dbh, $sth);
+
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT name FROM ass WHERE ass = 1 LIMIT 1");
+    $sth->execute;
+    return $sth->fetchrow_array;
+}
+
+sub print_ass {
+    my $ass = get_ass();
+    my $tlen = length($ass);
+    my $offset = $tlen / 2 - 4;
+    my $offstr = "";
+    my $offnik = "";
+    if ($offset < 0) {
+        for (my $i = $offset; $i < -1; $i++) {
+            $offnik .= " ";
+        }
+    }
+    else {	
+        for (my $i = $offset; $i > 0; $i--) {
+            $offstr .= " ";
+        }
+    }
+
+    print "sendnext\n";
+    print $offstr."_( Y )_\n";
+    print $offnik.$ass."\n";
+}

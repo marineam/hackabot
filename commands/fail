@@ -1,0 +1,104 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Failboat!
+# !failhat [someone | --value someone | --low | --high | --nicks]
+##HACKABOT_HELP##
+
+use strict;
+use Hackabot::Client;
+use POSIX qw(ceil);
+
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
+
+if ($msg !~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
+    if ($hbc->private) {
+        print "send $nick: This isn't a channel! Don't be rude in secret!\n";
+        exit;
+    }
+    if ($nick eq get_fail()) {
+        print "send $nick: Oh hush up, you are the fail!\n";
+        exit;
+    }
+
+    if ($msg) {
+        add_fail($msg);
+    }
+    print_fail();
+}
+elsif ($msg =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+    my $order;
+    my $nicks;
+
+    $order = ($msg =~ /(-l|--low)/)? "ASC" : "DESC";
+    $nicks = ($msg =~ /(-n|--nicks)/)? $chan : undef;
+
+    my @list = $hbc->counter_list("fail", $order, $nicks);
+    print "sendnext\n";
+
+    if ($order eq "DESC") {
+        print "Top Fails:\n";
+    }
+    else {
+        print "Little Fails:\n";
+    }
+
+    foreach $_ (@list) {
+        print "  $_->{'value'} $_->{'name'}\n";
+    }
+}
+elsif ($msg =~ /(-v|--value)\s+(\S+)/) {
+    my $val = $hbc->counter_get("fail", $2);
+    if ($val == "") { $val = 0; }
+    if ($val == "1") {
+        print "send $2 has been a fail $val time!\n";
+    }
+    else {
+        print "send $2 has been a fail $val times!\n";
+    }
+}
+else {
+    print_fail();
+}
+
+
+sub add_fail {
+    my $name = shift;
+
+    $hbc->counter_add("fail", $name, 1);
+
+    my $dbh = $hbc->dbi;
+    $dbh->do("UPDATE fail SET fail = 0 WHERE fail = 1");
+    $dbh->do("UPDATE fail SET fail = 1 WHERE name = ?", undef, $name);
+}
+
+sub get_fail {
+    my ($dbh, $sth);
+
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT name FROM fail WHERE fail = 1 LIMIT 1");
+    $sth->execute;
+    return $sth->fetchrow_array;
+}
+
+sub print_fail {
+    my $fail = get_fail();
+    my $len = length($fail);
+
+    if ($len < 10) {
+        $fail .= " " x (10 - $len);
+        $len = 10;
+    }
+
+    my $extra = ceil(($len - 4) / 5.0);
+
+    print "sendnext\n";
+    print "          ", "    ~" x $extra, "\n";
+        print "          ", "   ~~" x $extra, "\n";
+           print "    ___| |", "__| |" x $extra, "__\n";
+    print " ###\\ $fail", " " x (5 - $len % 5), "/\n";
+    print "######%\@\@_", "_____" x $extra, "/\n";
+}

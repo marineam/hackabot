@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+
+##HACKABOT_HELP##
+# Hooooray!
+# !win [someone | --value someone | --low | --high | --nicks]
+##HACKABOT_HELP##
+
+use strict;
+use Hackabot::Client;
+
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
+my $chan = $hbc->channel;
+
+if ($msg !~ /(-v|--value|-h|--high|-l|--low|-n|--nicks)/) {
+    if ($hbc->private) {
+        print "send $nick: This isn't a channel! Don't be rude in secret!\n";
+        exit;
+    }
+    if ($nick eq get_blame()) {
+        print "send $nick: Oh hush up, it is your fault!\n";
+        exit;
+    }
+
+    if ($msg =~ /\S/) {
+        chomp $msg;
+        add_blame($msg);
+    }
+    print_blame();
+}
+elsif ($msg =~ /(-h|--high|-l|--low|-n|--nicks)/) {
+    my $order;
+    my $nicks;
+
+    $order = ($msg =~ /(-l|--low)/)? "ASC" : "DESC";
+    $nicks = ($msg =~ /(-n|--nicks)/)? $chan : undef;
+
+    my @list = $hbc->counter_list("win", $order, $nicks);
+    print "sendnext\n";
+
+    if ($order eq "DESC") {
+        print "Most Guilty:\n";
+    }
+    else {
+        print "Least Guilty:\n";
+    }
+
+    foreach $_ (@list) {
+        print "  $_->{'value'} $_->{'name'}\n";
+    }
+}
+elsif ($msg =~ /(-v|--value)\s+(\S.*)/) {
+    my $name = $2;
+    chomp $name;
+    my $val = $hbc->counter_get("blame", $name);
+    if ($val == "") { $val = 0; }
+    if ($val == "1") {
+        print "send $name has been a blamed $val time!\n";
+    }
+    else {
+        print "send $name has been a blamed $val times!\n";
+    }
+}
+else {
+    print_blame();
+}
+
+
+sub add_blame {
+    my $name = shift;
+
+    $hbc->counter_add("win", $name, 1);
+
+    my $dbh = $hbc->dbi;
+    $dbh->do("UPDATE win SET win = 0 WHERE win = 1");
+    $dbh->do("UPDATE win SET win = 1 WHERE name = ?", undef, $name);
+}
+
+sub get_blame {
+    my ($dbh, $sth);
+
+    my $dbh = $hbc->dbi;
+    my $sth = $dbh->prepare("SELECT name FROM win WHERE win = 1 LIMIT 1");
+    $sth->execute;
+    return $sth->fetchrow_array;
+}
+
+
+sub print_blame {
+    my $blame = get_blame();
+    print "sendnext\n";
+    print "       66666\n";
+    print "     __|||||__\n";
+    print "    {._._._._.}  $blame\n";
+    print "  __{._._._._.}__\n";
+    print " `~~~~~~~~~~~~~~~`\n";
+}

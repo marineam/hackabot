@@ -275,14 +275,21 @@ sub quote_get {
 }
 
 sub quote_add {
-    my ($self, $type, $text) = @_;
+    my ($self, $type, $text, $set_lastused) = @_;
     my $nick = $self->sent_by;
     my $chan = $self->channel;
+    my $lastused = "'1'";
+
+    if (defined($set_lastused)) {
+        $lastused = "NOW()";
+    }
 
     my $dbh = $self->dbi or die;
 
-    $dbh->do("INSERT `$type` (`text`, `nick`, `chan`, `date`)
-       VALUES (?, ?, ?, NOW())", undef, $text, $nick, $chan) or die;
+    $dbh->do("INSERT `$type`
+        (`text`, `nick`, `chan`, `date`, `lastused`)
+        VALUES (?, ?, ?, NOW(), $lastused)",
+        undef, $text, $nick, $chan) or die;
 }
 
 1;
