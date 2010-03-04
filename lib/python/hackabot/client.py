@@ -3,8 +3,7 @@
 import os
 import sys
 
-# Relative import just in case the python path isn't set correctly
-from etree import ElementTree
+from hackabot.etree import ElementTree
 
 class Client(object):
 
