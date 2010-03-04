@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+import os
+import re
+import sys
+import glob
+import warnings
+
+DIRS = ('commands/',
+        'hooks/*/*',
+        'lib/perl/*.pm',
+        'lib/python/hackabot/*.py',
+        'lib/python/hackabot/plugins/*.py')
+EXCLUDE = ('lib/python/hackabot/etree.py',)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def check_perl(fd):
+    for line in fd:
+        match = re.match('^\s*use\s+([\w:]+)', line)
+        if match:
+            ret = os.system("perl -e 'use %s'" % match.group(1))
+            if ret != 0:
+                sys.stderr.write("Dependency check for %s failed\n" % fd.name)
+
+def check_python(fd):
+    for line in fd:
+        match = re.match('^\s*((from\s+[\w\.]+\s+)?import\s+[\w\.\s,]+)', line)
+        if match:
+            try:
+                exec match.group(1) in {}
+            except Exception, ex:
+                sys.stderr.write("%s: %s\n" % (match.group(1), ex))
+                sys.stderr.write("Dependency check for %s failed\n" % fd.name)
+
+def check(fd):
+    top = fd.readline()
+    match = re.match('^#!\s*/usr/bin/(|env\s+)(perl|python)', top)
+    if match:
+        if match.group(2) == "perl":
+            check_perl(fd)
+        elif match.group(2) == "python":
+            check_python(fd)
+    elif fd.name.endswith('.py'):
+        check_python(fd)
+
+def main():
+    warnings.simplefilter('ignore', DeprecationWarning)
+    path = os.path.join(ROOT, 'lib', 'python')
+    sys.path.append(path)
+
+    for dir in DIRS:
+        dir = os.path.join(ROOT, dir)
+        for cmd in glob.glob(dir):
+            if not os.path.isfile(cmd):
+                continue
+            elif any([cmd.endswith(x) for x in EXCLUDE]):
+                continue
+            fd = open(cmd)
+            check(fd)
+            fd.close()
+
+if __name__ == "__main__":
+    main()
