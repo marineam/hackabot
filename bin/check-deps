@@ -14,6 +14,14 @@ DIRS = ('commands/',
 EXCLUDE = ('lib/python/hackabot/etree.py',)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Python 2.4 compat
+if 'any' not in globals():
+    def any(seq):
+        for item in seq:
+            if item:
+                return True
+        return False
+
 def check_perl(fd):
     for line in fd:
         match = re.match('^\s*use\s+([\w:]+)', line)
@@ -29,7 +37,7 @@ def check_python(fd):
             try:
                 exec match.group(1) in {}
             except Exception, ex:
-                sys.stderr.write("%s: %s\n" % (match.group(1), ex))
+                sys.stderr.write("%s: %s\n" % (match.group(1).strip(), ex))
                 sys.stderr.write("Dependency check for %s failed\n" % fd.name)
 
 def check(fd):
