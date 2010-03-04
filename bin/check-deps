@@ -4,9 +4,10 @@ import os
 import re
 import sys
 import glob
+import shlex
 import warnings
 
-DIRS = ('commands/',
+DIRS = ('commands/*',
         'hooks/*/*',
         'lib/perl/*.pm',
         'lib/python/hackabot/*.py',
@@ -21,6 +22,64 @@ if 'any' not in globals():
             if item:
                 return True
         return False
+
+def check_sh(fd):
+    # Super shitty ass shell parser, but this should be sufficient
+    # to sort of catch things, hopefully doesn't produce false positives.
+    lex = shlex.shlex(fd, posix=True)
+    lex.wordchars += ':,'
+    lex.whitespace = ' \t' # tokenize newlines
+    lex.quotes += '`'
+    shlex.escapedquotes = lex.quotes
+    newline = True
+    incase = 0
+    incasematch = False
+    while True:
+        token = lex.get_token()
+        if not token:
+            break
+        elif token == 'case':
+            incase += 1
+            newline = False
+            continue
+        elif incase:
+            if token == 'esac':
+                incase -= 1
+            continue
+        elif token in ('\n', '\r', ';', '|'):
+            newline = True
+            continue
+        elif not newline:
+            continue
+
+        next = lex.get_token()
+        if next == '=':
+            next = lex.get_token()
+            if next == '$':
+                lex.push_token(next)
+                continue
+            continue
+        else:
+            lex.push_token(next)
+
+        if token in ('if', 'elif', 'do'):
+            continue
+
+        newline = False
+
+        if (not token.isalnum() or token in
+                ('then','else','fi','done','echo','function','set')):
+            continue
+
+        found = False
+        for dir in os.environ['PATH'].split(':'):
+            if os.path.exists(os.path.join(dir, token)):
+                found = True
+                break
+
+        if not found:
+            sys.stderr.write("Command not found: %s\n" % token)
+            sys.stderr.write("Dependency check for %s failed\n" % fd.name)
 
 def check_perl(fd):
     for line in fd:
@@ -42,12 +101,14 @@ def check_python(fd):
 
 def check(fd):
     top = fd.readline()
-    match = re.match('^#!\s*/usr/bin/(|env\s+)(perl|python)', top)
+    match = re.match('^#!\s*(/usr)?/bin/(env\s+)?(perl|python|sh|bash)', top)
     if match:
-        if match.group(2) == "perl":
+        if match.group(3) == "perl":
             check_perl(fd)
-        elif match.group(2) == "python":
+        elif match.group(3) == "python":
             check_python(fd)
+        elif match.group(3) in ('sh', 'bash'):
+            check_sh(fd)
     elif fd.name.endswith('.py'):
         check_python(fd)
 
@@ -55,6 +116,12 @@ def main():
     warnings.simplefilter('ignore', DeprecationWarning)
     path = os.path.join(ROOT, 'lib', 'python')
     sys.path.append(path)
+
+    perllib = os.path.join(ROOT, 'lib', 'perl')
+    if 'PERL5LIB' in os.environ:
+        os.environ['PERL5LIB'] += ":"+perllib
+    else:
+        os.environ['PERL5LIB'] = perllib
 
     for dir in DIRS:
         dir = os.path.join(ROOT, dir)
