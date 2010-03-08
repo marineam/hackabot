@@ -1,10 +1,11 @@
 """Hackabot Database"""
 
+import os
 import glob
 
 from twisted.enterprise import adbapi
 
-from hackabot import conf, log
+from hackabot import conf, core, log
 
 # These are all the tables included in the schema prior to the introduction of
 # schema versions. If all these exist it is probably safe to assume that the
@@ -22,198 +23,246 @@ ConnectionLost = adbapi.ConnectionLost
 class DBError(Exception):
     pass
 
-def required_schema():
-    """Get the required version from the schema-version file"""
+def _db_args(config):
+    tag = config.find('database')
+    if tag is None:
+        return
 
-    schema_file = "%s/schema-version" % conf.get('mysql')
+    dbcfg = tag.attrib
+    req = set(('hostname', 'database', 'username', 'password'))
+    req.difference_update(set(dbcfg.keys()))
+    if req:
+        raise core.ConfigError(
+                "<database> is missing the attribute(s): %s" %
+                ', '.join(req))
 
-    try:
-        schema_fd = open(schema_file)
-        required = schema_fd.readline()
-        schema_fd.close()
-    except IOError, (errno, errstr):
-        raise DBError("Failed to read %s: %s" % (schema_file, errstr))
+    return {'db': dbcfg['database'],
+            'host': dbcfg['hostname'],
+            'user': dbcfg['username'],
+            'passwd': dbcfg['password']}
 
-    try:
-        return int(required)
-    except ValueError:
-        raise DBError("Invalid version '%s' in %s" % (required, schema_file))
+class SchemaManager(object):
+    """Tools for upgrading and dumping the DB schema"""
 
-def current_schema(db):
-    """Get the current version from the configured database"""
-    # This is a bit icky to account for an empty db or a version before 1
+    def __init__(self, config, create=True):
+        global MySQLdb
+        if MySQLdb is None:
+            import MySQLdb
 
-    cursor = db.cursor()
+        args = _db_args(config)
+        if args is None:
+            raise core.ConfigError("<database> tag is missing")
 
-    try:
-        cursor.execute("SHOW TABLES")
-    except MySQLdb.Error, (errno, errstr):
-        raise DBError("DB error: [%s] %s"%(errno, errstr))
-
-    tables = cursor.fetchall()
-
-    if not tables:
-        # Empty!
-        cursor.close()
-        return -1
-
-    tables = [row[0] for row in tables]
-
-    if "metadata" in tables:
-        # we are at >= version 1
+        self._dir = config.attrib['mysql']
 
         try:
-            cursor.execute("SELECT `value` FROM `metadata` WHERE "
-                    "`name` = 'schema'")
+            self._db = self._open(args)
+        except MySQLdb.Error, (errno, errstr):
+            raise DBError("DB connection failed: [%s] %s" % (errno, errstr))
+
+    def _open(self, args, create=True):
+        try:
+            return MySQLdb.connect(**args)
+        except MySQLdb.Error, (errno, errstr):
+            if create and errno == 1049:
+                self._create(args)
+                return self._open(args, False)
+            raise DBError("DB connection failed: [%s] %s" % (errno, errstr))
+
+    @staticmethod
+    def _create(args):
+        """helper for creating the database"""
+        args = args.copy()
+        name = args.pop('db')
+        assert '`' not in name
+        db = MySQLdb.connect(**args)
+        cursor = db.cursor()
+        cursor.execute("CREATE DATABASE `%s`" % name)
+        cursor.close()
+        db.close()
+
+    def close(self):
+        self._db.close()
+
+    def upgrade(self):
+        required = self.required_schema()
+        current = self.current_schema()
+
+        if (current < 0):
+            # Empty DB!
+            current = self._load_schema(required)
+        else:
+            log.info("Current DB version: %s" % current)
+
+        while current < required:
+            current += 1
+            self._load_update(current)
+
+    def required_schema(self):
+        """Get the required version from the schema-version file"""
+
+        schema_file = "%s/schema-version" % self._dir
+
+        try:
+            schema_fd = open(schema_file)
+            required = schema_fd.readline()
+            schema_fd.close()
+        except IOError, ex:
+            raise DBError(str(ex))
+
+        try:
+            return int(required)
+        except ValueError:
+            raise DBError("Invalid version %r in %s" %
+                    (required, schema_file))
+
+    def current_schema(self):
+        """Get the current version from the configured database"""
+        # This is a bit icky to account for an empty db or a version before 1
+
+        cursor = self._db.cursor()
+
+        try:
+            cursor.execute("SHOW TABLES")
         except MySQLdb.Error, (errno, errstr):
             raise DBError("DB error: [%s] %s"%(errno, errstr))
 
-        version = cursor.fetchone()
+        tables = cursor.fetchall()
 
-        if version is None:
-            raise DBError("Unknown schema version! "
-                    "(schema missing from metadata table)")
-        try:
-            version = int(version[0])
-        except ValueError:
-            raise DBError("Invalid schema version: '%s' "
-                    "(schema in metadata table not an int)" % version)
+        if not tables:
+            # Empty!
+            cursor.close()
+            return -1
 
-    else:
-        # we are at version 0 (hopefully)
-        missing = set(OLDTABLES) - set(tables)
+        tables = [row[0] for row in tables]
 
-        if missing:
-            raise DBError("The database is not empty, has an unknown "
-                    "version, and is missing tables: %s" % " ,".join(missing))
+        if "metadata" in tables:
+            # we are at >= version 1
+            try:
+                cursor.execute("SELECT `value` FROM `metadata` WHERE "
+                        "`name` = 'schema'")
+            except MySQLdb.Error, (errno, errstr):
+                raise DBError("DB error: [%s] %s"%(errno, errstr))
+
+            version = cursor.fetchone()
+
+            if version is None:
+                raise DBError("Unknown schema version! "
+                        "(schema missing from metadata table)")
+            try:
+                version = int(version[0])
+            except ValueError:
+                raise DBError("Invalid schema version: '%s' "
+                        "(schema in metadata table not an int)" % version)
 
         else:
-            version = 0
+            # we are at version 0 (hopefully)
+            missing = set(OLDTABLES) - set(tables)
 
-    cursor.close()
-    return version
+            if missing:
+                raise DBError("The database is not empty, has an unknown "
+                        "version, and is missing tables: %s" %
+                        " ,".join(missing))
 
-def _load_sql(db, dump):
-    """Execute a chunk of SQL from a file"""
+            else:
+                version = 0
 
-    try:
-        dumpfd = open(dump)
-        sql = dumpfd.read()
-        dumpfd.close()
-    except IOError, (errno, errstr):
-        raise DBError("Failed to read %s: %s" % (dump, errstr))
+        cursor.close()
+        return version
 
-    cursor = db.cursor()
+    def _load_sql(self, dump):
+        """Execute a chunk of SQL from a file"""
 
-    try:
-        cursor.execute(sql)
-    except MySQLdb.Error, (errno, errstr):
-        raise DBError("Loading schema file %s failed: [%s] %s" %
-                (dump, errno, errstr))
+        log.debug("Loading SQL from %s" % dump)
 
-    cursor.close()
+        try:
+            dumpfd = open(dump)
+            sql = dumpfd.read()
+            dumpfd.close()
+        except IOError, (errno, errstr):
+            raise DBError("Failed to read %s: %s" % (dump, errstr))
 
-def _load_schema(db, required):
-    """Load the latest available schema version"""
+        cursor = self._db.cursor()
 
-    dumps = glob.glob("%s/schema-???.sql" % conf.get('mysql'))
+        try:
+            cursor.execute(sql)
+        except MySQLdb.Error, (errno, errstr):
+            raise DBError("Loading schema file %s failed: [%s] %s" %
+                    (dump, errno, errstr))
 
-    if not dumps:
-        raise DBError("No schema files found in %s" % conf.get('mysql'))
+        cursor.close()
 
-    dumps.sort()
-    dump = dumps[-1]
+    def _set_version(self, version):
+        """Update the schema version metadata"""
 
-    log.info("Loading DB schema from %s" % dump)
+        if version <= 0:
+            return
 
-    # Goofy way of grabbing the ??? out of the above glob
-    version = int(dump[-7:-4])
+        cursor = self._db.cursor()
 
-    assert version <= required
+        log.debug("Setting schema version to %s" % version)
 
-    _load_sql(db, dump)
-    _set_version(db, version)
+        try:
+            cursor.execute("INSERT `metadata` (`name` , `value`) "
+                    "VALUES ('schema', '%s') "
+                    "ON DUPLICATE KEY UPDATE `value` = %s",
+                    (version, version))
+        except MySQLdb.Error, (errno, errstr):
+            raise DBError("DB error: [%s] %s"%(errno, errstr))
 
-    return version
+        cursor.close()
 
-def _load_update(db, version):
-    """Load a single update file"""
+    def _load_schema(self, required):
+        """Load the latest available schema version"""
 
-    update = "%s/schema/%03d.sql" % (conf.get('mysql'), version)
+        dump = "%s/schema-%03d.sql" % (self._dir, required)
+        if not os.path.exists(dump):
+            dumps = glob.glob("%s/schema-???.sql" % self._dir)
+            if not dumps:
+                raise DBError("No schema files found in %s" % self._dir)
 
-    _load_sql(db, update)
-    _set_version(db, version)
+            dumps.sort()
+            dump = dumps[-1]
 
-def _set_version(db, version):
-    """Update the schema version metadata"""
+            # Goofy way of grabbing the ??? out of the above glob
+            version = int(dump[-7:-4])
+            assert version <= required
+        else:
+            version = required
 
-    if version <= 0:
-        return
+        log.info("Loading DB schema version %s" % version)
 
-    cursor = db.cursor()
+        self._load_sql(dump)
+        self._set_version(version)
+        return version
 
-    log.debug("Setting schema version to %s" % version)
+    def _load_update(self, version):
+        """Load a single update file"""
 
-    try:
-        cursor.execute("INSERT `metadata` (`name` , `value`) "
-                "VALUES ('schema', '%s') "
-                "ON DUPLICATE KEY UPDATE `value` = %s",
-                (version, version))
-    except MySQLdb.Error, (errno, errstr):
-        raise DBError("DB error: [%s] %s"%(errno, errstr))
+        log.info("Upgrading to DB schema version %s" % version)
 
-    cursor.close()
+        update = "%s/schema/%03d.sql" % (self._dir, version)
+        self._load_sql(update)
+        self._set_version(version)
 
 def _connected(connection):
     log.debug("Created database connection...")
 
 def init():
     """Create db pool and check/upgrade schema revision"""
-    global pool, MySQLdb
+    global pool
 
-    tag = conf.find('database')
-    if tag is None:
+    config = conf
+
+    args = _db_args(config)
+    if args is None:
         log.info("No database configured.")
         return
-    else:
-        dbcfg = tag.attrib
 
-    req = set(('hostname', 'database', 'username', 'password'))
-    if not req.issubset(set(dbcfg.keys())):
-        raise DBError("Database must have these attributes: %s" % ' '.join(req))
-
-    # Use MySQLdb directly for check/upgrade since we don't need
-    # to be asynchronous during the init phase
-    try:
-        import MySQLdb
-    except ImportError, ex:
-        raise DBError("%s" % ex)
-
-    try:
-        db = MySQLdb.connect(host=dbcfg['hostname'], db=dbcfg['database'],
-                user=dbcfg['username'], passwd=dbcfg['password'])
-    except MySQLdb.Error, (errno, errstr):
-        raise DBError("Failed to connect to db: [%s] %s" % (errno, errstr))
-
-    required = required_schema()
-    current = current_schema(db)
-
-    if (current < 0):
-        # Empty DB!
-        current = _load_schema(db, required)
-    else:
-        log.info("Current DB version: %s" % current)
-
-    while current < required:
-        current += 1
-        log.info("Upgrading to DB version: %s" % current)
-
-        _load_update(db, current)
-
-    db.close()
+    upgrader = SchemaManager(config)
+    upgrader.upgrade()
+    upgrader.close()
 
     # Everything is in order, setup the pool for all to use.
-    pool = adbapi.ConnectionPool("MySQLdb", host=dbcfg['hostname'],
-            db=dbcfg['database'], user=dbcfg['username'],
-            passwd=dbcfg['password'], cp_noisy=False,
-            cp_reconnect=True, cp_openfun=_connected)
+    pool = adbapi.ConnectionPool("MySQLdb", cp_noisy=False,
+            cp_reconnect=True, cp_openfun=_connected, **args)
