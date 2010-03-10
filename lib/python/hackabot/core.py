@@ -488,7 +488,7 @@ class HBotNetwork(protocol.ClientFactory):
         self.realname = config.get('name', self.nickname)
         self.username = self.nickname
         self.password = None
-        self.acl = ACL(config)
+        self.acl = ACL(manager.config, config)
 
         servers = config.findall('server')
         if not servers:

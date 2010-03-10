@@ -1,16 +1,16 @@
 """Hackabot ACL Checks"""
 
-from hackabot import conf, log
+from hackabot import log
 from hackabot.etree import ElementTree
 
 class ACL(object):
     """Process the acl xml file"""
 
-    def __init__(self, net=None):
+    def __init__(self, config, net=None):
         if net is not None and net.find("acl"):
-            conffile = conf.find("acl").get("file", None)
-        elif conf.find("acl") is not None:
-            conffile = conf.find("acl").get("file", None)
+            conffile = net.find("acl").get("file", None)
+        elif config.find("acl") is not None:
+            conffile = config.find("acl").get("file", None)
         else:
             log.debug("No ACL file to load")
             self._conf = None
