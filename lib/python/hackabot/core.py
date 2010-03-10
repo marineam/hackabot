@@ -16,12 +16,9 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import log, plugin
+from hackabot import ConfigError, log, plugin
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
-
-class ConfigError(Exception):
-    pass
 
 class NotConnected(Exception):
     pass

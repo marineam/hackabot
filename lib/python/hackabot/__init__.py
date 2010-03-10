@@ -8,6 +8,9 @@ from optparse import OptionParser
 
 from twisted.internet import reactor
 
+class ConfigError(Exception):
+    pass
+
 def daemonize(pid_file):
     """Background the current process"""
 
@@ -130,7 +133,7 @@ def run(argv=sys.argv):
         core.init(conf)
         plugin.init()
         remote.init(conf)
-    except core.ConfigError, ex:
+    except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
     except db.DBError, ex:
