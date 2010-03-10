@@ -149,7 +149,7 @@ def run(argv=sys.argv):
         sys.exit(1)
 
     try:
-        core.init()
+        core.init(conf)
         plugin.init()
         remote.init()
     except core.ConfigError, ex:

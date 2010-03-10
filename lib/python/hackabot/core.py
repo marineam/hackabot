@@ -16,7 +16,7 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import conf, log, plugin
+from hackabot import log, plugin
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
 
@@ -29,18 +29,19 @@ class NotConnected(Exception):
 def nick(sent_by):
     return sent_by.split('!',1)[0]
 
-def init():
+def init(config):
     global manager
-    manager = HBotManager()
+    manager = HBotManager(config)
 
 class HBotManager(object):
     """Manage various network connections"""
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self._networks = {}
         self._default = None
 
-        for network in conf.findall("network"):
+        for network in config.findall("network"):
             id = network.get("id", None)
 
             if id not in self._networks:
@@ -122,6 +123,10 @@ class HBotConnection(irc.IRCClient):
 
         # Used to track channel information
         self.channels = {}
+
+        # Used by plugins to access global info
+        self.manager = self.factory.manager
+        self.network = self.factory
 
         irc.IRCClient.connectionMade(self)
 
