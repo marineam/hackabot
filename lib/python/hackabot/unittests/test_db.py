@@ -2,7 +2,7 @@
 
 import os
 from twisted.trial import unittest
-from hackabot import conf, db, load_conf
+from hackabot import db, parse_config
 
 try:
     import MySQLdb
@@ -20,8 +20,7 @@ class SchemaTestCase(unittest.TestCase):
         skip = "HB_UNITTEST_DB is undefined"
 
     def setUp(self):
-        load_conf(self.unittest_db)
-        self.config = conf
+        self.config = parse_config(self.unittest_db)
         self._drop()
 
     def tearDown(self):

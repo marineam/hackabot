@@ -73,8 +73,8 @@ def parse_options(argv):
 
     return options, args[0]
 
-def load_conf(conffile):
-    """Configuration stuff!"""
+def parse_config(conffile):
+    """Load configuration XML, return the root element"""
 
     from hackabot.etree import ElementTree
 
@@ -96,29 +96,12 @@ def load_conf(conffile):
         vars['xml'] = fd.read()
         fd.close()
 
-        _conf = ElementTree.fromstring(vars['xml'])
+        config = ElementTree.fromstring(vars['xml'])
     else:
-        _conf = ElementTree.Element("hackabot")
+        config = ElementTree.Element("hackabot")
 
-    _conf.attrib.update(vars)
-    conf._set_target_(_conf)
-
-def basic(conffile):
-    """Start up the Hackabot framework, but don't actually fire up"""
-
-    log.init(sys.stdout, "INFO")
-
-    try:
-        load_conf(conffile)
-    except IOError, (exno, exstr):
-        log.error("Failed to open %s: %s" % (conffile, exstr))
-        sys.exit(1)
-
-    try:
-        db.init()
-    except db.DBError, ex:
-        log.error(str(ex))
-        sys.exit(1)
+    config.attrib.update(vars)
+    return config
 
 def run(argv=sys.argv):
     """Start up Hackabot"""
@@ -137,7 +120,7 @@ def run(argv=sys.argv):
     log.init(logfile, options.level)
 
     try:
-        load_conf(conffile)
+        conf = parse_config(conffile)
     except IOError, (exno, exstr):
         log.error("Failed to open %s: %s" % (conffile, exstr))
         sys.exit(1)
@@ -163,22 +146,6 @@ def run(argv=sys.argv):
     reactor.callWhenRunning(core.manager.connect)
     reactor.callWhenRunning(remote.listen)
     reactor.run()
-
-class _Wrapper(object):
-    """Dummy wrapper object that can be imported but the actual
-    value object inside can be replaced at any time.
-    """
-
-    def __init__(self, target=None):
-        self.__target = target
-
-    def _set_target_(self, target):
-        self.__target = target
-
-    def __getattr__(self, key):
-        return getattr(self.__target, key)
-
-conf = _Wrapper()
 
 # Import late to avoid circles...
 from hackabot import core, db, plugin, remote, log

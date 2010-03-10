@@ -9,13 +9,13 @@ if __name__ == "__main__":
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append("%s/lib/python" % root)
 
-    from hackabot import conf, db, load_conf
+    from hackabot import db, parse_config
 
     if len(sys.argv) != 2:
         sys.stderr.write("Usage: %s config.xml\n" % sys.argv[0])
         sys.exit(1)
 
-    load_conf(sys.argv[1])
+    conf = parse_config(sys.argv[1])
     try:
         manager = db.SchemaManager(conf, create=False)
         path = manager.dump()
