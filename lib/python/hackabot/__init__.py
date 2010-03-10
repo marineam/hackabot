@@ -143,16 +143,14 @@ def run(argv=sys.argv):
         sys.exit(1)
 
     try:
-        db.init()
-    except db.DBError, ex:
-        log.error(str(ex))
-        sys.exit(1)
-
-    try:
+        db.init(conf)
         core.init(conf)
         plugin.init()
         remote.init()
     except core.ConfigError, ex:
+        log.error(str(ex))
+        sys.exit(1)
+    except db.DBError, ex:
         log.error(str(ex))
         sys.exit(1)
 

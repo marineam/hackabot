@@ -6,7 +6,7 @@ import glob
 
 from twisted.enterprise import adbapi
 
-from hackabot import conf, core, log
+from hackabot import core, log
 
 # These are all the tables included in the schema prior to the introduction of
 # schema versions. If all these exist it is probably safe to assume that the
@@ -283,11 +283,9 @@ class SchemaManager(object):
 def _connected(connection):
     log.debug("Created database connection...")
 
-def init():
+def init(config):
     """Create db pool and check/upgrade schema revision"""
     global pool
-
-    config = conf
 
     args = _db_args(config)
     if args is None:
