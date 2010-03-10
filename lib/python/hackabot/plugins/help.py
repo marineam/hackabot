@@ -6,7 +6,7 @@ from glob import glob
 from zope.interface import implements
 from twisted.plugin import IPlugin
 
-from hackabot import conf, plugin
+from hackabot import plugin
 
 class Help(object):
     implements(IPlugin, plugin.IHackabotPlugin)
@@ -16,6 +16,7 @@ class Help(object):
         !help [command]
         """
 
+        conf = conn.manager.config
         text = event['text'].strip()
         if text:
             event['command'] = text

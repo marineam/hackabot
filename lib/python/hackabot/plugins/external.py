@@ -8,7 +8,7 @@ from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
 from hackabot.protocol import HBProcessProtocol
-from hackabot import conf, log
+from hackabot import log
 
 class ExternalPlugins(object):
     """Pass off events to external plugins,
@@ -20,6 +20,7 @@ class ExternalPlugins(object):
         if 'internal' in event and event['internal']:
             return
 
+        conf = conn.manager.config
         if event['type'] == "command":
             commands = glob("%s/%s" % (conf.get('commands'), event['command']))
         else:

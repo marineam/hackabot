@@ -146,7 +146,7 @@ def run(argv=sys.argv):
         db.init(conf)
         core.init(conf)
         plugin.init()
-        remote.init()
+        remote.init(conf)
     except core.ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
