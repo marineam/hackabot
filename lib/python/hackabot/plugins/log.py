@@ -21,7 +21,7 @@ class DBLogger(object):
             event['sent_to'] = None
 
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     notice = msg
 
@@ -33,33 +33,33 @@ class DBLogger(object):
         event['sent_by'] = event['user']
         event['sent_to'] = None
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def join(self, conn, event):
         event['sent_by'] = event['user']
         event['sent_to'] = None
         event['text'] = None
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def part(self, conn, event):
         event['sent_by'] = event['user']
         event['sent_to'] = None
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def kick(self, conn, event):
         event['sent_by'] = event['kicker']
         event['sent_to'] = event['kickee']
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def quit(self, conn, event):
         event['sent_by'] = event['user']
         event['sent_to'] = None
         event['channel'] = None
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def rename(self, conn, event):
         # We abuse sent_to slightly here
@@ -68,7 +68,7 @@ class DBLogger(object):
         event['channel'] = None
         event['text'] = None
         event['count'] = None
-        self._logger(event)
+        self._logger(conn, event)
 
     def names(self, conn, event):
         #TODO: change enum value from 'stats' to 'names'
@@ -77,12 +77,13 @@ class DBLogger(object):
         event['sent_to'] = None
         event['count'] = len(event['users'])
         event['text'] = " ".join(event['users'])
-        self._logger(event)
+        self._logger(conn, event)
 
-    def _logger(self, event):
+    def _logger(self, conn, event):
         """Record an event to the log table"""
 
-        if not db.pool:
+        dbpool = conn.manager.dbpool
+        if not dbpool:
             return
 
         # These correspond to the type column's enum values
@@ -100,8 +101,8 @@ class DBLogger(object):
             "%(count)s, %(type)s, FROM_UNIXTIME(%(time)s) )")
 
         try:
-            db.pool.runOperation(sql, event)
+            dbpool.runOperation(sql, event)
         except db.ConnectionLost:
-            db.pool.runOperation(sql, event)
+            dbpool.runOperation(sql, event)
 
 logger = DBLogger()

@@ -5,7 +5,7 @@ from zope.interface import implements
 from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
-from hackabot import log, db
+from hackabot import log
 
 class Score(object):
     """Record something++ and something-- statements"""
@@ -19,6 +19,8 @@ class Score(object):
                 or event['sent_to'] == conn.nickname):
             return
 
+        dbpool = conn.manager.dbpool
+
         for match in re.finditer(self._regex, event['text']):
             if match.group(2) == "++":
                 inc = 1
@@ -27,7 +29,7 @@ class Score(object):
 
             log.debug("score: %s += %s" % (match.group(1), inc))
 
-            defer = db.pool.runOperation("INSERT INTO `score` "
+            defer = dbpool.runOperation("INSERT INTO `score` "
                     "(`name`, `value`, `nick`, `chan`, `date`) "
                     "VALUES (%s, %s, %s, %s, FROM_UNIXTIME(%s)) "
                     "ON DUPLICATE KEY UPDATE "
@@ -49,6 +51,8 @@ class Score(object):
         if not event['text']:
             return
 
+        dbpool = conn.manager.dbpool
+
         if "--nicks" in event['text'] and event['sent_to'] in conn.channels:
             # This looks weird, but MySQLdb doesn't provide a quote
             # function so we have to build a format string and tuple
@@ -61,20 +65,20 @@ class Score(object):
         sql = "SELECT `name`, `value` FROM `score` "
 
         if "--high" in event['text']:
-            defer = db.pool.runQuery("%s%s ORDER BY `value` DESC LIMIT 3"
+            defer = dbpool.runQuery("%s%s ORDER BY `value` DESC LIMIT 3"
                     % (sql, where), names)
             defer.addCallback(self._send_list, "High Scores:", conn, event)
             defer.addErrback(self._error, conn, event)
 
         elif "--low" in event['text']:
-            defer = db.pool.runQuery("%s%s ORDER BY `value` ASC LIMIT 3"
+            defer = dbpool.runQuery("%s%s ORDER BY `value` ASC LIMIT 3"
                     % (sql, where), names)
             defer.addCallback(self._send_list, "Low Scores:", conn, event)
             defer.addErrback(self._error, conn, event)
 
         else:
             name = event['text'].split(None,1)[0]
-            defer = db.pool.runQuery("SELECT `value` FROM `score` "
+            defer = dbpool.runQuery("SELECT `value` FROM `score` "
                     "WHERE `name` = %s", name)
             defer.addCallback(self._send_value, name, conn, event)
             defer.addErrback(self._error, conn, event)

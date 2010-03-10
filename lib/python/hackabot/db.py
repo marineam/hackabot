@@ -6,7 +6,7 @@ import glob
 
 from twisted.enterprise import adbapi
 
-from hackabot import core, log
+from hackabot import ConfigError, log
 
 # These are all the tables included in the schema prior to the introduction of
 # schema versions. If all these exist it is probably safe to assume that the
@@ -16,7 +16,6 @@ OLDTABLES = ("bar_adj","bar_location","bar_n","blame","fire","group",
         "reminder","score","tard","topic","whip","wtf")
 
 MySQLdb = None
-pool = None
 
 # Make the ConnectionLost exception easier to find
 ConnectionLost = adbapi.ConnectionLost
@@ -33,7 +32,7 @@ def _db_args(config):
     req = set(('hostname', 'database', 'username', 'password'))
     req.difference_update(set(dbcfg.keys()))
     if req:
-        raise core.ConfigError(
+        raise ConfigError(
                 "<database> is missing the attribute(s): %s" %
                 ', '.join(req))
 
@@ -52,7 +51,7 @@ class SchemaManager(object):
 
         self._args = _db_args(config)
         if self._args is None:
-            raise core.ConfigError("<database> tag is missing")
+            raise ConfigError("<database> tag is missing")
 
         self._dir = config.attrib['mysql']
 
@@ -283,9 +282,8 @@ class SchemaManager(object):
 def _connected(connection):
     log.debug("Created database connection...")
 
-def init(config):
-    """Create db pool and check/upgrade schema revision"""
-    global pool
+def ConnectionPool(config):
+    """Factory function to check/upgrade schema and return a pool"""
 
     args = _db_args(config)
     if args is None:
@@ -297,5 +295,5 @@ def init(config):
     upgrader.close()
 
     # Everything is in order, setup the pool for all to use.
-    pool = adbapi.ConnectionPool("MySQLdb", cp_noisy=False,
+    return adbapi.ConnectionPool("MySQLdb", cp_noisy=False,
             cp_reconnect=True, cp_openfun=_connected, **args)

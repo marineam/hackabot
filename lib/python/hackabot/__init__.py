@@ -129,14 +129,10 @@ def run(argv=sys.argv):
         sys.exit(1)
 
     try:
-        db.init(conf)
         core.init(conf)
         plugin.init()
         remote.init(conf)
     except ConfigError, ex:
-        log.error(str(ex))
-        sys.exit(1)
-    except db.DBError, ex:
         log.error(str(ex))
         sys.exit(1)
 
@@ -151,4 +147,4 @@ def run(argv=sys.argv):
     reactor.run()
 
 # Import late to avoid circles...
-from hackabot import core, db, plugin, remote, log
+from hackabot import core, plugin, remote, log

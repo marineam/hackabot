@@ -16,7 +16,7 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import ConfigError, log, plugin
+from hackabot import ConfigError, db, log, plugin
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
 
@@ -35,6 +35,7 @@ class HBotManager(object):
 
     def __init__(self, config):
         self.config = config
+        self.dbpool = db.ConnectionPool(config)
         self._networks = {}
         self._default = None
 
