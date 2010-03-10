@@ -2,7 +2,6 @@
 
 """Dump the current DB schema"""
 
-import re
 import os
 import sys
 
@@ -11,37 +10,18 @@ if __name__ == "__main__":
     sys.path.append("%s/lib/python" % root)
 
     from hackabot import conf, db, load_conf
-    import MySQLdb
 
     if len(sys.argv) != 2:
-        sys.stderr.write("Usage: %s config.xml" % sys.argv[0])
+        sys.stderr.write("Usage: %s config.xml\n" % sys.argv[0])
         sys.exit(1)
 
     load_conf(sys.argv[1])
-    config = conf.find("database")
-    assert config is not None
+    try:
+        manager = db.SchemaManager(conf, create=False)
+        path = manager.dump()
+        manager.close()
+    except db.DBError, ex:
+        sys.stderr.write("%s\n" % ex)
+        sys.exit(1)
 
-    hostname = config.get("hostname")
-    database = config.get("database")
-    username = config.get("username")
-    password = config.get("password")
-
-    conn = MySQLdb.connect(host=hostname, db=database,
-            user=username, passwd=password)
-    version = db.current_schema(conn)
-    conn.close()
-
-    dump = open("%s/schema-%03d.sql" % (conf.get('mysql'), version), 'w')
-    print "Dumping %s to %s" % (database, dump.name)
-    input = os.popen("mysqldump --no-data --skip-add-drop-table "
-            "--host='%s' --user='%s' --password='%s' '%s'"
-            % (hostname, username, password, database))
-
-    for line in input:
-        if line.startswith(") ENGINE="):
-            line = re.sub("ENGINE=\w+\s*", "", line)
-            line = re.sub("AUTO_INCREMENT=\w+\w*", "", line)
-        dump.write(line)
-
-    input.close()
-    dump.close()
+    print "Successfully dumped schema to %s" % os.path.relpath(path)

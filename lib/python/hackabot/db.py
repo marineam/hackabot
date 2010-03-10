@@ -1,6 +1,7 @@
 """Hackabot Database"""
 
 import os
+import re
 import glob
 
 from twisted.enterprise import adbapi
@@ -49,24 +50,24 @@ class SchemaManager(object):
         if MySQLdb is None:
             import MySQLdb
 
-        args = _db_args(config)
-        if args is None:
+        self._args = _db_args(config)
+        if self._args is None:
             raise core.ConfigError("<database> tag is missing")
 
         self._dir = config.attrib['mysql']
 
         try:
-            self._db = self._open(args)
+            self._db = self._open(create)
         except MySQLdb.Error, (errno, errstr):
             raise DBError("DB connection failed: [%s] %s" % (errno, errstr))
 
-    def _open(self, args, create=True):
+    def _open(self, create):
         try:
-            return MySQLdb.connect(**args)
+            return MySQLdb.connect(**self._args)
         except MySQLdb.Error, (errno, errstr):
             if create and errno == 1049:
-                self._create(args)
-                return self._open(args, False)
+                self._create(self._args)
+                return self._open(False)
             raise DBError("DB connection failed: [%s] %s" % (errno, errstr))
 
     @staticmethod
@@ -97,6 +98,40 @@ class SchemaManager(object):
         while current < required:
             current += 1
             self._load_update(current)
+
+    def dump(self):
+        """Use mysqldump to dump the current schema"""
+
+        # Not sure if I want to break 2.4 compatibility just for this
+        import subprocess
+
+        version = self.current_schema()
+        if version < 0:
+            raise DBError("Database is empty!")
+
+        output_path = "%s/schema-%03d.sql" % (self._dir, version)
+
+        output = open(output_path, 'w')
+        proc = subprocess.Popen(("mysqldump",
+            "--no-data", "--skip-add-drop-table",
+            "--host=%s" % self._args['host'],
+            "--user=%s" % self._args['user'],
+            "--password=%s" % self._args['passwd'],
+            self._args['db']), stdout=subprocess.PIPE)
+
+        for line in proc.stdout:
+            if line.startswith(") ENGINE="):
+                line = re.sub("ENGINE=\w+\s*", "", line)
+                line = re.sub("AUTO_INCREMENT=\w+\s*", "", line)
+            output.write(line)
+
+        proc.wait()
+        output.close()
+
+        if proc.returncode != 0:
+            raise DBError("mysqldump exited with code %s" % proc.returncode)
+
+        return output_path
 
     def required_schema(self):
         """Get the required version from the schema-version file"""
