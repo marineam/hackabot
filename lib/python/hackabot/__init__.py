@@ -79,16 +79,16 @@ def parse_options(argv):
 
     return options, args[0]
 
-def parse_config(conffile):
+def parse_config(path=None, xml=None):
     """Load configuration XML, return the root element"""
+    assert not (path and xml)
 
     from hackabot.etree import ElementTree
 
     # Assuming the normal svn layout, find the source root
     root = os.path.abspath(__file__).rsplit("/",4)[0]
 
-    vars = {
-        'conf': conffile,
+    defaults = {
         'root': root,
         'perl': "%s/lib/perl" % root,
         'mysql': "%s/lib/mysql" % root,
@@ -97,22 +97,25 @@ def parse_config(conffile):
         'hooks': "%s/hooks" % root,
     }
 
-    if conffile:
-        fd = open(conffile)
-        vars['xml'] = fd.read()
-        fd.close()
-
-        config = ElementTree.fromstring(vars['xml'])
+    if path:
+        try:
+            config = ElementTree.parse(path).getroot()
+        except IOError, (exno, exstr):
+            raise ConfigError("Failed to read %s: %s" % (path, exstr))
+    elif xml:
+        config = ElementTree.fromstring(xml)
     else:
         config = ElementTree.Element("hackabot")
 
-    config.attrib.update(vars)
+    for key, value in defaults.iteritems():
+        config.attrib.setdefault(key, value)
+
     return config
 
 def run(argv=sys.argv):
     """Start up Hackabot"""
 
-    options, conffile = parse_options(argv)
+    options, conf = parse_options(argv)
 
     if options.file:
         try:
@@ -126,13 +129,7 @@ def run(argv=sys.argv):
     log.init(logfile, options.level)
 
     try:
-        conf = parse_config(conffile)
-    except IOError, (exno, exstr):
-        log.error("Failed to open %s: %s" % (conffile, exstr))
-        sys.exit(1)
-
-    try:
-        manager = core.HBotManager(conf)
+        manager = core.HBotManager(conf, exit_cb=lambda: reactor.stop())
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)

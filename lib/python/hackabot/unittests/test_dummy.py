@@ -1,5 +1,5 @@
 from twisted.internet import protocol, reactor
-from hackabot.unittests import dummy_server, IRCTestCase
+from hackabot.unittests import dummy_server, IRCTestCase, HBTestCase
 
 class DummyClient(dummy_server.TesterClient):
     nickname = "dummy"
@@ -34,3 +34,8 @@ class DummyTestCase(IRCTestCase):
         d = dummy.ready()
         d.addCallback(ready)
         return d
+
+class HBNoopTestCase(HBTestCase):
+
+    def testNoop(self):
+        self.assert_(True)

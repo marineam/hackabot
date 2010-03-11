@@ -8,6 +8,7 @@ from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
 from hackabot.protocol import HBProcessProtocol
+from hackabot.etree import ElementTree
 from hackabot import log
 
 class ExternalPlugins(object):
@@ -34,6 +35,7 @@ class ExternalPlugins(object):
             vars["HB_%s" % key.upper()] = str(val)
 
         vars['HB_NICK'] = conn.nickname
+        vars['HB_XML'] = ElementTree.tostring(conn.manager.config)
         text = ""
         for key, val in event.iteritems():
             if key == 'text':

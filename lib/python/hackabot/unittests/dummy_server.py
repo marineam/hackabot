@@ -15,7 +15,9 @@ class TesterClient(irc.IRCClient):
     nickname = "tester"
     channel = "#hackabot"
 
-    def __init__(self, log=None):
+    def __init__(self, log=None, channel=None):
+        if channel:
+            self.channel = channel
         self._log = log
         self._notify = None
         self._ready = defer.Deferred()
@@ -129,14 +131,14 @@ class SimpleIRCFactory(service.IRCFactory):
 
 class Tester(object):
 
-    def __init__(self):
+    def __init__(self, channel='#hackabot'):
         # Setup server
         self._server = reactor.listenTCP(0, SimpleIRCFactory())
         self.port = self._server.getHost().port
 
         # Setup client
         self.log = []
-        self.client = TesterClient(self.log)
+        self.client = TesterClient(self.log, channel)
         reactor.connectTCP("127.0.0.1", self.port,
                 PassThroughFactory(self.client))
 
@@ -149,8 +151,8 @@ class Tester(object):
     def ready(self):
         return self.client.ready()
 
-    def notify(self):
-        return self.client.notify()
+    def notify(self, *args, **kwargs):
+        return self.client.notify(*args, **kwargs)
 
 class SMTPMessageParser(FeedParser):
     """Parse the email message and store the resulting MIME

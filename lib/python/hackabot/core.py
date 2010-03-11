@@ -1,5 +1,6 @@
 """Hackabot Core"""
 
+import os
 import re
 import time
 
@@ -16,7 +17,7 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import db, log, plugin, remote
+from hackabot import db, log, plugin, remote, parse_config
 from hackabot import ConfigError, NotConnected
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
@@ -27,15 +28,17 @@ def nick(sent_by):
 class HBotManager(object):
     """Manage various network connections"""
 
-    def __init__(self, config):
-        self.config = config
-        self.dbpool = db.ConnectionPool(config)
+    def __init__(self, path=None, xml=None, exit_cb=None, exit_args=()):
+        self.config = parse_config(path, xml)
+        self.dbpool = db.ConnectionPool(self.config)
         self.plugins = plugin.PluginManager()
+        self._exit_cb = exit_cb
+        self._exit_args = exit_args
         self._remote = remote.HBRemoteControl(self)
         self._networks = {}
         self._default = None
 
-        for network in config.findall("network"):
+        for network in self.config.findall("network"):
             id = network.get("id", None)
 
             if id not in self._networks:
@@ -64,11 +67,13 @@ class HBotManager(object):
         """Connect to all configured networks"""
         for net in self._networks.itervalues():
             net.connect()
+        self._remote.connect()
 
     def disconnect(self, message=''):
         """Disconnect all configured networks"""
 
         log.info("Quitting with message '%s'" % message)
+        self._remote.disconnect()
         for net in self._networks.itervalues():
             net.disconnect(message)
 
@@ -85,8 +90,12 @@ class HBotManager(object):
             if net.reconnect:
                 active = True
 
-        if not active:
-            reactor.stop()
+        if not active and self._exit_cb:
+            cb = self._exit_cb
+            args = self._exit_args
+            self._exit_cb = None
+            self._exit_args = None
+            cb(*args)
 
     def __getitem__(self, key):
         return self._networks[key]
@@ -503,6 +512,7 @@ class HBotNetwork(protocol.ClientFactory):
                     raise ConfigError("Server with invalid port '%s' in '%s'"
                             % (server.get('port', None), self.id))
 
+        self._force_disconnect_timer = None
         self._connection = None
         self._server_curr = None
         self._server_iter = None
@@ -567,15 +577,20 @@ class HBotNetwork(protocol.ClientFactory):
         self.reconnect = False
         if self._connection:
             self._connection.quit(message)
-            # Close the connection if the server doesn't within 5 seconds
-            reactor.callLater(5, self._force_disconnect)
+            # Close the connection if the server doesn't within 15 seconds
+            self._force_disconnect_timer = \
+                    reactor.callLater(15, self._force_disconnect)
 
     def _force_disconnect(self):
         if self._connection:
             log.warn("Killing connection...")
-            #self._connection.transport.loseConnection()
+            self._force_disconnect_timer = None
+            self._connection.transport.loseConnection()
 
     def _reconnect(self):
+        if self._force_disconnect_timer:
+            self._force_disconnect_timer.cancel()
+            self._force_disconnect_timer = None
         if not self.reconnect:
             self.manager.networkLost(self.id)
             return

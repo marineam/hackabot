@@ -16,21 +16,32 @@ class HBRemoteControl(ServerFactory):
 
     def __init__(self, manager):
         self._manager = manager
+        self._socket = None
 
-        if manager.config.find('listen') is None:
-            path = "%s/sock" % manager.config.get('root')
+        if manager.config.find('listen') is not None:
+            self._path = "%s/sock" % manager.config.get('root')
         else:
-            return
-
-        try:
-            os.unlink(path)
-            log.warn("Removed an old socket: %s" % path)
-        except OSError:
-            pass
-
-        reactor.listenUNIX(path, self)
+            self._path = None
 
     def buildProtocol(self, addr):
         p = self.protocol(self._manager)
         p.factory = self
         return p
+
+    def connect(self):
+        if not self._path:
+            return
+
+        try:
+            os.unlink(self._path)
+            log.warn("Removed an old socket: %s" % self._path)
+        except OSError:
+            pass
+
+        self._socket = reactor.listenUNIX(self._path, self)
+
+    def disconnect(self):
+        if self._socket:
+            sock = self._socket
+            self._socket = None
+            return sock.loseConnection()
