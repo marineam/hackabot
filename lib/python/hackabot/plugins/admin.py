@@ -3,7 +3,7 @@
 from zope.interface import implements
 from twisted.plugin import IPlugin
 
-from hackabot import core, plugin
+from hackabot import plugin
 
 class Admin(object):
     implements(IPlugin, plugin.IHackabotPlugin)
@@ -27,7 +27,7 @@ class Admin(object):
                     "This is reload #%s since startup." % count)
             plugin.manager.reload()
         elif request == "quit":
-            core.manager.disconnect(args)
+            conn.manager.disconnect(args)
         elif request == "join":
             conn.join(args)
         elif request == "part":

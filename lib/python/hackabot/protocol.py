@@ -21,9 +21,10 @@ class HBLineProtocol(LineOnlyReceiver):
     delimiter = '\n'
     _dump = False
 
-    def __init__(self):
+    def __init__(self, manager):
+        self._manager = manager
+        self._net = manager.default()
         self._to = None
-        self._net = core.manager.default()
 
     def connectionMade(self):
         log.debug("New connection.")
@@ -103,10 +104,10 @@ class HBLineProtocol(LineOnlyReceiver):
                 self.sendLine("ok only one network")
             else:
                 self.sendLine("ok %s" % id)
-        elif args not in core.manager:
+        elif args not in self._manager:
             raise CommandError("invalid network id '%s'" % args)
         else:
-            self._net = core.manager[args]
+            self._net = self._manager[args]
             self.sendLine("ok")
 
     def handle_dump(self, args):
@@ -227,7 +228,7 @@ class HBLineProtocol(LineOnlyReceiver):
         
         quit [<some reason>]"""
 
-        core.manager.disconnect(args)
+        self._manager.disconnect(args)
 
     def handle_topic(self, args):
         """Get or set a topic in a channel using the current to.
@@ -267,6 +268,7 @@ class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
     """ProcessProtocol adapter for HBLineProtocol"""
 
     def __init__(self, conn, event):
+        HBLineProtocol.__init__(self, conn.manager)
         self._net = conn.factory
         self._pid = ""
 
@@ -283,8 +285,8 @@ class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
             self._text = ""
 
     def connectionMade(self):
-        log.debug("Process started", prefix=self._pid)
         self._pid = str(self.transport.pid)
+        log.debug("Process started", prefix=self._pid)
 
         # workaround to make the LineProtocol happy
         self.transport.disconnecting = 0

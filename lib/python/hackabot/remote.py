@@ -32,3 +32,8 @@ class HBRemoteControl(ServerFactory):
             pass
 
         reactor.listenUNIX(path, self)
+
+    def buildProtocol(self, addr):
+        p = self.protocol(self._manager)
+        p.factory = self
+        return p
