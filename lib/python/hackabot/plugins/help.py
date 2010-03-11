@@ -5,17 +5,17 @@ from glob import glob
 
 from zope.interface import implements
 from twisted.plugin import IPlugin
-
-from hackabot import plugin
+from hackabot.plugin import IHackabotPlugin
 
 class Help(object):
-    implements(IPlugin, plugin.IHackabotPlugin)
+    implements(IPlugin, IHackabotPlugin)
 
     def command_help(self, conn, event):
         """List commands or get help on one command
         !help [command]
         """
 
+        plugins = conn.manager.plugins
         conf = conn.manager.config
         text = event['text'].strip()
         if text:
@@ -24,8 +24,8 @@ class Help(object):
             if not ok:
                 if reply:
                     send = reply
-            elif text in plugin.manager.commands:
-                send = plugin.manager.commands[text].__doc__
+            elif text in plugins.commands:
+                send = plugins.commands[text].__doc__
                 if send is None:
                     send = "Command '%s' is missing a help message." % text
             elif os.path.isfile("%s/%s" % (conf.get('commands'), text)):
@@ -53,7 +53,7 @@ class Help(object):
             else:
                 send = "Unknown command '%s'" % text
         else:
-            commands = plugin.manager.commands.keys()
+            commands = plugins.commands.keys()
 
             for cmd in glob("%s/*" % conf.get('commands')):
                 if (os.path.isfile(cmd) and not os.path.islink(cmd)

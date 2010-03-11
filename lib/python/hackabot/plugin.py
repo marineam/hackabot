@@ -7,11 +7,6 @@ from twisted.python import modules, failure
 from hackabot import log, plugins
 
 
-def init():
-    global manager
-    manager = PluginManager()
-
-
 class PluginManager(object):
     """Keep an index of available plugins and call them"""
 
@@ -19,7 +14,7 @@ class PluginManager(object):
                   'kick', 'quit', 'rename', 'names', 'command')
 
     def __init__(self):
-        self.load()
+        self._load()
 
     def reload(self):
         """Reload all available plugins"""
@@ -30,9 +25,9 @@ class PluginManager(object):
         for module in modules.getModule(plugins.__name__).iterModules():
             reload(module.load())
 
-        self.load()
+        self._load()
 
-    def load(self):
+    def _load(self):
         """Load all available plugins"""
 
         self.plugins = getPlugins(IHackabotPlugin, plugins)

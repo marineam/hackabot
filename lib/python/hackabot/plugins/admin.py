@@ -2,11 +2,10 @@
 
 from zope.interface import implements
 from twisted.plugin import IPlugin
-
-from hackabot import plugin
+from hackabot.plugin import IHackabotPlugin
 
 class Admin(object):
-    implements(IPlugin, plugin.IHackabotPlugin)
+    implements(IPlugin, IHackabotPlugin)
 
     @staticmethod
     def command_admin(conn, event):
@@ -25,7 +24,7 @@ class Admin(object):
         if request == "reload":
             conn.msg(event['reply_to'],
                     "This is reload #%s since startup." % count)
-            plugin.manager.reload()
+            conn.manager.reload()
         elif request == "quit":
             conn.manager.disconnect(args)
         elif request == "join":

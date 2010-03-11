@@ -34,6 +34,7 @@ class HBotManager(object):
     def __init__(self, config):
         self.config = config
         self.dbpool = db.ConnectionPool(config)
+        self.plugins = plugin.PluginManager()
         self._remote = remote.HBRemoteControl(self)
         self._networks = {}
         self._default = None
@@ -55,6 +56,11 @@ class HBotManager(object):
             ConfigError("No networks defined!")
         elif len(self._networks) != 1 and None in self._networks:
             ConfigError("Missing network id!")
+
+    def reload(self):
+        """Reload plugins and configs"""
+        # TODO: reload the config!
+        self.plugins.reload()
 
     def connect(self):
         """Connect to all configured networks"""
@@ -161,7 +167,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def privmsg(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -183,7 +189,7 @@ class HBotConnection(irc.IRCClient):
             event['reply_to'] = sent_to
             event['private'] = False
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
         match = self.COMMAND.match(msg)
         if match:
@@ -200,7 +206,7 @@ class HBotConnection(irc.IRCClient):
             if reply:
                 self.msg(event['reply_to'], reply)
             if ok:
-                plugin.manager.command(self, cmdevent)
+                self.manager.plugins.command(self, cmdevent)
 
     def action(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -222,7 +228,7 @@ class HBotConnection(irc.IRCClient):
             event['reply_to'] = sent_to
             event['private'] = False
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def noticed(self, sent_by, sent_to, msg):
         sent_by = nick(sent_by)
@@ -244,7 +250,7 @@ class HBotConnection(irc.IRCClient):
             event['reply_to'] = sent_to
             event['private'] = False
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def joined(self, channel):
         log.info("Joined %s" % channel)
@@ -258,7 +264,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def left(self, channel):
         log.info("Left %s" % channel)
@@ -273,7 +279,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def kickedFrom(self, channel, kicker, msg):
         log.info("Kicked from %s by %s: %s" % (channel, nick(kicker), msg))
@@ -289,7 +295,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def topicUpdated(self, user, channel, topic):
         log.debug("%s topic: %s" % (channel, topic))
@@ -304,7 +310,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def userJoined(self, user, channel):
         log.debug("%s joined channel %s" % (user, channel))
@@ -318,7 +324,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def userLeft(self, user, channel):
         log.debug("%s left channel %s" % (user, channel))
@@ -334,7 +340,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def userKicked(self, user, channel, kicker, msg):
         log.debug("%s kicked from %s by %s: %s" % (user, channel, kicker, msg))
@@ -350,7 +356,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def userQuit(self, user, msg):
         log.debug("%s quit: %s" % (user, msg))
@@ -364,7 +370,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def userRenamed(self, oldname, newname):
         log.debug("%s changed to %s" % (oldname, newname))
@@ -380,7 +386,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def irc_RPL_NAMREPLY(self, prefix, params):
         # Odd that twisted doesn't handle this one
@@ -401,7 +407,7 @@ class HBotConnection(irc.IRCClient):
             'users': users,
             'time': time.time()
         }
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def irc_unknown(self, prefix, command, params):
         log.trace("unknown: %s %s %s" % (prefix, command, params))
@@ -427,7 +433,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def notice(self, to, msg):
         irc.IRCClient.notice(self, to, msg)
@@ -449,7 +455,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
     def me(self, to, msg):
         # Override the twisted behavior of only allowing channels for this
@@ -465,7 +471,7 @@ class HBotConnection(irc.IRCClient):
                 'time': time.time()
                 }
 
-        plugin.manager.hook(self, event)
+        self.manager.plugins.hook(self, event)
 
 # So other bits can get access to the current connections
 connections = {}
