@@ -24,10 +24,6 @@ from hackabot.acl import ACL
 def nick(sent_by):
     return sent_by.split('!',1)[0]
 
-def init(config):
-    global manager
-    manager = HBotManager(config)
-
 class HBotManager(object):
     """Manage various network connections"""
 
@@ -56,6 +52,8 @@ class HBotManager(object):
             ConfigError("No networks defined!")
         elif len(self._networks) != 1 and None in self._networks:
             ConfigError("Missing network id!")
+
+        self.connect()
 
     def reload(self):
         """Reload plugins and configs"""

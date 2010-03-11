@@ -132,7 +132,7 @@ def run(argv=sys.argv):
         sys.exit(1)
 
     try:
-        core.init(conf)
+        manager = core.HBotManager(conf)
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
@@ -143,7 +143,6 @@ def run(argv=sys.argv):
     # Delay taking over stdio so any startup errors can go to stderr
     log.init_stdio()
 
-    reactor.callWhenRunning(core.manager.connect)
     reactor.run()
 
 # Import late to avoid circles...
