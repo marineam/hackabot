@@ -131,7 +131,7 @@ def run(argv=sys.argv):
     try:
         core.init(conf)
         plugin.init()
-        remote.init(conf)
+        remote.init(core.manager)
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
@@ -143,7 +143,6 @@ def run(argv=sys.argv):
     log.init_stdio()
 
     reactor.callWhenRunning(core.manager.connect)
-    reactor.callWhenRunning(remote.listen)
     reactor.run()
 
 # Import late to avoid circles...
