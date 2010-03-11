@@ -42,7 +42,7 @@ class ACL(object):
             log.debug("No acl")
             return (True, "")
         else:
-            log.debug("Using acl: %s" % ElementTree.tostring(acl))
+            log.debug("Using acl: %s" % ElementTree.tostring(acl).strip())
             action = acl.get("action", "")
             if action == "" or action not in ("allow", "deny"):
                 log.error('Invalid acl action="%s", allowing.' % action)
