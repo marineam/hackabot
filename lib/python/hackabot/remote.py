@@ -8,9 +8,6 @@ from twisted.internet.protocol import ServerFactory
 from hackabot.protocol import HBLineProtocol
 from hackabot import log
 
-def init(manager):
-    HBRemoteControl(manager)
-
 class HBRemoteControl(ServerFactory):
     """Remote Control connection factory"""
 

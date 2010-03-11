@@ -11,6 +11,9 @@ from twisted.internet import reactor
 class ConfigError(Exception):
     pass
 
+class NotConnected(Exception):
+    pass
+
 def daemonize(pid_file):
     """Background the current process"""
 
@@ -131,7 +134,6 @@ def run(argv=sys.argv):
     try:
         core.init(conf)
         plugin.init()
-        remote.init(core.manager)
     except ConfigError, ex:
         log.error(str(ex))
         sys.exit(1)
@@ -146,4 +148,4 @@ def run(argv=sys.argv):
     reactor.run()
 
 # Import late to avoid circles...
-from hackabot import core, plugin, remote, log
+from hackabot import core, plugin, log

@@ -6,7 +6,7 @@ from twisted.internet.interfaces import IHalfCloseableProtocol
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import LineOnlyReceiver
 
-from hackabot import core, log
+from hackabot import log, NotConnected
 
 class CommandError(Exception):
     pass
@@ -66,7 +66,7 @@ class HBLineProtocol(LineOnlyReceiver):
         if self._net:
             try:
                 return self._net.connection()
-            except core.NotConnected:
+            except NotConnected:
                 raise CommandError("net %s is not connected", self._net.id)
         else:
             raise CommandError("net has not been set")

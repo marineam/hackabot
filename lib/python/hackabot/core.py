@@ -16,12 +16,10 @@ if ssl and not ssl.supported:
    # happens second and later times
    ssl = None
 
-from hackabot import ConfigError, db, log, plugin
+from hackabot import db, log, plugin, remote
+from hackabot import ConfigError, NotConnected
 from hackabot.etree import ElementTree
 from hackabot.acl import ACL
-
-class NotConnected(Exception):
-    pass
 
 def nick(sent_by):
     return sent_by.split('!',1)[0]
@@ -36,6 +34,7 @@ class HBotManager(object):
     def __init__(self, config):
         self.config = config
         self.dbpool = db.ConnectionPool(config)
+        self._remote = remote.HBRemoteControl(self)
         self._networks = {}
         self._default = None
 
