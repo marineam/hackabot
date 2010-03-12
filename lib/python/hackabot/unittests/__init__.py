@@ -15,6 +15,12 @@ class IRCTestCase(unittest.TestCase):
         self.tester = dummy_server.Tester(self.channel)
         return self.tester.ready()
 
+    def send(self, msg, to=channel):
+        self.tester.client.msg(to, msg)
+
+    def action(self, msg, to=channel):
+        self.tester.client.me(to, msg)
+
     def tearDown(self):
         return self.tester.loseConnection()
 
@@ -51,6 +57,15 @@ class HBTestCase(IRCTestCase):
         d = super(HBTestCase, self).setUp()
         d.addCallback(start)
         return d
+
+    def expect(self, log):
+        log = [('join', self.nickname, None)] + list(log)
+        if len(self.tester.log) >= len(log):
+            self.assertEquals(self.tester.log, log)
+        else:
+            d = self.tester.notify()
+            d.addCallback(lambda _: self.expect(log))
+            return d
 
     def tearDown(self):
         self.manager.disconnect()

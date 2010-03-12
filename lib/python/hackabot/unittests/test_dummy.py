@@ -35,7 +35,32 @@ class DummyTestCase(IRCTestCase):
         d.addCallback(ready)
         return d
 
-class HBNoopTestCase(HBTestCase):
+    def testCommands(self):
+        log = []
+        dummy = DummyClient(log)
+        c = reactor.connectTCP("127.0.0.1", self.tester.port,
+                dummy_server.PassThroughFactory(dummy))
 
-    def testNoop(self):
-        self.assert_(True)
+        expect = [('privmsg', 'tester', 'aaaa'),
+                  ('action', 'tester', 'bbbb')]
+
+        def ready(_):
+            d = dummy.notify('action')
+            d.addCallback(check)
+            self.send("aaaa")
+            self.action("bbbb")
+            return d
+
+        def check(_):
+            self.assertEquals(log, expect)
+            dummy.quit()
+            return dummy.done()
+
+        d = dummy.ready()
+        d.addCallback(ready)
+        return d
+
+class TrivialTestCase(HBTestCase):
+
+    def testExpect(self):
+        return self.expect([])

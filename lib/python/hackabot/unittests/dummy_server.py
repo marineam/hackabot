@@ -57,9 +57,6 @@ class TesterClient(irc.IRCClient):
     def privmsg(self, user, channel, message):
         self._logit('privmsg', user, message)
 
-    def noticed(self, user, channel, message):
-        self._logit('notice', user, message)
-
     def action(self, user, channel, message):
         self._logit('action', user, message)
 
@@ -74,6 +71,10 @@ class TesterClient(irc.IRCClient):
 
     def userRenamed(self, old, new):
         self._logit('nick', old, new)
+
+    def notice(self, to, msg):
+        # This blows, but I don't want to deal with implementing it.
+        raise Exception("Twisted's IRC server doesn't support NOTICE")
 
     def ready(self):
         return self._ready
