@@ -43,6 +43,9 @@ Hackabot can be run without a database but many commands and hooks
 depend on it so you probably want it unless you are simply using
 Hackabot as a framework for your own stuff.
 
+Disclaimer: Although I think hackabot is compatible with Python 2.4 and
+Twisted 2.5 it has been a while since it was tested with these versions.
+
 Misc Requirements
 ~~~~~~~~~~~~~~~~~
 
@@ -70,6 +73,10 @@ figlet                  (figlet command)
 cowsay                  (cowsay command)
 and other stuff I forget...
 
+To attempt to get catch missing dependencies before starting run the
+check-deps script in the bin directory. It is far from perfect and is
+known to miss a few things, but it should catch most things.
+
 CONFIGURATION
 -------------
 
@@ -90,7 +97,7 @@ as the argument:
 ./bin/hackabot etc/hackabot.xml
 
 If you want the bot to background the bot try this:
-./bin/hackabot --log-file var/hackabot.log etc/hackabot.xml &
+./bin/hackabot -l var/hackabot.log -p var/hackabot.pid etc/hackabot.xml
 
 
 Further documentation can be found in the docs directory. Enjoy!
