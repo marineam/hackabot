@@ -20,7 +20,7 @@ class Ponies(object):
         message = event["text"].lower()
 
         if "pony" in message or "ponies" in message:
-            conn.msg(event["reply_to"], "OMG!! Ponies!!!")
+            conn.msg(event["reply_to"], "OMG!!! Ponies!!!")
 
     me = msg
 

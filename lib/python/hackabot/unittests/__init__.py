@@ -3,6 +3,7 @@
 import re
 
 from twisted.internet import defer
+from twisted.python import log
 from twisted.trial import unittest
 
 from hackabot import core, parse_config
@@ -57,12 +58,17 @@ class HBTestCase(IRCTestCase):
         d.addCallback(start)
         return d
 
-    def expect(self, log, autojoin=True):
+    def expect(self, expect, autojoin=True):
         if autojoin:
-            log = [('join', self.nickname, None)] + list(log)
-        if len(self.tester.log) >= len(log):
-            self.assertEquals(len(self.tester.log), len(log))
-            for result, expect in zip(self.tester.log, log):
+            expect = [('join', self.nickname, None)] + list(expect)
+
+        # Sanity check!
+        for item in expect:
+            self.assertEquals(len(item), 3)
+
+        if len(self.tester.log) >= len(expect):
+            self.assertEquals(len(self.tester.log), len(expect))
+            for result, expect in zip(self.tester.log, expect):
                 self.assertEquals(result[0], expect[0])
                 self.assertEquals(result[1], expect[1])
                 if isinstance(expect[2], SRE_Pattern):
@@ -70,8 +76,10 @@ class HBTestCase(IRCTestCase):
                 else:
                     self.assertEquals(expect[2], result[2])
         else:
+            log.msg('Waiting for %d more event(s)' %
+                    (len(expect) - len(self.tester.log)))
             d = self.tester.notify()
-            d.addCallback(lambda _: self.expect(log, False))
+            d.addCallback(lambda _: self.expect(expect, False))
             return d
 
     def tearDown(self):
