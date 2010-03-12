@@ -3,7 +3,7 @@ import os
 from glob import glob
 
 from zope.interface import implements
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 from twisted.plugin import IPlugin
 
 from hackabot.plugin import IHackabotPlugin
@@ -54,11 +54,19 @@ class ExternalPlugins(object):
         else:
             vars['PYTHONPATH'] = conf.get('python')
 
+        deferreds = []
         for cmd in commands:
             if os.access(cmd, os.X_OK):
                 log.debug("Running %s" % cmd)
-                proto = HBProcessProtocol(conn, event)
+                deferred = defer.Deferred()
+                deferreds.append(deferred)
+                proto = HBProcessProtocol(conn, event, deferred)
                 reactor.spawnProcess(proto, cmd, [cmd], vars)
+
+        if len(deferreds) == 1:
+            return deferreds[0]
+        elif len(deferreds) > 1:
+            return defer.DeferredList(deferreds, consumeErrors=True)
 
     msg = _handle_event
     me = _handle_event

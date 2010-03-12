@@ -5,7 +5,7 @@ import re
 import time
 
 from twisted.words.protocols import irc
-from twisted.internet import protocol, reactor, error
+from twisted.internet import protocol, reactor, error, defer
 
 # SSL support is screwy
 try:
@@ -34,6 +34,7 @@ class HBotManager(object):
         self.plugins = plugin.PluginManager()
         self._exit_cb = exit_cb
         self._exit_args = exit_args
+        self._exit_deferred = None
         self._remote = remote.HBRemoteControl(self)
         self._networks = {}
         self._default = None
@@ -72,10 +73,16 @@ class HBotManager(object):
     def disconnect(self, message=''):
         """Disconnect all configured networks"""
 
+        self._exit_deferred = d = defer.Deferred()
+
         log.info("Quitting with message '%s'" % message)
-        self._remote.disconnect()
+        remote_d = self._remote.disconnect()
         for net in self._networks.itervalues():
             net.disconnect(message)
+
+        d.addCallback(lambda _: remote_d)
+        d.addCallback(lambda _: self.plugins.wait())
+        return d
 
     def default(self):
         """The default network"""
@@ -90,12 +97,18 @@ class HBotManager(object):
             if net.reconnect:
                 active = True
 
-        if not active and self._exit_cb:
-            cb = self._exit_cb
-            args = self._exit_args
-            self._exit_cb = None
-            self._exit_args = None
-            cb(*args)
+        if not active:
+            if self._exit_cb:
+                cb = self._exit_cb
+                args = self._exit_args
+                self._exit_cb = None
+                self._exit_args = None
+                cb(*args)
+
+            if self._exit_deferred:
+                d = self._exit_deferred
+                self._exit_deferred = None
+                d.callback(None)
 
     def __getitem__(self, key):
         return self._networks[key]

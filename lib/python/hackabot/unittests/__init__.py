@@ -1,11 +1,16 @@
 """Base Hackabot TestCase"""
 
+import re
+
 from twisted.internet import defer
 from twisted.trial import unittest
 
 from hackabot import core, parse_config
 from hackabot.etree import ElementTree
 from hackabot.unittests import dummy_server
+
+# There got to be a less retarded way to do this
+SRE_Pattern = type(re.compile('x'))
 
 class IRCTestCase(unittest.TestCase):
 
@@ -43,31 +48,33 @@ class HBTestCase(IRCTestCase):
         return cfg
 
     def setUp(self):
-        self._hb_exit = defer.Deferred()
-
-        def stop():
-            assert self._hb_exit
-            self._hb_exit.callback(None)
-
         def start(_):
             config = ElementTree.tostring(self.buildConfig())
-            self.manager = core.HBotManager(xml=config, exit_cb=stop)
+            self.manager = core.HBotManager(xml=config)
             return self.tester.notify('join', self.nickname)
 
         d = super(HBTestCase, self).setUp()
         d.addCallback(start)
         return d
 
-    def expect(self, log):
-        log = [('join', self.nickname, None)] + list(log)
+    def expect(self, log, autojoin=True):
+        if autojoin:
+            log = [('join', self.nickname, None)] + list(log)
         if len(self.tester.log) >= len(log):
-            self.assertEquals(self.tester.log, log)
+            self.assertEquals(len(self.tester.log), len(log))
+            for result, expect in zip(self.tester.log, log):
+                self.assertEquals(result[0], expect[0])
+                self.assertEquals(result[1], expect[1])
+                if isinstance(expect[2], SRE_Pattern):
+                    self.assert_(expect[2].search(result[2]))
+                else:
+                    self.assertEquals(expect[2], result[2])
         else:
             d = self.tester.notify()
-            d.addCallback(lambda _: self.expect(log))
+            d.addCallback(lambda _: self.expect(log, False))
             return d
 
     def tearDown(self):
-        self.manager.disconnect()
-        self._hb_exit.addCallback(lambda _: super(HBTestCase, self).tearDown())
-        return self._hb_exit
+        d = self.manager.disconnect()
+        d.addCallback(lambda _: super(HBTestCase, self).tearDown())
+        return d

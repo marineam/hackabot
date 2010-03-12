@@ -1,6 +1,7 @@
 """Hackabot Plugin Interface"""
 
 from zope.interface import Interface
+from twisted.internet import defer, reactor
 from twisted.plugin import getPlugins
 from twisted.python import modules, failure
 
@@ -14,6 +15,7 @@ class PluginManager(object):
                   'kick', 'quit', 'rename', 'names', 'command')
 
     def __init__(self):
+        self._pending = set()
         self._load()
 
     def reload(self):
@@ -26,6 +28,23 @@ class PluginManager(object):
             reload(module.load())
 
         self._load()
+
+    def wait(self):
+        def check(_):
+            if self._pending:
+                log.debug("Waiting on %d plugin commands" % len(self._pending))
+                d = defer.DeferredList(self._pending, consumeErrors=True)
+                d.addBoth(check)
+                return d
+            else:
+                log.trace("All plugin commands complete")
+
+        d = defer.Deferred()
+        d.addCallback(check)
+        # Call later to give the reactor a chance to start anything
+        # that is already in the works (ie some buffer, etc.)
+        reactor.callLater(0, d.callback, None)
+        return d
 
     def _load(self):
         """Load all available plugins"""
@@ -65,14 +84,22 @@ class PluginManager(object):
         assert callable(func)
         self.hooks[type].append(func)
 
+    def _add_pending(self, deferred):
+        if not isinstance(deferred, defer.Deferred):
+            return
+        self._pending.add(deferred)
+        deferred.addBoth(lambda _: self._pending.discard(deferred))
+
     def command(self, conn, event):
         log.trace("command: %s: %s" % (event['command'], event['text']))
 
         if event['command'] in self.commands:
             try:
-                self.commands[event['command']](conn, event.copy())
+                d = self.commands[event['command']](conn, event.copy())
             except:
                 log.error(failure.Failure())
+            else:
+                self._add_pending(d)
         else:
             self.hook(conn, event)
 
@@ -81,9 +108,11 @@ class PluginManager(object):
 
         for func in self.hooks[event['type']]:
             try:
-                func(conn, event.copy())
+                d = func(conn, event.copy())
             except:
                 log.error(failure.Failure())
+            else:
+                self._add_pending(d)
 
 
 class IHackabotPlugin(Interface):

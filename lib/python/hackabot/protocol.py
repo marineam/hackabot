@@ -264,13 +264,37 @@ class HBLineProtocol(LineOnlyReceiver):
         users = self.conn().channels[chan]['users']
         self.sendLine("ok %s" % (" ".join(users)))
 
-class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
+class DeferredProcessProtocol(ProcessProtocol):
+    """A ProcessProtocol that fires a deferred when it is done.
+
+    This is hugely helpful for house keeping during unit tests.
+    """
+
+    def __init__(self, deferred):
+        self._deferred = deferred
+        self._pid = ""
+
+    def connectionMade(self):
+        self._pid = str(self.transport.pid)
+        log.debug("Process started", prefix=self._pid)
+
+    def processEnded(self, reason):
+        if isinstance(reason.value, error.ProcessDone):
+            log.debug("Process ended", prefix=self._pid)
+            reason = None
+        else:
+            log.warn(reason, prefix=self._pid)
+        deferred = self._deferred
+        self._deferred = None
+        deferred.callback(reason)
+
+class HBProcessProtocol(DeferredProcessProtocol, HBLineProtocol):
     """ProcessProtocol adapter for HBLineProtocol"""
 
-    def __init__(self, conn, event):
+    def __init__(self, conn, event, deferred):
+        DeferredProcessProtocol.__init__(self, deferred)
         HBLineProtocol.__init__(self, conn.manager)
         self._net = conn.factory
-        self._pid = ""
 
         if 'reply_to' in event:
             self._to = event['reply_to']
@@ -285,8 +309,7 @@ class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
             self._text = ""
 
     def connectionMade(self):
-        self._pid = str(self.transport.pid)
-        log.debug("Process started", prefix=self._pid)
+        DeferredProcessProtocol.connectionMade(self)
 
         # workaround to make the LineProtocol happy
         self.transport.disconnecting = 0
@@ -310,9 +333,3 @@ class HBProcessProtocol(ProcessProtocol, HBLineProtocol):
     def outConnectionLost(self):
         if self._buffer:
             self.lineReceived(self._buffer)
-
-    def processEnded(self, reason):
-        if not isinstance(reason.value, error.ProcessDone):
-            log.warn(reason, prefix=self._pid)
-        else:
-            log.debug("Process ended", prefix=self._pid)
