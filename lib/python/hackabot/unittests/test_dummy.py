@@ -7,7 +7,7 @@ class DummyClient(dummy_server.TesterClient):
 class DummyTestCase(IRCTestCase):
     """Sanity check the tester infrastructure"""
 
-    def testLog(self):
+    def test_log(self):
         dummy = DummyClient()
         c = reactor.connectTCP("127.0.0.1", self.tester.port,
                 dummy_server.PassThroughFactory(dummy))
@@ -35,7 +35,7 @@ class DummyTestCase(IRCTestCase):
         d.addCallback(ready)
         return d
 
-    def testCommands(self):
+    def test_commands(self):
         log = []
         dummy = DummyClient(log)
         c = reactor.connectTCP("127.0.0.1", self.tester.port,
@@ -62,5 +62,5 @@ class DummyTestCase(IRCTestCase):
 
 class TrivialTestCase(HBTestCase):
 
-    def testExpect(self):
+    def test_expect(self):
         return self.expect([])

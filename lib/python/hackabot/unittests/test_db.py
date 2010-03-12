@@ -39,14 +39,14 @@ class SchemaTestCase(unittest.TestCase):
         cursor.close()
         conn.close()
 
-    def testLoadLatest(self):
+    def test_load_latest(self):
         sch = db.SchemaManager(self.config)
         latest = sch.required_schema()
         sch._load_schema(latest)
         self.assertEquals(latest, sch.current_schema())
         sch.close()
 
-    def testAllUpgrades(self):
+    def test_upgrade_all(self):
         sch = db.SchemaManager(self.config)
         sch._load_schema(0)
         sch.upgrade()
