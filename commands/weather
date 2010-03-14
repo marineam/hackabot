@@ -10,8 +10,13 @@ use URI::Escape;
 use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new;
+my $conf = $hbc->{'conf'}->{'commands'};
 my $asker = $hbc->sent_by;
 my $location = $hbc->readline;
+
+if (not $location and defined $conf->{'weather'}->{'location'}) {
+    $location = $conf->{'weather'}->{'location'};
+}
 
 if ($location ne "") {
     $location = uri_escape($location);
@@ -42,10 +47,10 @@ if ($location ne "") {
     $weather = "$weather Humidity: $data_current->{relative_humidity}, Pressure: $data_current->{pressure_in}\",";
     $weather = "$weather Wind: $data_current->{wind_dir} $data_current->{wind_mph}mph";
     print "send $weather\n";
-    $weather = "Forecast: $data_forecast->{simpleforecast}->{forecastday}[0]->{conditions},";
-    $weather = "$weather High: $data_forecast->{simpleforecast}->{forecastday}[0]->{high}->{fahrenheit} F,";
-    $weather = "$weather Low: $data_forecast->{simpleforecast}->{forecastday}[0]->{low}->{fahrenheit} F";
+    $weather = "Forecast: $data_forecast->{simpleforecast}->{forecastday}[1]->{conditions},";
+    $weather = "$weather High: $data_forecast->{simpleforecast}->{forecastday}[1]->{high}->{fahrenheit} F,";
+    $weather = "$weather Low: $data_forecast->{simpleforecast}->{forecastday}[1]->{low}->{fahrenheit} F";
     print "send $weather\n";
 } else {
-    print "send $asker: You must enter a location code, either zip or airport\n";
+    print "send $asker: You must enter a zip or airport code\n";
 }

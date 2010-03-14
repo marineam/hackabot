@@ -65,6 +65,8 @@
             username='mydelicioususer'
             password='mydeliciouspass'
         />
+        <!-- default location for !weather -->
+        <weather location="02129"/>
     </commands>
 
     <!-- Options for external inputs (ie email) -->
