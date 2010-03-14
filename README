@@ -68,7 +68,7 @@ And some lesser things:
 
 URI::Find::Rule         (TinyURL hook)
 WWW::Shorten::TinyURL   (TinyURL hook)
-SOAPpy                  (Urban Dictionary command)
+SOAP::Lite              (Urban Dictionary command)
 figlet                  (figlet command)
 cowsay                  (cowsay command)
 and other stuff I forget...

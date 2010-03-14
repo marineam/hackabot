@@ -1,26 +1,40 @@
-#!/usr/bin/env python
+#!/usr/bin/perl -w
+
 ##HACKABOT_HELP##
 # Look up a word in the Urban Dictionary.
 # !urban word
 ##HACKABOT_HELP##
 
-import SOAPpy
-import sys
+use strict;
+use SOAP::Lite;
+use Hackabot::Client;
 
-import hackabot
-from hackabot.client import Client
+my $key = '7df8eccad5391dbbb45e81fa77f4c1a8';
+my $url = 'http://api.urbandictionary.com/soap?wsdl';
 
-server = SOAPpy.SOAPProxy("http://api.urbandictionary.com/soap")
+my $hbc = Hackabot::Client->new;
+my $msg = $hbc->readline;
+my $nick = $hbc->sent_by;
 
-hbc = Client()
-msg = hbc.readline()
-nick = hbc.sent_by()
-if msg:
-    urban = server.lookup("7df8eccad5391dbbb45e81fa77f4c1a8", msg)
-    if len(urban):
-        if(len(urban[0].definition) < 256):
-            print "send %s: %s" % (nick, urban[0].definition.strip())
-        else:
-            print "send %s: %s" % (nick, urban[0].url.strip())
-    else:
-        print "send %s: I couldn't find a definition for %s" % (nick, msg)
+my $search = SOAP::Lite->service($url);
+my $results;
+if ($msg) {
+    $results = $search->lookup($key, $msg)
+}
+else {
+    print "send $nick: Please give me a word to look up\n";
+    exit;
+}
+
+if ($results) {
+    my $definition = $results->[0]->{'definition'};
+    if (length($definition) > 400) {
+        print "send $nick: ".$results->[0]->{'url'}."\n";
+    }
+    else {
+        print "send $nick: $definition\n";
+    }
+}
+else {
+    print "send $nick: I couldn't find a definition for $msg\n";
+}
