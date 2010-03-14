@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+"""Upgrade to the latest DB schema"""
+
+import os
+import sys
+
+if __name__ == "__main__":
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.append("%s/lib/python" % root)
+
+    from hackabot import db, log, parse_config
+
+    if len(sys.argv) != 2:
+        sys.stderr.write("Usage: %s config.xml\n" % sys.argv[0])
+        sys.exit(1)
+
+    log.init(sys.stdout, 'INFO')
+
+    conf = parse_config(sys.argv[1])
+    try:
+        manager = db.SchemaManager(conf, create=False)
+        manager.upgrade()
+        manager.close()
+    except db.DBError, ex:
+        sys.stderr.write("%s\n" % ex)
+        sys.exit(1)
