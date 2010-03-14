@@ -6,6 +6,7 @@ import sys
 import time
 import email
 from email import utils
+from email import header
 from optparse import OptionParser
 
 sys.path.append("%s/lib/python" %
@@ -36,7 +37,8 @@ def main():
         sys.exit(1)
     ticket = match.group(1)
 
-    subject = msg['Subject'].strip()
+    subject, enc = header.decode_header(msg['Subject'])[0]
+    subject = subject.decode(enc).strip()
     if isinstance(subject, unicode):
         subject = subject.encode('UTF-8')
     subject = re.sub('\[[^\]]*#%s\]\s*' % ticket, '', subject)

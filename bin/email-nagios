@@ -24,7 +24,8 @@ def main():
     msg = email.message_from_file(sys.stdin)
     date = time.localtime(utils.mktime_tz(utils.parsedate_tz(msg['Date'])))
 
-    send = msg['Subject'].strip()
+    send, enc = header.decode_header(msg['Subject'])[0]
+    send = send.decode(enc).strip()
     if isinstance(send, unicode):
         send = send.encode('UTF-8')
 
