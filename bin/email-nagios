@@ -44,7 +44,7 @@ def main():
     if match:
         send = "%s, %s" % (send, match.group(1))
 
-    send = "%s, %s" % (send, time.strftime("%b %d, %H:%M", date))
+    send = "%s, %s" % (send, time.strftime("%b %d, %H:%M %Z", date))
 
     for channel in sys.argv[1:]:
         hbc.check_cmd("to %s" % channel)
