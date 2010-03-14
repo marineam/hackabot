@@ -96,6 +96,7 @@ def parse_config(path=None, xml=None):
     }
 
     if path:
+        path = os.path.abspath(path)
         try:
             config = ElementTree.parse(path).getroot()
         except IOError, (exno, exstr):
@@ -107,6 +108,9 @@ def parse_config(path=None, xml=None):
 
     for key, value in defaults.iteritems():
         config.attrib.setdefault(key, value)
+
+    if path:
+        config.attrib['config'] = path
 
     return config
 

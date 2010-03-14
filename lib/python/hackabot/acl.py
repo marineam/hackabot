@@ -1,25 +1,37 @@
 """Hackabot ACL Checks"""
 
-from hackabot import log
+import os
+
+from hackabot import log, ConfigError
 from hackabot.etree import ElementTree
 
 class ACL(object):
     """Process the acl xml file"""
 
     def __init__(self, config, net=None):
+        self._conf = None
+
         if net is not None and net.find("acl"):
             conffile = net.find("acl").get("file", None)
         elif config.find("acl") is not None:
             conffile = config.find("acl").get("file", None)
         else:
             log.debug("No ACL file to load")
-            self._conf = None
             return
 
         if conffile is None:
-            log.error("<acl> tag is missing the file attribute!");
-            self._conf = None
-            return
+            raise ConfigError("<acl> tag is missing the file attribute!");
+
+        if not os.path.isabs(conffile):
+            confdir = config.get('config', None)
+            if not confdir:
+                log.error("Unable to resolve relative path to ACL")
+                return
+            confdir = os.path.dirname(confdir)
+            conffile = os.path.join(confdir, conffile)
+
+        if not os.access(conffile, os.R_OK):
+            raise ConfigError("Cannot read ACL file %s" % conffile);
 
         log.debug("Loading ACL file %s" % conffile)
         self._conf = ElementTree.parse(conffile)
