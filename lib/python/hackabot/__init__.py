@@ -63,7 +63,7 @@ def daemonize(pid_file):
 def parse_options(argv):
     """Parse Hackabot command line parameters"""
 
-    parser = OptionParser("usage: %prog [options] hackabot.ini")
+    parser = OptionParser("usage: %prog [options] hackabot.xml")
     parser.add_option("-l", "--log-file", dest="file")
     parser.add_option("-v", "--log-level", dest="level", default="INFO",
             help="one of: %s" % ", ".join(log.LEVELS))
