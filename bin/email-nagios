@@ -1,53 +1,54 @@
-#!/usr/bin/perl
+#!/usr/bin/env python
 
-use strict;
-my $root;
+import os
+import re
+import sys
+import time
+import email
+from email import utils
 
-BEGIN {
-    # Figure out the source root based on this file
-    my @path = split("/", $ENV{'PWD'}."/".__FILE__);
-    $root = join("/", @path[0 .. $#path-2]);
-}
+sys.path.append("%s/lib/python" %
+        os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+from hackabot import client
 
-use lib $root."/lib/perl";
-use Hackabot::Client;
+def main():
+    if len(sys.argv) < 2:
+        sys.stderr.write("Usage: %s #channel ...\n" %
+                os.path.basename(__file__))
+        sys.exit(1)
 
-my $hbc = Hackabot::Client->new;
-$hbc->connect($root."/sock");
+    hbc = client.Client()
+    hbc.connect()
 
-my $r;
-my $chan = shift;
-if (not defined $chan or not $chan) {
-    print "Usage: $0 #channel";
-    exit(1);
-}
-else {
-    $r = $hbc->cmd("to $chan");
-    $r =~ /^ok/ or die $r;
-}
+    msg = email.message_from_file(sys.stdin)
+    date = time.localtime(utils.mktime_tz(utils.parsedate_tz(msg['Date'])))
 
-my $data;
-my $header = 1;
-while (<>) {
-    chomp;
-    if (/^Subject:/ and $header) {
-        s/^Subject:\s*//;
-        $data = $_;
-    }
-    elsif (/^$/ and $header) {
-        $header = 0;
-    }
-    elsif (/^Info/ and not $header) {
-        s/^Info:\s*//;
-        $data .= ", $_";
-    }
-    elsif (/^Date/ and not $header) {
-        s/^Date:\s*//;
-        $data .= " $_";
-    }
-}
+    send = msg['Subject'].strip()
+    if isinstance(send, unicode):
+        send = send.encode('UTF-8')
 
-chomp($data);
-$r = $hbc->cmd("notice $data")."\n";
-$r =~ /^ok/ or die $r;
-$hbc->close;
+    text = ""
+    if msg.is_multipart():
+        for part in msg.get_payload():
+            if part.get_content_type() == "text/plain":
+                text = part.get_payload()
+                break
+    else:
+        text = msg.get_payload()
+
+    if isinstance(text, unicode):
+        text = text.encode('UTF-8')
+
+    match = re.search('^Info:\s*(.*\S)\s*$', text, re.M)
+    if match:
+        send = "%s, %s" % (send, match.group(1))
+
+    send = "%s, %s" % (send, time.strftime("%b %d, %H:%M", date))
+
+    for channel in sys.argv[1:]:
+        hbc.check_cmd("to %s" % channel)
+        hbc.check_cmd("notice %s" % send)
+
+if __name__ == "__main__":
+    main()

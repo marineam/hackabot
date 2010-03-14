@@ -66,4 +66,9 @@
             password='mydeliciouspass'
         />
     </commands>
+
+    <!-- Options for external inputs (ie email) -->
+    <external>
+        <email-rt ticket="https://rt.example.com/Ticket/Display.html?id=" />
+    </external>
 </hackabot>

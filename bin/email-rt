@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+import os
+import re
+import sys
+import time
+import email
+from email import utils
+from optparse import OptionParser
+
+sys.path.append("%s/lib/python" %
+        os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+from hackabot import client
+
+def main():
+    parser = OptionParser("Usage: %prog [-c hackabot.xml] #channel ...")
+    parser.add_option("-c", "--config", help="hackabot config file")
+    options, channels = parser.parse_args()
+
+    if not channels:
+        parser.error("At least one channel is required")
+
+    hbc = client.Client(options.config)
+    hbc.connect()
+
+    msg = email.message_from_file(sys.stdin)
+
+    ticket = msg.get('RT-Ticket', None)
+    if not ticket:
+        sys.stderr.write("Email message didn't come from RT!")
+        sys.exit(1)
+    match = re.search('\s#(\d+)', ticket)
+    if not match:
+        sys.stderr.write("Email RT-Ticket header malformed!")
+        sys.exit(1)
+    ticket = match.group(1)
+
+    subject = msg['Subject'].strip()
+    if isinstance(subject, unicode):
+        subject = subject.encode('UTF-8')
+    subject = re.sub('\[[^\]]*#%s\]\s*' % ticket, '', subject)
+
+    send = "New Ticket #%s: %s" % (ticket, subject)
+
+    # Do we have a base URL?
+    conf = hbc.conf.find('external/email-rt')
+    if conf is not None and conf.get('ticket', None):
+        base = conf.get('ticket')
+        send = "%s - %s%s" % (send, base, ticket)
+
+    for channel in sys.argv[1:]:
+        hbc.check_cmd("to %s" % channel)
+        hbc.check_cmd("notice %s" % send)
+
+if __name__ == "__main__":
+    main()
