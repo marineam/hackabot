@@ -1,0 +1,89 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          hackabot
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Hackabot
+# Description:       An IRC Bot
+### END INIT INFO
+
+DESC="Hackabot"
+USER=hackabot
+GROUP=hackabot
+HBDIR=/home/$USER/hackabot
+PYTHON=/usr/bin/python
+DAEMON=$HBDIR/bin/hackabot
+CONFIG=$HBDIR/etc/hackabot.xml
+LOGFILE=/home/$USER/hackabot.log
+PIDFILE=/home/$USER/hackabot.pid
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Define LSB log_* functions.
+. /lib/lsb/init-functions
+
+do_start()
+{
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $PYTHON --test > /dev/null \
+		|| return 1
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--chuid $USER:$GROUP --exec $PYTHON -- $DAEMON \
+        --pid-file $PIDFILE --log-file $LOGFILE $CONFIG \
+		|| return 2
+}
+
+do_stop()
+{
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 \
+		--pidfile $PIDFILE --exec $PYTHON
+	return "$?"
+}
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC"
+	do_start
+	case "$?" in
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC"
+	do_stop
+	case "$?" in
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
+	esac
+	;;
+  status)
+       status_of_proc "$PIDFILE" && exit 0 || exit $?
+       ;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $0 {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:

@@ -1,0 +1,36 @@
+#!/sbin/runscript
+# Copyright 1999-2010 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+DESC="Hackabot"
+USER=manatee
+GROUP=manatee
+HOME=/home/$USER
+# Note this must be python2, python2.5, not python.
+# On gentoo python is a symlink to python-wrapper which
+# apparently confuses the hell out of start-stop-daemon.
+PYTHON=/usr/bin/python2
+HBROOT=$HOME/hackabot
+DAEMON=$HBROOT/bin/hackabot
+CONFIG=$HBROOT/etc/hackabot.xml
+LOGFILE=$HOME/hackabot.log
+PIDFILE=$HOME/hackabot.pid
+
+depend() {
+    need net
+}
+
+start() {
+    ebegin "Starting $DESC"
+    start-stop-daemon --start --pidfile $PIDFILE \
+        --chuid $USER:$GROUP --exec $PYTHON -- $DAEMON \
+        --pid-file $PIDFILE --log-file $LOGFILE $CONFIG
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping $DESC"
+    start-stop-daemon --stop --exec $PYTHON --pidfile $PIDFILE
+    eend $?
+}
