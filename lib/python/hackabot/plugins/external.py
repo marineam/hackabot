@@ -23,9 +23,11 @@ class ExternalPlugins(object):
 
         conf = conn.manager.config
         if event['type'] == "command":
-            commands = glob("%s/%s" % (conf.get('commands'), event['command']))
+            commands = glob("%s/commands/%s" %
+                    (conf.get('root'), event['command']))
         else:
-            commands = glob("%s/%s/*" % (conf.get('hooks'), event['type']))
+            commands = glob("%s/hooks/%s/*" %
+                (conf.get('root'), event['type']))
 
         if not commands:
             return

@@ -17,6 +17,7 @@ class Help(object):
 
         plugins = conn.manager.plugins
         conf = conn.manager.config
+        external = "%s/commands" % conf.get('root')
         text = event['text'].strip()
         if text:
             event['command'] = text
@@ -28,8 +29,8 @@ class Help(object):
                 send = plugins.commands[text].__doc__
                 if send is None:
                     send = "Command '%s' is missing a help message." % text
-            elif os.path.isfile("%s/%s" % (conf.get('commands'), text)):
-                cmd = "%s/%s" % (conf.get('commands'), text)
+            elif os.path.isfile("%s/%s" % (external, text)):
+                cmd = "%s/%s" % (external, text)
                 send = ""
 
                 try:
@@ -55,7 +56,7 @@ class Help(object):
         else:
             commands = plugins.commands.keys()
 
-            for cmd in glob("%s/*" % conf.get('commands')):
+            for cmd in glob("%s/*" % external):
                 if (os.path.isfile(cmd) and not os.path.islink(cmd)
                         and os.access(cmd, os.X_OK)):
                     commands.append(os.path.basename(cmd))

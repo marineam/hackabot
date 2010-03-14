@@ -93,8 +93,6 @@ def parse_config(path=None, xml=None):
         'perl': "%s/lib/perl" % root,
         'mysql': "%s/lib/mysql" % root,
         'python': "%s/lib/python" % root,
-        'commands': "%s/commands" % root,
-        'hooks': "%s/hooks" % root,
     }
 
     if path:
