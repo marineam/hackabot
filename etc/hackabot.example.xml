@@ -43,7 +43,7 @@
         <autojoin chan="#protected" password="secret" />
     </network>
 
-    <database namehost="dbhost.some.org"
+    <database hostname="dbhost.some.org"
               database="dbname"
               username="user"
               password="secret" />
