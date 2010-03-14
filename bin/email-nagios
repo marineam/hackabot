@@ -26,9 +26,8 @@ def main():
     date = time.localtime(utils.mktime_tz(utils.parsedate_tz(msg['Date'])))
 
     send, enc = header.decode_header(msg['Subject'])[0]
-    send = send.decode(enc).strip()
-    if isinstance(send, unicode):
-        send = send.encode('UTF-8')
+    if enc:
+        send = send.decode(enc).strip().encode('UTF-8')
 
     text = ""
     if msg.is_multipart():

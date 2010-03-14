@@ -38,9 +38,8 @@ def main():
     ticket = match.group(1)
 
     subject, enc = header.decode_header(msg['Subject'])[0]
-    subject = subject.decode(enc).strip()
-    if isinstance(subject, unicode):
-        subject = subject.encode('UTF-8')
+    if enc:
+        subject = subject.decode(enc).strip().encode('UTF-8')
     subject = re.sub('\[[^\]]*#%s\]\s*' % ticket, '', subject)
 
     send = "New Ticket #%s: %s" % (ticket, subject)
