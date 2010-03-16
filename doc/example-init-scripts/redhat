@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# hackabot - a crazy little bot
+#
+# chkconfig: 2345 90 10
+# description: Hackabot IRC Bot
+
+# Source function library.
+. /etc/init.d/functions
+
+DESC="Hackabot"
+LOCK=hackabot
+USER=hackabot
+HBDIR=/home/$USER/hackabot
+PYTHON=/usr/bin/python
+DAEMON=$HBDIR/bin/hackabot
+CONFIG=$HBDIR/etc/hackabot.xml
+LOGFILE=/home/$USER/hackabot.log
+PIDFILE=/home/$USER/hackabot.pid
+
+start() {
+        echo -n "Starting $DESC: "
+        daemon --user $USER --pidfile $PIDFILE $PYTHON $DAEMON \
+                --pid-file $PIDFILE --log-file $LOGFILE $CONFIG
+        RETVAL=$?
+        if [ "$RETVAL" = 0 ]; then
+                success
+                touch /var/lock/subsys/$LOCK
+        else
+                failure
+        fi
+        echo
+        return $RETVAL
+}        
+
+stop() {
+        echo -n "Shutting down $DESC: "
+        killproc -p $PIDFILE -d 15 $LOCK
+        RETVAL=$?
+        if [ "$RETVAL" = 0 ]; then
+                success
+                rm -f /var/lock/subsys/$LOCK
+        else
+                failure
+        fi
+        echo
+        return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status -p $PIDFILE $LOCK
+        ;;
+    restart|reload)
+            stop && start
+        ;;
+    condrestart)
+        [ -f /var/lock/subsys/$LOCK ] && restart
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart}"
+        exit 1
+        ;;
+esac
+exit $?
