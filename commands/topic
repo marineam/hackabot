@@ -16,8 +16,7 @@ my $msg = $hbc->readline;
 my $chan = $hbc->channel;
 my $nick = $hbc->sent_by;
 
-if ($msg =~ /^--add\s+(.+)/) {
-    chomp $1;
+if ($msg =~ /^--add\s+(.*\S)\s*$/) {
     $hbc->quote_add("topic", $1);
     print "send $nick: Successfully added\n";
 }

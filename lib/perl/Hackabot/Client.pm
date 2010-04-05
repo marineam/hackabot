@@ -280,7 +280,7 @@ sub quote_add {
     my $chan = $self->channel;
     my $lastused = "'1'";
 
-    if (defined($set_lastused)) {
+    if (defined($set_lastused) and $set_lastused) {
         $lastused = "NOW()";
     }
 
