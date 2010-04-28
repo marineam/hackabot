@@ -41,6 +41,7 @@ def main():
     if enc:
         subject = subject.decode(enc).strip().encode('UTF-8')
     subject = re.sub('\[[^\]]*#%s\]\s*' % ticket, '', subject)
+    subject = re.sub('\s+', ' ', subject)
 
     send = "New Ticket #%s: %s" % (ticket, subject)
 

@@ -28,6 +28,7 @@ def main():
     send, enc = header.decode_header(msg['Subject'])[0]
     if enc:
         send = send.decode(enc).strip().encode('UTF-8')
+    send = re.sub('\s+', ' ', send)
 
     text = ""
     if msg.is_multipart():
