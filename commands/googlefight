@@ -72,7 +72,7 @@ sub gethits {
     }
 
     $word = uri_escape($word);
-    my $google = `lynx --dump "http://www.google.com/search?q=$word" | grep -m1 Results | sed -e 's/.*of about *//' -e 's/  *.*//' -e 's/,//g'`;
+    my $google = `lynx --dump "http://www.google.com/search?q=$word" | grep -i -m1 results | sed -e 's/.*about *//i' -e 's/  *.*//' -e 's/,//g'`;
     chomp $google;
     return int($google);
 }
