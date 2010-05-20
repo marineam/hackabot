@@ -2,7 +2,7 @@
 
 ##HACKABOT_HELP##
 # Failboat!
-# !failhat [someone | --value someone | --low | --high | --nicks]
+# !fail [someone | --value someone | --low | --high | --nicks]
 ##HACKABOT_HELP##
 
 use strict;
