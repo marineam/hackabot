@@ -50,7 +50,7 @@ elsif ($msg =~ /^new$/) {
     $dbh->do("INSERT INTO hangman (chan, phrase, guess, final, wrong)
         VALUES (?, ?, ?, NULL, '') ON DUPLICATE KEY UPDATE
         phrase = VALUES(phrase),
-        guess = VALUES(guess)
+        guess = VALUES(guess),
         final = NULL, wrong = ''",
         undef, $chan, $phrase, $guess)
         or die("hangman: db update failed\n");
@@ -136,7 +136,7 @@ else {
         $row->{'final'} = "'win'";
 
         $dbh->do("UPDATE hangman SET guess = ?, final = 'win'
-            WHERE chan = ?", undef, $row->{'guess'})
+            WHERE chan = ?", undef, $row->{'guess'}, $chan)
             or die("hangman: db update failed\n");
     }
     elsif (defined $row->{'phrase'} and
@@ -150,7 +150,7 @@ else {
         $row->{'final'} = "'lose'";
 
         $dbh->do("UPDATE hangman SET guess = ?, final = 'lose'
-            WHERE chan = ?", undef, $row->{'guess'})
+            WHERE chan = ?", undef, $row->{'guess'}, $chan)
             or die("hangman: db update failed\n");
     }
 

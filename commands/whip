@@ -14,8 +14,9 @@ my $nick = $hbc->sent_by;
 my $chan = $hbc->channel;
 
 if ($msg =~ /^--add\s+(.+)/) {
-    chomp $1;
-    $hbc->quote_add("whip", $1);
+    my $new = $1;
+    chomp $new;
+    $hbc->quote_add("whip", $new);
     print "send $nick: Successfully added\n";
 }
 elsif ($hbc->private) {
