@@ -23,9 +23,21 @@ class Score(object):
 
         for match in re.finditer(self._regex, event['text']):
             if match.group(2) == "++":
-                inc = 1
+                if match.group(1) == event['sent_by']:
+                    conn.msg(event['reply_to'],
+                            "%s: no self promotion! You lose 5 points." %
+                            event['sent_by'])
+                    inc = -5
+                else:
+                    inc = 1
             else:
-                inc = -1
+                if match.group(1) == event['sent_by']:
+                    conn.msg(event['reply_to'],
+                            "%s: Aww, cheer up! You can keep your point." %
+                            event['sent_by'])
+                    return
+                else:
+                    inc = -1
 
             log.debug("score: %s += %s" % (match.group(1), inc))
 
