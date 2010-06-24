@@ -25,7 +25,7 @@ sub make_lunch {
     $time = $dbh->quote($time);
 
     $sth = $dbh->prepare("SELECT id, name FROM $0_location
-                          ORDER BY RAND()*(1/lastused) DESC LIMIT 1");
+                          ORDER BY RAND()*`lastused` ASC LIMIT 1");
     $sth->execute;
     if (@row = $sth->fetchrow_array) {
         $lunch = "suggests " . $row[1] . " for";
