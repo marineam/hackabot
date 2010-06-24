@@ -9,6 +9,7 @@ use strict;
 use URI::Escape;
 use Hackabot::Client;
 
+my $hipster = ($0 =~ /hipster/);
 my $hbc = Hackabot::Client->new;
 my $msg = $hbc->readline;
 my $nick = $hbc->sent_by;
@@ -39,11 +40,11 @@ if (defined $word1 and defined $word2) {
     my $hits2 = gethits($word2);
 
     my $result;
-    if ($hits1 > $hits2) {
-        $result = "$word1 wins with ".commafy($hits1).". vs. $word2 with ".commafy($hits2).", a difference of ". commafy($hits1 - $hits2) ." results.";
+    if (($hipster and $hits1 < $hits2) or (not $hipster and $hits1 > $hits2)) {
+        $result = "$word1 wins with ".commafy($hits1).". vs. $word2 with ".commafy($hits2).", a difference of ". commafy(abs($hits1 - $hits2)) ." results.";
     }
-    elsif ($hits1 < $hits2) {
-        $result = "$word2 wins with ".commafy($hits2)." vs. $word1 with ".commafy($hits1).", a difference of ". commafy($hits2 - $hits1) ." results.";
+    elsif (($hipster and $hits1 > $hits2) or (not $hipster and $hits1 < $hits2)) {
+        $result = "$word2 wins with ".commafy($hits2)." vs. $word1 with ".commafy($hits1).", a difference of ". commafy(abs($hits2 - $hits1)) ." results.";
     }
     elsif ($hits1 == $hits2) {
         $result = "It is a draw between $word1 and $word2 with ".commafy($hits1)." results.";
@@ -52,10 +53,10 @@ if (defined $word1 and defined $word2) {
         $result = "I'm confused!";
     }
 
-    print "send $nick: $result";
+    print "send $nick: $result\n";
 }
 else {
-    print "send Usage: word1 word2";
+    print "send Usage: word1 word2\n";
 }
 
 sub commafy {
