@@ -17,8 +17,8 @@ if (/^("[^"]+"|'[^']+'|[^'"\s]\S*)\s+("[^"]+"|'[^']+'|[^'"\s]\S*)/) {
 
 if (defined $one and defined $two) {
     # Double quotes don't work for queries
-    $one =~ s/^"(.*)"$/'$1'/;
-    $two =~ s/^"(.*)"$/'$1'/;
+    $one =~ s/("|')//g;
+    $two =~ s/("|')//g;
     $one = uri_escape($one);
     $two = uri_escape($two);
     my $result = `lynx -dump -width 1000 'http://www.netsoc.tcd.ie/~mu/cgi-bin/shortpath.cgi?from=$one&to=$two' | grep -A1 'view reverse path' | tail -n1`;
