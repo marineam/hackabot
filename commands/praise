@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
 ##HACKABOT_HELP##
-# Tell someone they are wonderful!
+# Tell someone they are the marble in your pudding!
+# http://www.madsci.org/cgi-bin/cgiwrap/~lynn/jardin/SCG
 # !praise [#chan] nick
 ##HACKABOT_HELP##
 
