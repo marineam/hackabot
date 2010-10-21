@@ -6,4 +6,4 @@
 ##HACKABOT_HELP##
 
 echo "sendnext"
-grep '^msg' | sed -e 's/^msg\s*//g' | bc 2>&1
+bc 2>&1

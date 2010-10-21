@@ -6,4 +6,4 @@
 ##HACKABOT_HELP##
 
 echo "sendnext"
-sed -e -e 's/![^<=>].*//g' | dc 2>&1
+sed -e 's/![^<=>].*//g' | dc 2>&1
