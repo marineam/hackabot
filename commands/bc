@@ -6,4 +6,4 @@
 ##HACKABOT_HELP##
 
 echo "sendnext"
-bc 2>&1
+bc -l 2>&1
