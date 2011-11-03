@@ -9,6 +9,8 @@ use URI::Find::Rule;
 use WWW::Shorten::TinyURL;
 use WWW::Shorten 'TinyURL';
 
+my $hbc = Hackabot::Client->new;
+my $conf = $hbc->{'conf'}->{'commands'};
 my $nick = $ENV{'HBEV_SENT_BY'};
 my $msg = <>;
 
@@ -16,8 +18,10 @@ my @urls = URI::Find::Rule->in($msg,1);
 if(@urls){
     foreach $url (@urls){
         if(length($url->as_string) > 79){
-            $short_url = makeashorterlink($url->as_string);
-            print "msg $nick\'s tiny URL is $short_url\n";
+            if(not defined $conf->{'tinyurl'}->{'ignore'} || $url->as_string =~ $conf->{'tinyurl'}->{'ignore'}){
+                $short_url = makeashorterlink($url->as_string);
+                print "msg $nick\'s tiny URL is $short_url\n";
+            }
         }
     }
 }
