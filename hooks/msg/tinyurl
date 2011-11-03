@@ -10,7 +10,7 @@ use WWW::Shorten::TinyURL;
 use WWW::Shorten 'TinyURL';
 
 my $hbc = Hackabot::Client->new;
-my $conf = $hbc->{'conf'}->{'commands'};
+my $conf = $hbc->{'conf'}->{'hooks'};
 my $nick = $ENV{'HBEV_SENT_BY'};
 my $msg = <>;
 
