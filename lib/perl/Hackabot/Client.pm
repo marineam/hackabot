@@ -95,6 +95,12 @@ sub cmd {
     }
 
     my $conn = $self->{'conn'};
+
+    if (defined $ENV{'HB_NETWORK'}) {
+       print $conn "net " . $ENV{'HB_NETWORK'} . "\n";
+       my $net_ret = <$conn>;
+    }
+
     print $conn "$send\n";
     my $ret = <$conn>;
 
