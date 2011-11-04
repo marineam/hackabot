@@ -8,6 +8,7 @@
 use URI::Find::Rule;
 use WWW::Shorten::TinyURL;
 use WWW::Shorten 'TinyURL';
+use Hackabot::Client;
 
 my $hbc = Hackabot::Client->new;
 my $conf = $hbc->{'conf'}->{'hooks'};
