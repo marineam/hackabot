@@ -1,5 +1,6 @@
 
 import os
+import pprint
 from glob import glob
 
 from zope.interface import implements
@@ -17,6 +18,9 @@ class ExternalPlugins(object):
     """
     implements(IPlugin, IHackabotPlugin)
 
+    def __exit__(self, type, value, traceback):
+        return isinstance(value, TypeError)
+
     def _handle_event(self, conn, event):
         if 'internal' in event and event['internal']:
             return
@@ -32,12 +36,15 @@ class ExternalPlugins(object):
         if not commands:
             return
 
+        os.environ.clear()
         vars = os.environ.copy()
         for key, val in conf.items():
             vars["HB_%s" % key.upper()] = str(val)
 
+        if conn.network.id:
+            vars['HB_NETWORK'] = conn.network.id
+
         vars['HB_NICK'] = conn.nickname
-        vars['HB_NETWORK'] = conn.network.id
         vars['HB_XML'] = ElementTree.tostring(conn.manager.config)
         text = ""
         for key, val in event.iteritems():
@@ -64,6 +71,8 @@ class ExternalPlugins(object):
                 deferred = defer.Deferred()
                 deferreds.append(deferred)
                 proto = HBProcessProtocol(conn, event, deferred)
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(vars)
                 reactor.spawnProcess(proto, cmd, [cmd], vars)
 
         if len(deferreds) == 1:
