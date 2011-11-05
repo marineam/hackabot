@@ -17,9 +17,6 @@ class ExternalPlugins(object):
     """
     implements(IPlugin, IHackabotPlugin)
 
-    def __exit__(self, type, value, traceback):
-        return isinstance(value, TypeError)
-
     def _handle_event(self, conn, event):
         if 'internal' in event and event['internal']:
             return
