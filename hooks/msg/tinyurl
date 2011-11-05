@@ -19,7 +19,7 @@ my $nick = $ENV{'HBEV_SENT_BY'};
 my $msg = <>;
 
 if(exists $conf->{'tinyurl'}){
-    if (ref($conf->{'tinyurl'}) eq "ARRAY") {
+    if(ref($conf->{'tinyurl'}) eq "ARRAY"){
         foreach (@{$conf->{'tinyurl'}}){
             if(exists $_->{'ignore'}){
                 $ra->add($_->{'ignore'});
