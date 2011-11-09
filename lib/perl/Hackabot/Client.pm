@@ -258,20 +258,29 @@ sub counter_list {
 }
 
 sub quote_get {
-    my ($self, $type) = @_;
+    my $self = shift;
+    my $type = shift;
+    my $search = shift;  # optional
     my ($dbh, $sth);
+
+    if (defined($search)) {
+        $search = '%' . $search . '%';
+    } else {
+        $search = '%';
+    }
 
     $dbh = $self->dbi or die;
 
-    $sth = $dbh->prepare("SELECT `id`, `text` FROM 
-        `$type` ORDER BY RAND()*`lastused` ASC LIMIT 1");
+    my $sql = qq{SELECT `id`, `text` FROM `$type` WHERE `text` LIKE '$search'
+        ORDER BY RAND()*`lastused` ASC LIMIT 1};
+    $sth = $dbh->prepare($sql);
     $sth->execute or die;
     my @row = $sth->fetchrow_array;
     my $value = $row[1];
     my $id = $row[0];
 
     # Not sure why I originally used this format instead of just using
-    # seconds since epoch, but I'll stick with it for compaitbility's sake.
+    # seconds since epoch, but I'll stick with it for compatibility's sake.
     my $time = localtime->strftime("%y%m%d%H%M");
 
     $dbh->do("UPDATE `$type` SET lastused = ? WHERE id = ?",
