@@ -69,6 +69,12 @@
         <weather location="02129"/>
     </commands>
 
+    <!-- Options for hooks (ie tinyurl) -->
+    <hooks>
+       <!-- Option to skip generating tinyurls for URIs containing sensitive information by regex pattern below -->
+       <tinyurl ignore="acme.widgets" />
+    </hooks>
+
     <!-- Options for external inputs (ie email) -->
     <external>
         <email-rt ticket="https://rt.example.com/Ticket/Display.html?id=" />
