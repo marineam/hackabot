@@ -263,15 +263,20 @@ sub quote_get {
     my $search = shift;  # optional
     my ($dbh, $sth);
 
-    if (defined($search)) {
-        $search = '%' . $search . '%';
-    } else {
-        $search = '%';
-    }
-
     $dbh = $self->dbi or die;
 
-    my $sql = qq{SELECT `id`, `text` FROM `$type` WHERE `text` LIKE '$search'
+    # do some input validation
+    if (defined($search)) {
+        if ($search !~ /^%|%$/) {
+            $search = '%' . $search . '%';
+        }
+        $search = $dbh->quote($search);
+        $search = qq| WHERE `text` LIKE $search |;
+    } else {
+        $search = "";
+    }
+
+    my $sql = qq{SELECT `id`, `text` FROM `$type` $search
         ORDER BY RAND()*`lastused` ASC LIMIT 1};
     $sth = $dbh->prepare($sql);
     $sth->execute or die;
