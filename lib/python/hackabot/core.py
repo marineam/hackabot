@@ -166,6 +166,9 @@ class HBotConnection(irc.IRCClient):
             else:
                 log.error("Invalid automsg: %s" % ElementTree.tostring(automsg))
 
+        reactor.callLater(2, self._autojoin)
+
+    def _autojoin(self):
         for autojoin in self.factory.config.findall('autojoin'):
             chan = autojoin.get('chan', None)
             password = autojoin.get('password', None)
