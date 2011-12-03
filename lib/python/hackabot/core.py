@@ -493,6 +493,15 @@ class HBotConnection(irc.IRCClient):
 
         self.manager.plugins.hook(self, event)
 
+    def sendLine(self, line):
+       log.rainman("SEND: %s" % (line,))
+       irc.IRCClient.sendLine(self, line)
+
+    def lineReceived(self, line):
+       log.rainman("RECV: %s" % (line,))
+       irc.IRCClient.lineReceived(self, line)
+
+
 # So other bits can get access to the current connections
 connections = {}
 

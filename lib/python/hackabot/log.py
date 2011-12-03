@@ -5,7 +5,7 @@ import sys
 
 from twisted.python import log, util, failure
 
-LEVELS = [ 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE' ]
+LEVELS = [ 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE', 'RAINMAN' ]
 
 _log_level = 2
 _log_fallback = sys.stderr
@@ -84,3 +84,6 @@ def debug(text, **kw):
 
 def trace(text, **kw):
     log.msg(text, log_level='TRACE', **kw)
+
+def rainman(text, **kw):
+    log.msg(text, log_level='RAINMAN', **kw)
