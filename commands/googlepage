@@ -5,7 +5,7 @@
 # !googlepage Firstname Lastname
 ##HACKABOT_HELP##
 
-MSG=`grep '^msg' | sed -e 's/^msg\s*//g'`
+MSG=`head -n1`
 FIRST=`echo "$MSG" | awk '{print $1}'`
 LAST=`echo "$MSG" | awk '{print $2}'`
 
@@ -22,7 +22,7 @@ for i in `seq 0 10 $MAXRESULTS`
 do 
     URL="http://www.google.com/search?q=$FIRST&start=$i"
     UA="Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8b5) Gecko/20051022 Firefox/1.5"
-    wget -q -U "$UA" "$URL" -O - | grep -q -i $LAST && echo -n "When $FIRST is googled, $LAST is found on page `echo "$i / 10 + 1" | bc`: $URL" && exit
+    wget -q -U "$UA" "$URL" -O - | grep -q -i -- "$LAST" && echo -n "When $FIRST is googled, $LAST is found on page `echo "$i / 10 + 1" | bc`: $URL" && exit
     if [ $i -eq $MAXRESULTS ]
     then
         echo "Sorry, $LAST was not found in the first $MAXRESULTS results of the search $FIRST. Looks like you need to blog more." && exit
