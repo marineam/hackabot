@@ -47,7 +47,7 @@ class Client(object):
             self.connect()
 
         network = os.environ.get("HB_NETWORK", None)
-        if network
+        if network:
            self.conn.write("net %s\n" % network)
            ret = self.conn.readline()
 
