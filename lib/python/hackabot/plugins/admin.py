@@ -10,7 +10,7 @@ class Admin(object):
     @staticmethod
     def command_admin(conn, event):
         """Various administrative commands.
-        !admin reload | quit | join #chan | part #chan
+        !admin reload | quit | join #chan | part #chan | nick newname
         """
 
         line = event['text'].split(None, 1)
@@ -27,10 +27,14 @@ class Admin(object):
             conn.manager.reload()
         elif request == "quit":
             conn.manager.disconnect(args)
+        elif not args:  # All further commands require an argument
+            conn.msg(event['reply_to'], "Missing argument, try !help admin")
         elif request == "join":
             conn.join(args)
         elif request == "part":
             conn.part(args)
+        elif request == "nick":
+            conn.setNick(line[0])
         else:
             conn.msg(event['reply_to'],
                     "Unknown admin request: '%s'" % request)
