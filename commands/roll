@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+##HACKABOT_HELP##
+# Roll some dice (default 1d6)
+# !roll [[NUMd]SIDES[+ADD]]
+##HACKABOT_HELP##
+
+import re
+import random
+
+import hackabot
+from hackabot.client import Client
+
+def roll(num, sides):
+    return [random.randint(1, sides) for _ in xrange(num)]
+
+def main():
+    hbc = Client()
+    msg = hbc.readline()
+    nick = hbc.sent_by()
+
+    m = re.match(r'^((?P<num>\d*)d)?(?P<sides>\d*)(\+(?P<add>\d*))?$', msg)
+    if not m:
+        print "msg %s: Hm, not sure what that was, how about a 1d6?" % (nick,)
+        num = 1
+        sides = 6
+        add = 0
+    else:
+        num = int(m.group('num') or 1)
+        sides = int(m.group('sides') or 6)
+        add = int(m.group('add') or 0)
+
+    result = roll(num, sides)
+    if len(result) < 10:
+        result_text = ", ".join(str(x) for x in result)
+    else:
+        result_text = "a lot of dice"
+
+    print "msg %s: You rolled %sd%s+%s and got %s for a total of %s" % (
+        nick, num, sides, add, result_text, sum(result) + add)
+
+
+if __name__ == "__main__":
+    main()
