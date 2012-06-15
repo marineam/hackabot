@@ -14,6 +14,20 @@ from hackabot.client import Client
 def roll(num, sides):
     return [random.randint(1, sides) for _ in xrange(num)]
 
+def zero(count):
+    return random.sample([
+        '0',
+        'nada',
+        'naught',
+        'nil',
+        'nix',
+        'nothing',
+        'zero',
+        'zilch',
+        'zip',
+        'zot',
+        ], count)
+
 def main():
     hbc = Client()
     msg = hbc.readline()
@@ -29,6 +43,11 @@ def main():
         num = int(m.group('num') or 1)
         sides = int(m.group('sides') or 6)
         add = int(m.group('add') or 0)
+
+    if num < 1 or sides < 1:
+        msg = "You rolled %s and got %s for a total of %s" % tuple(zero(3))
+        print "msg %s: %s" % (nick, msg)
+        return
 
     result = roll(num, sides)
     if len(result) < 10:
