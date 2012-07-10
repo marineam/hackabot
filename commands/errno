@@ -1,0 +1,10 @@
+#!/bin/bash
+
+##HACKABOT_HELP##
+# #include <errno.h>
+# !errno
+##HACKABOT_HELP##
+
+echo 'sendnext'
+echo '#include <errno.h>' | cpp -fdirectives-only -CC - - \
+  | grep '^#define E[A-Z]* *[0-9]' | sort -R | head -n1 2>&1
